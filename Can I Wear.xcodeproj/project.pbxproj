@@ -27,6 +27,15 @@
 		AD2F78433072D73700CDF920 /* Can I Wear.app */ = {isa = PBXFileReference; explicitFileType = wrapper.application; includeInIndex = 0; path = "Can I Wear.app"; sourceTree = BUILT_PRODUCTS_DIR; };
 		AD2F78503072D73D00CDF920 /* Can I WearTests.xctest */ = {isa = PBXFileReference; explicitFileType = wrapper.cfbundle; includeInIndex = 0; path = "Can I WearTests.xctest"; sourceTree = BUILT_PRODUCTS_DIR; };
 		AD2F785A3072D73D00CDF920 /* Can I WearUITests.xctest */ = {isa = PBXFileReference; explicitFileType = wrapper.cfbundle; includeInIndex = 0; path = "Can I WearUITests.xctest"; sourceTree = BUILT_PRODUCTS_DIR; };
+		AD2F786E3072E3F200CDF920 /* AI_RULES.md */ = {isa = PBXFileReference; lastKnownFileType = net.daringfireball.markdown; path = AI_RULES.md; sourceTree = "<group>"; };
+		AD2F786F3072E3F200CDF920 /* DECISIONS.md */ = {isa = PBXFileReference; lastKnownFileType = net.daringfireball.markdown; path = DECISIONS.md; sourceTree = "<group>"; };
+		AD2F78703072E3F200CDF920 /* PRODUCT_SPEC.md */ = {isa = PBXFileReference; lastKnownFileType = net.daringfireball.markdown; path = PRODUCT_SPEC.md; sourceTree = "<group>"; };
+		AD2F78713072E3F200CDF920 /* PROJECT.md */ = {isa = PBXFileReference; lastKnownFileType = net.daringfireball.markdown; path = PROJECT.md; sourceTree = "<group>"; };
+		AD2F78723072E3F200CDF920 /* ROADMAP.md */ = {isa = PBXFileReference; lastKnownFileType = net.daringfireball.markdown; path = ROADMAP.md; sourceTree = "<group>"; };
+		AD2F78733072E3F200CDF920 /* TECH_SPEC.md */ = {isa = PBXFileReference; lastKnownFileType = net.daringfireball.markdown; path = TECH_SPEC.md; sourceTree = "<group>"; };
+		AD2F78743072E3F200CDF920 /* TODO.md */ = {isa = PBXFileReference; lastKnownFileType = net.daringfireball.markdown; path = TODO.md; sourceTree = "<group>"; };
+		AD2F78753072E3F200CDF920 /* UX.md */ = {isa = PBXFileReference; lastKnownFileType = net.daringfireball.markdown; path = UX.md; sourceTree = "<group>"; };
+		AD2F78763072E3F200CDF920 /* WEATHER_LOGIC.md */ = {isa = PBXFileReference; lastKnownFileType = net.daringfireball.markdown; path = WEATHER_LOGIC.md; sourceTree = "<group>"; };
 /* End PBXFileReference section */
 
 /* Begin PBXFileSystemSynchronizedRootGroup section */
@@ -75,6 +84,7 @@
 		AD2F783A3072D73700CDF920 = {
 			isa = PBXGroup;
 			children = (
+				AD2F786D3072E39300CDF920 /* docs */,
 				AD2F78453072D73700CDF920 /* Can I Wear */,
 				AD2F78533072D73D00CDF920 /* Can I WearTests */,
 				AD2F785D3072D73D00CDF920 /* Can I WearUITests */,
@@ -90,6 +100,22 @@
 				AD2F785A3072D73D00CDF920 /* Can I WearUITests.xctest */,
 			);
 			name = Products;
+			sourceTree = "<group>";
+		};
+		AD2F786D3072E39300CDF920 /* docs */ = {
+			isa = PBXGroup;
+			children = (
+				AD2F786E3072E3F200CDF920 /* AI_RULES.md */,
+				AD2F786F3072E3F200CDF920 /* DECISIONS.md */,
+				AD2F78703072E3F200CDF920 /* PRODUCT_SPEC.md */,
+				AD2F78713072E3F200CDF920 /* PROJECT.md */,
+				AD2F78723072E3F200CDF920 /* ROADMAP.md */,
+				AD2F78733072E3F200CDF920 /* TECH_SPEC.md */,
+				AD2F78743072E3F200CDF920 /* TODO.md */,
+				AD2F78753072E3F200CDF920 /* UX.md */,
+				AD2F78763072E3F200CDF920 /* WEATHER_LOGIC.md */,
+			);
+			path = docs;
 			sourceTree = "<group>";
 		};
 /* End PBXGroup section */
