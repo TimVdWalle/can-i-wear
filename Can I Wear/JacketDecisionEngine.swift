@@ -16,6 +16,7 @@ nonisolated enum RecommendationReason: Equatable, Sendable {
     case excessiveHeat
     case precipitationRisk
     case precipitation
+    case incompleteForecast
 }
 
 nonisolated struct HourlyRecommendation: Equatable, Sendable {
@@ -104,6 +105,105 @@ nonisolated struct JacketDecisionEngine: Sendable {
             return .caution
         }
         return .avoid
+    }
+}
+
+nonisolated struct DailyRecommendationEngine: Sendable {
+    private let hourlyEngine: JacketDecisionEngine
+
+    init(hourlyEngine: JacketDecisionEngine = JacketDecisionEngine()) {
+        self.hourlyEngine = hourlyEngine
+    }
+
+    /// Summarizes the remaining local calendar day. Returns nil when timezone or
+    /// hourly coverage is insufficient for the approved conservative policy.
+    func evaluate(_ forecast: NormalizedForecast, now: Date) -> HourlyRecommendation? {
+        guard
+            let timezoneIdentifier = forecast.hours.compactMap(\.timezoneIdentifier).first,
+            let timezone = TimeZone(identifier: timezoneIdentifier)
+        else {
+            return nil
+        }
+
+        var calendar = Calendar(identifier: .gregorian)
+        calendar.timeZone = timezone
+
+        guard
+            let day = calendar.dateInterval(of: .day, for: now),
+            let currentHour = calendar.dateInterval(of: .hour, for: now)?.start,
+            currentHour < day.end
+        else {
+            return nil
+        }
+
+        var expectedTimestamps: [Date] = []
+        var timestamp = currentHour
+        while timestamp < day.end {
+            expectedTimestamps.append(timestamp)
+            timestamp = timestamp.addingTimeInterval(3_600)
+        }
+
+        var recommendations: [HourlyRecommendation?] = []
+        for expectedTimestamp in expectedTimestamps {
+            let matches = forecast.hours.filter { $0.timestamp == expectedTimestamp }
+            guard matches.count <= 1 else {
+                return nil
+            }
+
+            guard let hour = matches.first, hour.timezoneIdentifier == timezoneIdentifier else {
+                recommendations.append(nil)
+                continue
+            }
+            recommendations.append(hourlyEngine.evaluate(hour))
+        }
+
+        let missingIndices = recommendations.indices.filter { recommendations[$0] == nil }
+        if missingIndices.count == 1, let missingIndex = missingIndices.first {
+            guard
+                missingIndex > recommendations.startIndex,
+                missingIndex < recommendations.index(before: recommendations.endIndex),
+                let previous = recommendations[recommendations.index(before: missingIndex)],
+                let next = recommendations[recommendations.index(after: missingIndex)]
+            else {
+                return nil
+            }
+
+            recommendations[missingIndex] = HourlyRecommendation(
+                level: max(.caution, previous.level, next.level),
+                reason: .incompleteForecast
+            )
+        } else if !missingIndices.isEmpty {
+            return nil
+        }
+
+        return recommendations.compactMap { $0 }.max(by: Self.isLessProtective)
+    }
+
+    private static func isLessProtective(
+        _ lhs: HourlyRecommendation,
+        _ rhs: HourlyRecommendation
+    ) -> Bool {
+        if lhs.level != rhs.level {
+            return lhs.level < rhs.level
+        }
+        return reasonPriority(lhs.reason) < reasonPriority(rhs.reason)
+    }
+
+    private static func reasonPriority(_ reason: RecommendationReason) -> Int {
+        switch reason {
+        case .suitableTemperature:
+            0
+        case .warmTemperature:
+            1
+        case .incompleteForecast:
+            2
+        case .precipitationRisk:
+            3
+        case .excessiveHeat:
+            4
+        case .precipitation:
+            5
+        }
     }
 }
 

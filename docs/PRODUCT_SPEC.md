@@ -88,6 +88,8 @@ Morning — AVOID
 
 If a forecast creates noisy alternating hourly results, consolidate them into a larger meaningful period. The safe recommendation should win when rain risk is the meaningful difference.
 
+Initial V1 grouping uses 3 hours for a normal meaningful change. A one-hour Don't wear risk expands into a 2-hour safety period rather than being hidden. Short safer intervals are absorbed into surrounding risk, and repeated hourly alternation is consolidated using the most protective result.
+
 ## Personalization
 
 No personal settings in V1.
@@ -97,6 +99,8 @@ No personal settings in V1.
 If weather cannot be obtained:
 - do not invent a recommendation;
 - a recent cached weather result may be used if it is still considered reliable.
+
+For the initial daily evaluation, one isolated unusable hour may be inferred conservatively from valid immediate neighbors and never as better than Caution. Multiple missing hours or an unbounded edge gap produce no daily recommendation.
 
 If location cannot be obtained:
 - a recent cached location may be used if it is still considered reliable;

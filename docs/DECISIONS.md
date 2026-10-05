@@ -112,12 +112,28 @@ All thresholds remain centralized and tunable. Invalid or insufficient required 
 ### D-024 — Initial relevant-day and summary policy
 **Decision:** Evaluate only the remaining hours of the forecast location’s current calendar day, from the current local hour through 23:59. For the temporary single-answer vertical slice, the most protective hourly result wins: **Avoid** over **Caution** over **OK**. Phase 2 replaces this coarse answer with meaningful time segments so later weather is not hidden.
 
-The policy for incomplete daily coverage remains TBD. The approved temperature fallback in D-023 does not resolve how one or more entirely unusable hours should affect a daily result.
+For incomplete daily coverage, exactly one isolated unusable/missing hour may be inferred only when valid hours exist immediately before and after it. Use the more protective neighboring result, and never infer better than **Caution**. Two or more missing hours, or a gap at either edge without valid data on both sides, means the forecast is incomplete and no daily recommendation may be produced.
+
+### D-025 — Basic first-slice presentation
+**Decision:** The temporary Phase 1 result labels are **Wear**, **Maybe**, and **Don’t wear**. The first working screen checks automatically on launch and presents one system icon, a large result label, a short primary reason and required Open-Meteo attribution.
+
+The approved temporary status copy is: **“Checking today’s weather…”**, **“Location access needed”**, **“Couldn’t get your location”**, **“Weather unavailable”**, and **“Today’s forecast is incomplete”**. Failure states provide a retry action. Final wording, palette and visual treatment remain scheduled for Phase 3 review.
+
+### D-026 — Meaningful period and noise policy
+**Decision:** A normal recommendation change must last at least 3 consecutive forecast hours to become a separate period. A one-hour **Don’t wear** result is never hidden; expand it into a 2-hour safety period by including the preceding hour, or the following hour when it occurs at the start of the evaluated window.
+
+A short safer interval must not override surrounding risk. Repeated hour-by-hour alternation is consolidated into one period using the most protective result in the noisy span. The period/noise values remain centralized and tunable.
+
+### D-027 — Freshness, reuse and weather timeout policy
+**Decision:** A recent accepted location may be reused for up to and including 30 minutes. A cached forecast may be used only through 30 minutes after it was fetched and, when a fresh location is available, only when its forecast location is within 5 km of that location.
+
+Any valid cached result up to 30 minutes old should appear immediately with its age while a live refresh runs. Fresh data replaces it when available; if refresh fails, the still-valid cached result remains visibly identified as cached. Forecasts older than 30 minutes must not produce a recommendation.
+
+A live weather request may wait at most 10 seconds before falling back to valid cached data or showing an explicit weather failure. The already approved one-time location acquisition timeout remains 15 seconds.
 
 ## Not yet decided
 
 The following are intentionally NOT decisions:
-- incomplete daily-forecast gap handling;
 - exact dynamic-period grouping parameters;
 - exact cache freshness;
 - exact UI labels;

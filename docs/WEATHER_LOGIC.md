@@ -75,9 +75,11 @@ These examples express the product intent and should become automated tests.
 5. Prefer a conservative larger period when tiny periods alternate between Wear/Avoid.
 6. Display only meaningful changes.
 
-Exact grouping parameters are configurable and should be determined through tests.
+Normal recommendation changes require 3 consecutive forecast hours to form a separate period. A one-hour Avoid result expands into a 2-hour safety period, preferably including the preceding hour. Short safer intervals do not override surrounding risk. Repeated hour-by-hour alternation is consolidated into one period using the most protective result in the noisy span. These parameters remain centralized and fixture-tested.
 
-For the temporary single-answer vertical slice, evaluate the current local hour through the end of the forecast location's calendar day and return the most protective hourly result. Phase 2 replaces this coarse result with meaningful periods. Incomplete daily-coverage handling remains TBD.
+For the temporary single-answer vertical slice, evaluate the current local hour through the end of the forecast location's calendar day and return the most protective hourly result. Phase 2 replaces this coarse result with meaningful periods.
+
+One isolated missing/unusable hour may be inferred only when it has valid immediate neighbors. Use the more protective neighbor and never infer better than Caution. Multiple gaps or a gap at either edge make the daily forecast incomplete, so no daily recommendation is produced.
 
 ## Central configuration
 

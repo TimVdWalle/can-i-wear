@@ -18,16 +18,16 @@ The numbered review units and their acceptance criteria are in [IMPLEMENTATION_P
 - [x] 0.4 Define normalized contracts and fixture harness — app-owned contracts and deterministic fixtures; 3 focused tests pass on iPhone
 - [x] 0.5 Implement one-time location acquisition — policy, provider, permission description and 5 focused tests complete; allowed live fix and denied-permission behavior verified on iPhone 13/iOS 26.6.2
 - [x] 0.6 Implement and probe the weather adapter — Open-Meteo request/normalization/error tests and the complete focused suite pass on iPhone 13/iOS 26.6.2; a live current-location forecast returned required normalized hourly fields. WeatherKit is deferred until a paid team is available
-- [~] 0.7 Approve first-slice recommendation policies — three-level rain/temperature rules and remaining-day/worst-result summary approved in D-023/D-024; incomplete daily-coverage behavior remains TBD
-- [ ] 0.8 Approve dynamic-period parameters — product decisions
-- [ ] 0.9 Approve freshness and safe-reuse policies — product/technical decisions
+- [x] 0.7 Approve first-slice recommendation policies — three-level rain/temperature rules, remaining-day/worst-result summary, and conservative single-gap handling approved in D-023/D-024
+- [x] 0.8 Approve dynamic-period parameters — 3-hour normal periods, 2-hour isolated Avoid expansion, safer-blip absorption and conservative noisy-span consolidation approved in D-026
+- [x] 0.9 Approve freshness and safe-reuse policies — 30-minute location/weather validity, 5 km forecast matching, immediate age-labeled cache refresh and 10-second weather timeout approved in D-027
 
 ### Phase 1 — First real-device vertical slice
 
-- [~] 1.1 Implement centralized hourly jacket rules — centralized three-level engine and 8 focused boundary/validity/precedence tests pass on iPhone 13/iOS 26.6.2; completion awaits the remaining 0.7 dependency
-- [ ] 1.2 Implement the basic daily summary — implementation/testing
-- [ ] 1.3 Connect providers to a basic result screen — implementation/integration testing
-- [ ] 1.4 Prove the complete vertical slice on a real iPhone — first major product milestone
+- [x] 1.1 Implement centralized hourly jacket rules — centralized three-level engine and 8 focused boundary/validity/precedence tests pass on iPhone 13/iOS 26.6.2
+- [x] 1.2 Implement the basic daily summary — remaining-local-day summary, most-protective result selection, and conservative gap handling implemented; 9 focused tests pass on iPhone 13/iOS 26.6.2
+- [x] 1.3 Connect providers to a basic result screen — approved basic presentation, automatic provider flow, explicit failures/retry, attribution and 4 focused presentation tests complete; live screen smoke check passed on iPhone
+- [x] 1.4 Prove the complete vertical slice on a real iPhone — live location → Open-Meteo → daily recommendation displayed Wear; relaunch, integrated denied-location, live offline failure and retry recovery all passed on iPhone 13/iOS 26.6.2. A privacy-safe warm timing probe measured 0.007 s location, 0.030 s weather and 0.038 s provider-to-result total
 
 ### Phase 2 — V1 daily intelligence
 
@@ -70,10 +70,10 @@ No Swift implementation, build, real-device run, live service validation or rele
 - [x] Final app name — **Can I Wear**
 - [x] Define measurable "few drops" rain tolerance — any forecast amount/type avoids; probability-only risk is Caution at 10% and Avoid at 20% — D-023, T-01, 0.7
 - [x] Decide exact actual-vs-apparent temperature weighting — use the warmer available value, or the sole available value — D-023, T-02, 0.7
-- [~] Define relevant local-day window, basic daily summary and incomplete forecast behavior — remaining local day and most-protective summary approved in D-024; incomplete coverage remains TBD — T-03, 0.7
-- [ ] Define dynamic period grouping/noise parameters — T-04, 0.8
-- [ ] Define cache freshness and weather/location matching — T-05, 0.9
-- [~] Define location accuracy, freshness, safe reuse and behavior-affecting timeouts — acquisition accuracy/timeout approved in D-021; freshness/reuse remains for 0.9 — T-06, 0.5/0.9
+- [x] Define relevant local-day window, basic daily summary and incomplete forecast behavior — remaining local day, most-protective summary and conservative single-gap handling approved in D-024 — T-03, 0.7
+- [x] Define dynamic period grouping/noise parameters — approved in D-026 — T-04, 0.8
+- [x] Define cache freshness and weather/location matching — approved in D-027 — T-05, 0.9
+- [x] Define location accuracy, freshness, safe reuse and behavior-affecting timeouts — acquisition policy approved in D-021 and reuse/weather timeout policy in D-027 — T-06, 0.5/0.9
 - [x] Define minimum supported OS versions — iOS 26.2 and newer — T-07, 0.2
 - [~] Approve development identity and final bundle identifiers — development identifier approved as `mobi.vandewalle.caniwear`; final bundle identity remains TBD — T-08, 0.2/5.1
 - [ ] Decide analytics/telemetry policy — T-09, 5.1; before any collection
@@ -95,19 +95,19 @@ All unchecked decisions remain **TBD**. T-12 (widget/notification timing/scope) 
 - [ ] Validate the production weather provider against accuracy, rain resolution, speed, reliability, cost and deployment complexity — Open-Meteo development setup/live fetch observed in 0.6; field validation remains for 4.2 and the production provider remains to be selected before release
 - [ ] Implement cache — 2.4 recent location, 2.5 weather, 2.6 fallback integration
 - [~] Create centralized product configuration — 0.5 acquisition parameters added; extend for 1.1 rules and approved period/cache settings in 2.3–2.5
-- [~] Create deterministic jacket decision engine — 1.1 hourly engine implemented and device-tested; 1.2 daily summary remains
+- [x] Create deterministic jacket decision engine — 1.1 hourly engine and 1.2 daily summary implemented and device-tested
 - [ ] Create period grouping engine — 2.1 daily inputs, 2.2 grouping, 2.3 consolidation
 
 ## V1 UX
 
-- [ ] Main recommendation screen — 1.3 basic; 3.5 final polish
-- [ ] Fast first-frame/loading state — 1.3 basic; 3.2/3.3 refinement and measurements
-- [ ] Short explanation — 1.3 basic; 3.1 approved copy, 3.5 polish
+- [~] Main recommendation screen — 1.3 basic screen complete; 3.5 final polish remains
+- [~] Fast first-frame/loading state — 1.3 automatic loading state complete; 3.2/3.3 refinement and measurements remain
+- [~] Short explanation — 1.3 basic reason mapping complete; 3.1 final copy and 3.5 polish remain
 - [ ] Dynamic periods — 2.6
-- [ ] No-location state — 1.3 basic; 2.6 fallback; 3.2 polish
-- [ ] No-weather state — 1.3 basic; 2.6 fallback; 3.2 polish
+- [~] No-location state — 1.3 basic denied/unavailable states and retry complete; 2.6 fallback and 3.2 polish remain
+- [~] No-weather state — 1.3 basic unavailable/incomplete states and retry complete; 2.6 fallback and 3.2 polish remain
 - [ ] Stale-data state — 2.6; 3.2 polish
-- [ ] Permission UX — 0.5 functional; 1.4 device proof; 3.2 polish
+- [~] Permission UX — 0.5 provider behavior and 1.3 integrated state complete; 1.4 denied-screen device proof and 3.2 polish remain
 - [ ] Accessibility — 3.1 approved details, 3.4 implementation/device checks
 - [ ] Visual polish — 3.5
 
@@ -133,25 +133,25 @@ All unchecked decisions remain **TBD**. T-12 (widget/notification timing/scope) 
 - [ ] Noisy alternating forecast — 2.3/2.7; 4.1
 - [~] Missing weather — 1.1 rejects missing/invalid required hourly inputs; 1.3, 2.6/2.7 and 4.1/4.3 remain
 - [ ] Missing location — 0.5/1.3, 2.6/2.7; 4.1/4.3
-- [~] Network unavailable — 0.6 provider error mapping test complete; 1.3 integration, 2.6/2.7 and 4.3 recovery checks remain
+- [~] Network unavailable — 0.6 provider mapping, 1.3 presentation mapping, and 1.4 live offline/recovery checks complete; 2.6/2.7 and 4.3 remain
 - [ ] Recent cached data — 2.4–2.7; 4.1/4.3
 - [ ] Stale cached data — 2.4–2.7; 4.1/4.3
 - [x] Real-device startup — 0.3 scaffold baseline complete; 1.4 live flow and 3.3/4.4 measurements remain
-- [~] Real-device permission flow — 0.5 allowed and denied provider checks complete; 1.4 integrated flow and 3.2/4.3 polish/recovery remain
+- [~] Real-device permission flow — 0.5 allowed/denied provider checks and 1.4 allowed/relaunch/integrated-denied checks complete; 3.2/4.3 polish/recovery remain
 
 Additional required checks: exact temperature/rain/freshness/grouping boundaries (1.1/2.3–2.5), provider mapping (0.6), timezones/day boundaries/coverage gaps (1.2/2.1), wrong-location cache (2.5/2.6), and accessibility (3.4). Audit completeness in 4.1; do not mark device observations complete from fixtures alone.
 
 ## Quality validation
 
-- [ ] Measure startup/perceived startup — 1.4 initial evidence; 3.3/4.4
-- [ ] Measure location acquisition — 0.5/1.4 initial evidence; 3.3
-- [~] Measure weather fetch — 0.6 live fetch succeeded; timing measurement remains for 1.4, 3.3 and 4.2
+- [~] Measure startup/perceived startup — 1.4 warm provider-to-result path measured 0.038 s, excluding process/UI startup; cold/perceived measurements remain for 3.3/4.4
+- [~] Measure location acquisition — 1.4 warm authorized acquisition measured 0.007 s; cold/slow measurements remain for 3.3
+- [~] Measure weather fetch — 0.6 live fetch succeeded and 1.4 warm fetch measured 0.030 s; broader 3.3/4.2 measurements remain
 - [ ] Verify no unnecessary location/background work — 0.5/1.4; 3.3/4.4
-- [~] Test on real iPhone — 0.3 scaffold, focused 0.4–0.6 tests, 0.5 allowed/denied location checks, and 0.6 live location-to-weather probe complete on iPhone 13/iOS 26.6.2; 1.4 recommendation flow and 2.7 daily flow remain
+- [~] Test on real iPhone — 35 focused tests and the complete live Phase 1 success/denied/offline/retry flow pass on iPhone 13/iOS 26.6.2; formal 1.4 gate and 2.7 period flow remain
 - [ ] Test multiple real devices across approved support — 4.4
-- [ ] Test slow network — 3.3/4.3
-- [~] Test denied permissions — 0.5 provider/device check complete; 1.4 integration and 3.2/4.3 recovery checks remain
-- [ ] Test app relaunch — 1.4/2.7; 4.3/4.4
+- [ ] Test slow network — 3.3/4.3; live offline failure/recovery passed in 1.4 but is not a slow-network measurement
+- [~] Test denied permissions — 0.5 provider/device and 1.4 integrated-screen checks complete; 3.2/4.3 recovery/polish checks remain
+- [~] Test app relaunch — 1.4 allowed-permission live relaunch passed; 2.7 and 4.3/4.4 scenarios remain
 - [ ] Test forecast changes — 2.6/2.7; 4.2/4.3
 - [ ] Test App Store/TestFlight build — 5.5
 
