@@ -90,7 +90,7 @@ AI must:
 - keep provider-specific authentication/configuration inside the provider adapter/integration layer;
 - make it possible to replace the provider without rewriting jacket logic.
 
-WeatherKit is the initial implementation provider, but not an irreversible dependency. Keep it behind the thin provider abstraction.
+Open-Meteo is the approved prototyping provider under D-022; WeatherKit remains a production candidate. Neither is an irreversible dependency. Keep each behind the thin provider abstraction and do not treat Open-Meteo's free endpoint as approved for distribution.
 
 ## 10. Prefer replaceable integrations
 

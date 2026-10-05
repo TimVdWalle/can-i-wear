@@ -1,7 +1,7 @@
 # Can I Wear — Project Truth
 
 > Status: ACTIVE
-> Last updated: 2026-10-04
+> Last updated: 2026-10-05
 > Source of truth: YES
 
 ## Purpose
@@ -26,7 +26,7 @@ V1:
 - gives an immediately understandable recommendation;
 - must work on a real iPhone;
 - is implemented natively for iOS using Swift + SwiftUI;
-- uses WeatherKit through a thin replaceable weather-provider abstraction;
+- uses a weather service through a thin replaceable provider abstraction; Open-Meteo is the development provider and the production provider remains to be confirmed before distribution;
 - treats Android as a later nice-to-have, not a V1 requirement;
 - targets App Store delivery.
 

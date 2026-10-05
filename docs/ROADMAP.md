@@ -1,7 +1,7 @@
 # Can I Wear — Implementation Phases & Roadmap
 
 > Status: ACTIVE
-> Last updated: 2026-10-04
+> Last updated: 2026-10-05
 > Source of truth: YES
 
 ## Version rule
@@ -22,7 +22,7 @@ Lock only the decisions needed to build the first quality version.
 Tasks:
 - initialize native Swift + SwiftUI Xcode project;
 - establish iOS real-device development;
-- integrate WeatherKit behind the WeatherProvider abstraction;
+- integrate the approved development weather service behind the `WeatherProvider` abstraction and retain a clean path to a production provider;
 - implement current-location acquisition;
 - define centralized configuration;
 - define exact measurable rain tolerance;

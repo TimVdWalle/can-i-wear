@@ -1,7 +1,7 @@
 # Can I Wear — Technical Specification
 
 > Status: ACTIVE
-> Last updated: 2026-10-04
+> Last updated: 2026-10-05
 > Source of truth: YES
 
 ## Technical goal
@@ -29,7 +29,7 @@ Implementation elegance is secondary to these outcomes.
 Why:
 - iOS is the product priority;
 - Android is a nice-to-have rather than a V1 requirement;
-- native integration is valuable for location, WeatherKit, notifications and widgets;
+- native integration is valuable for location, weather services, notifications and widgets;
 - SwiftUI provides the shortest path to a polished platform-consistent iOS UX;
 - most implementation will be AI-assisted/generated, reducing the cost of the user's limited prior Swift experience.
 
@@ -37,9 +37,9 @@ Android is intentionally outside the V1 implementation path.
 
 ## Weather provider
 
-**Initial implementation provider: Apple WeatherKit.**
+**Development provider: Open-Meteo. Production provider: TBD before distribution.**
 
-WeatherKit is not a permanent lock-in and must remain behind our abstraction.
+Open-Meteo's free open-access endpoint is approved only for evaluation and prototyping. WeatherKit remains the intended production candidate once a paid Apple Developer Program team is available. Neither provider is a permanent lock-in; both remain behind our abstraction.
 
 The architecture must be:
 
@@ -56,29 +56,29 @@ Jacket Decision Engine
 A concrete provider adapter implements the interface:
 
 ```text
-WeatherKitAdapter
+OpenMeteoProvider
 ```
 
-A future provider can implement the same interface:
+A production or future provider can implement the same interface:
 
 ```text
-OtherWeatherProviderAdapter
+WeatherKitProvider
 ```
 
 The jacket decision engine, period engine and UI must never consume provider-specific response objects.
 
-WeatherKit is the initial provider because it provides:
+Both evaluated providers supply the required hourly inputs:
 - hourly forecasts;
 - precipitation chance;
 - precipitation amount;
 - precipitation type;
 - temperature;
 - apparent/feels-like temperature;
-- up to 500,000 API calls/month included with Apple Developer Program membership.
+- time and forecast-location timezone context where available.
 
-V1 should use WeatherKit through Apple's native iOS framework. Provider-specific setup, authorization and mapping stay inside the WeatherKit integration layer.
+During unpaid development, V1 uses Open-Meteo over HTTPS. Provider-specific requests, authorization and mapping stay inside each provider integration layer. The free Open-Meteo endpoint must not be assumed suitable for App Store distribution; production terms/provider selection are revisited before release.
 
-Before treating WeatherKit as final, validate:
+Before treating any provider as final, validate:
 - forecast accuracy;
 - rain resolution;
 - speed;

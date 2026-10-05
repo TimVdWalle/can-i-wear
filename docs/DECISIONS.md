@@ -1,7 +1,7 @@
 # Can I Wear — Decisions
 
 > Status: ACTIVE
-> Last updated: 2026-10-04
+> Last updated: 2026-10-05
 > Source of truth: YES
 
 This file records decisions that AI and developers must not casually reopen.
@@ -71,6 +71,11 @@ The exact measurable API threshold for "a few drops" remains an implementation/c
 ### D-020 — Minimum supported iOS version
 **Decision:** V1 supports iOS 26.2 and newer.
 
+### D-021 — One-time location acquisition
+**Decision:** Request current location at approximately 1 km accuracy, accept a fix with horizontal accuracy within 5 km, stop location updates after success, and report a timeout if an authorized acquisition does not produce a usable fix within 15 seconds.
+
+The iOS when-in-use permission message is: **“Can I Wear uses your location to check local weather and provide today’s recommendation.”**
+
 ### D-017 — Framework and platform implementation
 **Decision:** Build V1 as a native iOS app using **Swift + SwiftUI**.
 
@@ -81,20 +86,42 @@ Android is not part of the V1 implementation path. It may be reconsidered later 
 ### D-018 — Weather provider architecture and initial provider
 **Decision:** Use **Apple WeatherKit** as the initial weather provider, but isolate it behind our own thin `WeatherProvider` abstraction. The rest of the app must consume a normalized internal weather model and must not depend directly on WeatherKit types.
 
-WeatherKit is the implementation choice for the first working version, not an irreversible product dependency. If another provider later proves better, the provider adapter must be replaceable without changing the jacket decision engine, period logic or UI.
+**Development update:** D-022 temporarily supersedes the initial provider for unpaid development. WeatherKit remains the intended production candidate once a paid Apple Developer Program team is available.
+
+WeatherKit remains a production candidate, not an irreversible product dependency. If another provider proves better, replacing the adapter must not require changing the jacket decision engine, period logic or UI.
 
 Reason for the abstraction: external weather providers are dependencies, while the leather-jacket recommendation is core product logic and should remain independent of the provider. The thin layer also makes deterministic testing with fake weather straightforward.
+
+### D-022 — Free development weather provider
+**Decision:** Use Open-Meteo’s free open-access API for evaluation and prototyping while WeatherKit is unavailable to the Personal Team. This is not approval to use the free tier for App Store distribution: it is non-commercial, has usage limits and no uptime guarantee. Open-Meteo attribution is required. Reassess the production provider and applicable terms before distribution.
+
+### D-023 — Initial hourly recommendation policy
+**Decision:** V1 uses exactly three recommendation levels: **OK**, **Caution**, and **Avoid**.
+
+For each hour:
+- any forecast precipitation amount above 0 mm, or a rain, drizzle, snow, sleet, hail or mixed-precipitation type, means **Avoid**;
+- with 0 mm forecast, a precipitation chance from 10% up to but not including 20% means **Caution**;
+- with 0 mm forecast, a precipitation chance of 20% or more means **Avoid**;
+- with 0 mm forecast and less than 10% chance, temperature determines the result;
+- temperature uses the warmer of actual and apparent temperature; if only one is available, use it;
+- the approved temperature bands remain: 15°C or below is **OK**, above 15°C through 20°C is **Caution**, and above 20°C is **Avoid**;
+- when rain and temperature produce different levels, the more protective level wins.
+
+All thresholds remain centralized and tunable. Invalid or insufficient required hourly data must not produce a recommendation.
+
+### D-024 — Initial relevant-day and summary policy
+**Decision:** Evaluate only the remaining hours of the forecast location’s current calendar day, from the current local hour through 23:59. For the temporary single-answer vertical slice, the most protective hourly result wins: **Avoid** over **Caution** over **OK**. Phase 2 replaces this coarse answer with meaningful time segments so later weather is not hidden.
+
+The policy for incomplete daily coverage remains TBD. The approved temperature fallback in D-023 does not resolve how one or more entirely unusable hours should affect a daily result.
 
 ## Not yet decided
 
 The following are intentionally NOT decisions:
-- exact measurable "few drops" threshold;
+- incomplete daily-forecast gap handling;
 - exact dynamic-period grouping parameters;
-- whether actual or apparent temperature should dominate;
 - exact cache freshness;
 - exact UI labels;
 - exact UI color palette;
-- minimum supported OS versions;
 - analytics/telemetry;
 - final bundle identifiers.
 

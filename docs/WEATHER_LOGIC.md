@@ -1,7 +1,7 @@
 # Can I Wear — Weather Logic
 
 > Status: ACTIVE
-> Last updated: 2026-10-04
+> Last updated: 2026-10-05
 > Source of truth: YES
 
 ## Goal
@@ -31,9 +31,7 @@ meaningful rain -> AVOID
 otherwise -> evaluate temperature
 ```
 
-"A few drops" is an allowed concept but should be treated conservatively because even rain can damage leather.
-
-The exact numerical threshold for "few drops" is TBD and must be validated against provider data and real-world forecasts.
+Even the smallest forecast precipitation amount or explicit precipitation type produces **Avoid**. When the forecast amount is 0 mm, probability handles forecast uncertainty: below 10% has no rain effect, 10% through less than 20% produces **Caution**, and 20% or more produces **Avoid**. These initial values remain centralized and tunable.
 
 ## Temperature
 
@@ -47,7 +45,7 @@ temperature > 20°C           -> TOO_HOT
 
 These values are centralized configuration, not literals scattered through the application.
 
-Whether the final comparison uses actual temperature, apparent temperature, or a combination remains a tuning decision. The implementation must make that easy to change.
+Use the warmer of actual and apparent temperature. If only one value is available, use it. If neither is available, do not produce an hourly recommendation.
 
 ## Recommendation precedence
 
@@ -78,6 +76,8 @@ These examples express the product intent and should become automated tests.
 6. Display only meaningful changes.
 
 Exact grouping parameters are configurable and should be determined through tests.
+
+For the temporary single-answer vertical slice, evaluate the current local hour through the end of the forecast location's calendar day and return the most protective hourly result. Phase 2 replaces this coarse result with meaningful periods. Incomplete daily-coverage handling remains TBD.
 
 ## Central configuration
 

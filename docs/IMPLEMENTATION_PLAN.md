@@ -106,17 +106,17 @@ Goal and exit remain those in the roadmap: establish the native/device/provider 
 - **Non-goals:** Continuous/background tracking, location history, manual city selection, cached reuse, polished permission flow.
 - **Blocking TBDs:** T-06 accuracy/timeouts and basic permission copy approval; cache freshness portion of T-06 remains for 0.9.
 
-### 0.6 — Implement and probe the WeatherKit adapter
+### 0.6 — Implement and probe the weather adapter
 
 - **Type:** Integration implementation, testing and real-device validation.
 - **Objective:** Fetch live hourly weather through our interface.
-- **Exact scope:** Configure WeatherKit capability/service access for the approved development identity; implement native adapter mapping into normalized data and explicit errors; validate a live fetch independently of recommendation UI. Identify provider attribution needs for presentation/release.
-- **Likely files/components:** `WeatherProvider`, `WeatherKitAdapter`, internal weather models, project/entitlements, mapping tests; `TODO.md` evidence.
+- **Exact scope:** Configure the approved development weather service; implement its adapter mapping into normalized data and explicit errors; validate a live fetch independently of recommendation UI. Identify provider attribution and licensing needs for presentation/release. D-022 selects Open-Meteo for unpaid prototyping and defers WeatherKit capability work until a paid Apple Developer Program team is available.
+- **Likely files/components:** `WeatherProvider`, concrete provider adapter, internal weather models, project configuration, mapping tests; `TODO.md` evidence.
 - **Acceptance criteria:** Live real-device forecast can be obtained and normalized; required fields or unavailable inputs are represented honestly; authentication/configuration stays in integration code; provider types do not escape.
-- **Tests/validation:** Mapping checks for units, precipitation type/chance/amount, actual/apparent temperature, time context and missing data; manual live fetch and network-failure check. Record rain resolution, latency, reliability, setup and cost observations; accuracy validation continues in 4.2.
+- **Tests/validation:** Mapping checks for units, precipitation type/chance/amount, actual/apparent temperature, time context and missing data; manual live fetch and network-failure mapping check. Record rain resolution, reliability, setup and cost observations; timing and accuracy validation continue in 1.4/4.2.
 - **Dependencies:** 0.3, 0.4, approved development identity from 0.2. A live-coordinate probe can follow 0.5.
-- **Non-goals:** Jacket rules, UI weather dashboard, second provider, exhaustive accuracy claims.
-- **Blocking TBDs:** T-08 development identity if not settled; developer-account/service provisioning is an external prerequisite. T-01/T-02 do not block raw mapping.
+- **Non-goals:** Jacket rules, UI weather dashboard, exhaustive accuracy claims, final production-provider selection.
+- **Blocking TBDs:** T-08 development identity if not settled; service availability is an external prerequisite. T-01/T-02 do not block raw mapping.
 
 ### 0.7 — Approve first-slice recommendation policies
 
@@ -200,7 +200,7 @@ The first major milestone remains **current location → live weather → determ
 
 - **Type:** Real-device validation and milestone review.
 - **Objective:** Demonstrate the first major milestone with live data.
-- **Exact scope:** Run installed app from launch through current location, live WeatherKit fetch, normalized inputs, deterministic daily recommendation and visible short reason. Record actual outcome, device/OS and observed startup/location/network timings.
+- **Exact scope:** Run installed app from launch through current location, live weather fetch through the active provider, normalized inputs, deterministic daily recommendation and visible short reason. Record actual outcome, device/OS and observed startup/location/network timings.
 - **Likely files/components:** Existing app, tests, adapters/engine/presentation, `TODO.md` evidence.
 - **Acceptance criteria:** The full live flow works on a real iPhone; output agrees with a deterministic replay of the relevant inputs; permission denial/network failure are honest; no continuous location work remains. Blocking integration defects are fixed and narrowly rechecked.
 - **Tests/validation:** Real-device first permission flow, allowed relaunch, denial and network failure; targeted unit/integration suite; measure rather than claim responsiveness.
@@ -380,8 +380,8 @@ Goal: prove existing V1 behavior under real conditions. Record actual results; t
 
 - **Type:** Real-device/provider validation.
 - **Objective:** Assess whether live forecasts support trustworthy jacket protection.
-- **Exact scope:** Check multiple locations and observed dry, drizzle, normal/heavy rain, warm/cool, morning-only and later-day rain, and changing forecasts; compare live normalized inputs and recommendations with observed conditions. Review WeatherKit accuracy, rain resolution, speed, reliability, cost and deployment experience.
-- **Likely files/components:** WeatherKit adapter, rules/config/period engine, `TODO.md` validation evidence; affected truth files only for approved tuning.
+- **Exact scope:** Check multiple locations and observed dry, drizzle, normal/heavy rain, warm/cool, morning-only and later-day rain, and changing forecasts; compare live normalized inputs and recommendations with observed conditions. Review the active provider's accuracy, rain resolution, speed, reliability, cost and deployment experience.
+- **Likely files/components:** Active weather adapter, rules/config/period engine, `TODO.md` validation evidence; affected truth files only for approved tuning.
 - **Acceptance criteria:** Observed scenarios and discrepancies are recorded honestly; mapping/logic defects are fixed; provider limitations and unresolved safety issues are visible. Unobserved conditions remain pending rather than fabricated; fixtures supplement field evidence.
 - **Tests/validation:** Real-phone observations, deterministic replay where useful, targeted regression tests for discoveries. If provider suitability fails, propose a decision review rather than silently switch providers.
 - **Dependencies:** 1.4, 2.7, 3.5; provider observation can begin in 0.6 and accumulate earlier.
@@ -444,7 +444,7 @@ Goal: deliver the validated V1 through TestFlight and the App Store. Verify curr
 
 - **Type:** App Store readiness and verification.
 - **Objective:** Make release declarations match actual app behavior.
-- **Exact scope:** Review current Apple privacy/submission and WeatherKit attribution requirements; prepare privacy information/policy/support material as required, verify purpose descriptions and provider attribution, and reflect approved telemetry/data handling accurately.
+- **Exact scope:** Review current Apple privacy/submission requirements and the selected production provider's attribution/licensing requirements; prepare privacy information/policy/support material as required, verify purpose descriptions and provider attribution, and reflect approved telemetry/data handling accurately.
 - **Likely files/components:** App permission configuration, attribution UI, privacy/support artifacts and listing fields; `TECH_SPEC.md`/`TODO.md` evidence.
 - **Acceptance criteria:** Required disclosures and attribution are accurate and complete; no unexpected location history or undeclared collection exists; release materials match approved policy and tested implementation.
 - **Tests/validation:** Inspect real data flows/configuration and installed attribution/purpose text; check current authoritative requirements at execution rather than inventing obligations now.

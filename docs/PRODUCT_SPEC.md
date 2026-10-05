@@ -1,7 +1,7 @@
 # Can I Wear — Product Specification
 
 > Status: ACTIVE
-> Last updated: 2026-10-04
+> Last updated: 2026-10-05
 > Source of truth: YES
 
 ## V1 user story
@@ -63,13 +63,15 @@ Temperature logic may later be refined using apparent temperature and real-world
 Rain is the dominant constraint.
 
 - No rain: preferred.
-- A few drops: may be tolerated, but should generally be avoided.
+- Any forecast precipitation amount or explicit precipitation type: avoid.
+- At 0 mm, a 10% to less than 20% precipitation chance: caution.
+- At 0 mm, a 20% or greater precipitation chance: avoid.
 - Normal/heavy rain: avoid.
 - If rain is expected to materially expose the jacket, the recommendation should be Avoid regardless of otherwise comfortable temperature.
 
 The app should optimize for **not ruining the jacket**, not for maximizing time spent wearing it.
 
-Exact measurable rain threshold remains a configuration/testing item.
+These initial probability thresholds are centralized and may be tuned after real-world validation.
 
 ## Dynamic day periods
 

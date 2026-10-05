@@ -1,7 +1,7 @@
 # Can I Wear — TODO
 
 > Status: ACTIVE
-> Last updated: 2026-10-04
+> Last updated: 2026-10-05
 > Source of truth: YES
 
 This is an execution list, not a source of product decisions.
@@ -13,18 +13,18 @@ The numbered review units and their acceptance criteria are in [IMPLEMENTATION_P
 ### Phase 0 — Decisions & technical foundation
 
 - [x] 0.1 Record the existing scaffold — verified by source inspection; build/device behavior is not verified
-- [ ] 0.2 Confirm development platform and identity — decision
-- [ ] 0.3 Establish a real-iPhone development baseline — setup/device validation
-- [ ] 0.4 Define normalized contracts and fixture harness — architecture implementation/testing
-- [ ] 0.5 Implement one-time location acquisition — decision/implementation/testing/device validation
-- [ ] 0.6 Implement and probe the WeatherKit adapter — integration/testing/device validation
-- [ ] 0.7 Approve first-slice recommendation policies — product decisions
+- [x] 0.2 Confirm development platform and identity — iOS 26.2+ and development bundle ID approved
+- [x] 0.3 Establish a real-iPhone development baseline — signed scaffold launched on iPhone 13 running iOS 26.6.2; focused test harness also runs on device
+- [x] 0.4 Define normalized contracts and fixture harness — app-owned contracts and deterministic fixtures; 3 focused tests pass on iPhone
+- [x] 0.5 Implement one-time location acquisition — policy, provider, permission description and 5 focused tests complete; allowed live fix and denied-permission behavior verified on iPhone 13/iOS 26.6.2
+- [x] 0.6 Implement and probe the weather adapter — Open-Meteo request/normalization/error tests and the complete focused suite pass on iPhone 13/iOS 26.6.2; a live current-location forecast returned required normalized hourly fields. WeatherKit is deferred until a paid team is available
+- [~] 0.7 Approve first-slice recommendation policies — three-level rain/temperature rules and remaining-day/worst-result summary approved in D-023/D-024; incomplete daily-coverage behavior remains TBD
 - [ ] 0.8 Approve dynamic-period parameters — product decisions
 - [ ] 0.9 Approve freshness and safe-reuse policies — product/technical decisions
 
 ### Phase 1 — First real-device vertical slice
 
-- [ ] 1.1 Implement centralized hourly jacket rules — implementation/testing
+- [~] 1.1 Implement centralized hourly jacket rules — centralized three-level engine and 8 focused boundary/validity/precedence tests pass on iPhone 13/iOS 26.6.2; completion awaits the remaining 0.7 dependency
 - [ ] 1.2 Implement the basic daily summary — implementation/testing
 - [ ] 1.3 Connect providers to a basic result screen — implementation/integration testing
 - [ ] 1.4 Prove the complete vertical slice on a real iPhone — first major product milestone
@@ -68,12 +68,12 @@ No Swift implementation, build, real-device run, live service validation or rele
 ## Remaining decisions / tuning
 
 - [x] Final app name — **Can I Wear**
-- [ ] Define measurable "few drops" rain tolerance — T-01, 0.7
-- [ ] Decide exact actual-vs-apparent temperature weighting — T-02, 0.7
-- [ ] Define relevant local-day window, basic daily summary and incomplete forecast behavior — T-03, 0.7
+- [x] Define measurable "few drops" rain tolerance — any forecast amount/type avoids; probability-only risk is Caution at 10% and Avoid at 20% — D-023, T-01, 0.7
+- [x] Decide exact actual-vs-apparent temperature weighting — use the warmer available value, or the sole available value — D-023, T-02, 0.7
+- [~] Define relevant local-day window, basic daily summary and incomplete forecast behavior — remaining local day and most-protective summary approved in D-024; incomplete coverage remains TBD — T-03, 0.7
 - [ ] Define dynamic period grouping/noise parameters — T-04, 0.8
 - [ ] Define cache freshness and weather/location matching — T-05, 0.9
-- [ ] Define location accuracy, freshness, safe reuse and behavior-affecting timeouts — T-06, 0.5/0.9
+- [~] Define location accuracy, freshness, safe reuse and behavior-affecting timeouts — acquisition accuracy/timeout approved in D-021; freshness/reuse remains for 0.9 — T-06, 0.5/0.9
 - [x] Define minimum supported OS versions — iOS 26.2 and newer — T-07, 0.2
 - [~] Approve development identity and final bundle identifiers — development identifier approved as `mobi.vandewalle.caniwear`; final bundle identity remains TBD — T-08, 0.2/5.1
 - [ ] Decide analytics/telemetry policy — T-09, 5.1; before any collection
@@ -85,16 +85,17 @@ All unchecked decisions remain **TBD**. T-12 (widget/notification timing/scope) 
 ## Technical foundation
 
 - [x] Initialize native Swift + SwiftUI Xcode project — 0.1; app and test-target scaffold exists
-- [ ] Establish iOS real-device build/run — 0.3 baseline; 1.4 complete live flow
-- [ ] Configure WeatherKit capability — 0.6
-- [ ] Implement location provider — 0.4 interface, 0.5 adapter, 2.4 reuse
-- [ ] Implement weather provider abstraction — 0.4
-- [ ] Define normalized internal weather model independent of provider — 0.4
-- [ ] Implement thin WeatherKit provider adapter — 0.6
-- [ ] Validate WeatherKit against accuracy, rain resolution, speed, reliability, cost and deployment complexity — 0.6 initial evidence, 4.2 field validation
+- [x] Establish iOS real-device build/run — 0.3 baseline complete; 1.4 complete live flow remains
+- [ ] Configure WeatherKit capability — deferred until a paid Apple Developer Program team is available; Open-Meteo is approved for unpaid prototyping in D-022
+- [~] Implement location provider — 0.4 interface and 0.5 adapter/tests/device validation complete; 2.4 reuse remains
+- [x] Implement weather provider abstraction — 0.4
+- [x] Define normalized internal weather model independent of provider — 0.4
+- [~] Implement thin WeatherKit provider adapter — mapping/error adapter implemented and compiling; focused tests and live capability validation remain
+- [x] Implement Open-Meteo development adapter — request, decoding, normalization and focused tests complete; live location-to-forecast probe passed on iPhone 13/iOS 26.6.2
+- [ ] Validate the production weather provider against accuracy, rain resolution, speed, reliability, cost and deployment complexity — Open-Meteo development setup/live fetch observed in 0.6; field validation remains for 4.2 and the production provider remains to be selected before release
 - [ ] Implement cache — 2.4 recent location, 2.5 weather, 2.6 fallback integration
-- [ ] Create centralized product configuration — 0.5 acquisition parameters, 1.1 rules; extend for approved period/cache settings in 2.3–2.5
-- [ ] Create deterministic jacket decision engine — 1.1 hourly rules, 1.2 basic daily summary
+- [~] Create centralized product configuration — 0.5 acquisition parameters added; extend for 1.1 rules and approved period/cache settings in 2.3–2.5
+- [~] Create deterministic jacket decision engine — 1.1 hourly engine implemented and device-tested; 1.2 daily summary remains
 - [ ] Create period grouping engine — 2.1 daily inputs, 2.2 grouping, 2.3 consolidation
 
 ## V1 UX
@@ -119,24 +120,24 @@ All unchecked decisions remain **TBD**. T-12 (widget/notification timing/scope) 
 
 ## Tests
 
-- [ ] Dry + <=15°C — 1.1; 4.1 regression audit
-- [ ] Dry + 15–20°C — 1.1; 4.1 (exactly 15°C belongs to the okay band)
-- [ ] Dry + >20°C — 1.1; 4.1
-- [ ] Few drops — 1.1 after 0.7 approval; 4.1/4.2
-- [ ] Normal rain — 1.1; 4.1/4.2
-- [ ] Heavy rain — 1.1; 4.1/4.2
-- [ ] Rain + cold — 1.1; 4.1
-- [ ] Rain + warm — 1.1; 4.1
+- [~] Dry + <=15°C — 1.1 focused boundary tests pass; 4.1 regression audit remains
+- [~] Dry + 15–20°C — 1.1 focused boundary tests pass, including exactly 15°C as OK and exactly 20°C as Caution; 4.1 audit remains
+- [~] Dry + >20°C — 1.1 focused boundary tests pass; 4.1 audit remains
+- [~] Few drops — any positive amount avoids and 10%/20% probability boundaries pass in 1.1 tests; 4.1/4.2 remain
+- [~] Normal rain — 1.1 focused test passes; 4.1/4.2 remain
+- [~] Heavy rain — 1.1 focused test passes; 4.1/4.2 remain
+- [~] Rain + cold — 1.1 focused test passes; 4.1 remains
+- [~] Rain + warm — 1.1 focused tests pass, including rain precedence over excessive heat; 4.1 remains
 - [ ] Morning rain only — 1.2 summary, 2.1/2.2 periods; 4.1/4.2
 - [ ] Later-day rain only — 1.2 summary, 2.1/2.2 periods; 4.1/4.2
 - [ ] Noisy alternating forecast — 2.3/2.7; 4.1
-- [ ] Missing weather — 1.1/1.3, 2.6/2.7; 4.1/4.3
+- [~] Missing weather — 1.1 rejects missing/invalid required hourly inputs; 1.3, 2.6/2.7 and 4.1/4.3 remain
 - [ ] Missing location — 0.5/1.3, 2.6/2.7; 4.1/4.3
-- [ ] Network unavailable — 0.6/1.3, 2.6/2.7; 4.3
+- [~] Network unavailable — 0.6 provider error mapping test complete; 1.3 integration, 2.6/2.7 and 4.3 recovery checks remain
 - [ ] Recent cached data — 2.4–2.7; 4.1/4.3
 - [ ] Stale cached data — 2.4–2.7; 4.1/4.3
-- [ ] Real-device startup — 0.3 baseline, 1.4 live flow; 3.3/4.4 measurements
-- [ ] Real-device permission flow — 0.5/1.4; 3.2/4.3
+- [x] Real-device startup — 0.3 scaffold baseline complete; 1.4 live flow and 3.3/4.4 measurements remain
+- [~] Real-device permission flow — 0.5 allowed and denied provider checks complete; 1.4 integrated flow and 3.2/4.3 polish/recovery remain
 
 Additional required checks: exact temperature/rain/freshness/grouping boundaries (1.1/2.3–2.5), provider mapping (0.6), timezones/day boundaries/coverage gaps (1.2/2.1), wrong-location cache (2.5/2.6), and accessibility (3.4). Audit completeness in 4.1; do not mark device observations complete from fixtures alone.
 
@@ -144,12 +145,12 @@ Additional required checks: exact temperature/rain/freshness/grouping boundaries
 
 - [ ] Measure startup/perceived startup — 1.4 initial evidence; 3.3/4.4
 - [ ] Measure location acquisition — 0.5/1.4 initial evidence; 3.3
-- [ ] Measure weather fetch — 0.6/1.4 initial evidence; 3.3/4.2
+- [~] Measure weather fetch — 0.6 live fetch succeeded; timing measurement remains for 1.4, 3.3 and 4.2
 - [ ] Verify no unnecessary location/background work — 0.5/1.4; 3.3/4.4
-- [ ] Test on real iPhone — 0.3 scaffold; first major milestone 1.4; daily flow 2.7
+- [~] Test on real iPhone — 0.3 scaffold, focused 0.4–0.6 tests, 0.5 allowed/denied location checks, and 0.6 live location-to-weather probe complete on iPhone 13/iOS 26.6.2; 1.4 recommendation flow and 2.7 daily flow remain
 - [ ] Test multiple real devices across approved support — 4.4
 - [ ] Test slow network — 3.3/4.3
-- [ ] Test denied permissions — 0.5/1.4; 3.2/4.3
+- [~] Test denied permissions — 0.5 provider/device check complete; 1.4 integration and 3.2/4.3 recovery checks remain
 - [ ] Test app relaunch — 1.4/2.7; 4.3/4.4
 - [ ] Test forecast changes — 2.6/2.7; 4.2/4.3
 - [ ] Test App Store/TestFlight build — 5.5
