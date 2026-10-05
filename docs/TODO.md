@@ -6,84 +6,164 @@
 
 This is an execution list, not a source of product decisions.
 
+The numbered review units and their acceptance criteria are in [IMPLEMENTATION_PLAN.md](IMPLEMENTATION_PLAN.md). Complete a subphase only after its decision blockers, tests and required device validation are satisfied. The detailed task/scenario lists below retain the original execution context; their subphase references show where each item is delivered or validated.
+
+## Subphase status
+
+### Phase 0 — Decisions & technical foundation
+
+- [x] 0.1 Record the existing scaffold — verified by source inspection; build/device behavior is not verified
+- [ ] 0.2 Confirm development platform and identity — decision
+- [ ] 0.3 Establish a real-iPhone development baseline — setup/device validation
+- [ ] 0.4 Define normalized contracts and fixture harness — architecture implementation/testing
+- [ ] 0.5 Implement one-time location acquisition — decision/implementation/testing/device validation
+- [ ] 0.6 Implement and probe the WeatherKit adapter — integration/testing/device validation
+- [ ] 0.7 Approve first-slice recommendation policies — product decisions
+- [ ] 0.8 Approve dynamic-period parameters — product decisions
+- [ ] 0.9 Approve freshness and safe-reuse policies — product/technical decisions
+
+### Phase 1 — First real-device vertical slice
+
+- [ ] 1.1 Implement centralized hourly jacket rules — implementation/testing
+- [ ] 1.2 Implement the basic daily summary — implementation/testing
+- [ ] 1.3 Connect providers to a basic result screen — implementation/integration testing
+- [ ] 1.4 Prove the complete vertical slice on a real iPhone — first major product milestone
+
+### Phase 2 — V1 daily intelligence
+
+- [ ] 2.1 Expose per-hour daily evaluation — implementation/testing
+- [ ] 2.2 Group contiguous meaningful periods — implementation/testing
+- [ ] 2.3 Consolidate noisy forecasts conservatively — implementation/testing
+- [ ] 2.4 Add recent-location reuse — implementation/testing
+- [ ] 2.5 Add weather cache and validity checks — implementation/testing
+- [ ] 2.6 Present daily periods and integrate safe fallback — implementation/integration testing
+- [ ] 2.7 Review daily-intelligence completeness — testing/device validation
+
+### Phase 3 — V1 polish
+
+- [ ] 3.1 Approve final V1 presentation details — product/UX decisions
+- [ ] 3.2 Polish permissions and recovery states — implementation/testing/device validation
+- [ ] 3.3 Measure and remove startup/request friction — implementation/device validation
+- [ ] 3.4 Implement and verify accessibility — implementation/testing/device validation
+- [ ] 3.5 Finish visual and transition polish — implementation/testing
+
+### Phase 4 — V1 validation
+
+- [ ] 4.1 Complete the deterministic regression matrix — testing
+- [ ] 4.2 Validate weather behavior across real conditions — provider/device validation
+- [ ] 4.3 Validate degraded operation and recovery — integration/device validation
+- [ ] 4.4 Validate supported devices and close the V1 quality gate — device/release-quality validation
+
+### Phase 5 — Store readiness
+
+- [ ] 5.1 Finalize release identity and telemetry policy — decisions/Store readiness
+- [ ] 5.2 Prepare the app icon and listing metadata — assets/Store readiness
+- [ ] 5.3 Prepare privacy and provider-compliance material — Store readiness
+- [ ] 5.4 Capture App Store screenshots — Store readiness/visual validation
+- [ ] 5.5 Validate a distribution build through TestFlight — testing/device/Store readiness
+- [ ] 5.6 Prepare review, submit and release V1 — Store readiness/release
+
+No Swift implementation, build, real-device run, live service validation or release action was performed when creating this plan. Current iOS 26.2, bundle identifier and signing settings are configuration observations, not completed approvals or device evidence.
+
 ## Remaining decisions / tuning
 
 - [x] Final app name — **Can I Wear**
-- [ ] Define measurable "few drops" rain tolerance
-- [ ] Decide exact actual-vs-apparent temperature weighting
-- [ ] Define dynamic period grouping/noise parameters
-- [ ] Define cache freshness
-- [ ] Define minimum supported OS versions
-- [ ] Decide analytics/telemetry policy
+- [ ] Define measurable "few drops" rain tolerance — T-01, 0.7
+- [ ] Decide exact actual-vs-apparent temperature weighting — T-02, 0.7
+- [ ] Define relevant local-day window, basic daily summary and incomplete forecast behavior — T-03, 0.7
+- [ ] Define dynamic period grouping/noise parameters — T-04, 0.8
+- [ ] Define cache freshness and weather/location matching — T-05, 0.9
+- [ ] Define location accuracy, freshness, safe reuse and behavior-affecting timeouts — T-06, 0.5/0.9
+- [x] Define minimum supported OS versions — iOS 26.2 and newer — T-07, 0.2
+- [~] Approve development identity and final bundle identifiers — development identifier approved as `mobi.vandewalle.caniwear`; final bundle identity remains TBD — T-08, 0.2/5.1
+- [ ] Decide analytics/telemetry policy — T-09, 5.1; before any collection
+- [ ] Approve exact result/caution labels, reasons, palette and layout — T-10, basic proposal 1.3; final 3.1
+- [ ] Approve loading/failure/stale/permission UX and accessibility details — T-11, basic proposal 1.3/2.6; final 3.1
+
+All unchecked decisions remain **TBD**. T-12 (widget/notification timing/scope) is retained in the follow-up list below. Icon, listing, screenshots, required support/privacy material and release timing/method require review during Phase 5; no final release details are chosen by the plan.
 
 ## Technical foundation
 
-- [ ] Initialize native Swift + SwiftUI Xcode project
-- [ ] Establish iOS real-device build/run
-- [ ] Configure WeatherKit capability
-- [ ] Implement location provider
-- [ ] Implement weather provider abstraction
-- [ ] Define normalized internal weather model independent of provider
-- [ ] Implement thin WeatherKit provider adapter
-- [ ] Validate WeatherKit against accuracy, rain resolution, speed, reliability, cost and deployment complexity
-- [ ] Implement cache
-- [ ] Create centralized product configuration
-- [ ] Create deterministic jacket decision engine
-- [ ] Create period grouping engine
+- [x] Initialize native Swift + SwiftUI Xcode project — 0.1; app and test-target scaffold exists
+- [ ] Establish iOS real-device build/run — 0.3 baseline; 1.4 complete live flow
+- [ ] Configure WeatherKit capability — 0.6
+- [ ] Implement location provider — 0.4 interface, 0.5 adapter, 2.4 reuse
+- [ ] Implement weather provider abstraction — 0.4
+- [ ] Define normalized internal weather model independent of provider — 0.4
+- [ ] Implement thin WeatherKit provider adapter — 0.6
+- [ ] Validate WeatherKit against accuracy, rain resolution, speed, reliability, cost and deployment complexity — 0.6 initial evidence, 4.2 field validation
+- [ ] Implement cache — 2.4 recent location, 2.5 weather, 2.6 fallback integration
+- [ ] Create centralized product configuration — 0.5 acquisition parameters, 1.1 rules; extend for approved period/cache settings in 2.3–2.5
+- [ ] Create deterministic jacket decision engine — 1.1 hourly rules, 1.2 basic daily summary
+- [ ] Create period grouping engine — 2.1 daily inputs, 2.2 grouping, 2.3 consolidation
 
 ## V1 UX
 
-- [ ] Main recommendation screen
-- [ ] Fast first-frame/loading state
-- [ ] Short explanation
-- [ ] Dynamic periods
-- [ ] No-location state
-- [ ] No-weather state
-- [ ] Stale-data state
-- [ ] Permission UX
-- [ ] Accessibility
-- [ ] Visual polish
+- [ ] Main recommendation screen — 1.3 basic; 3.5 final polish
+- [ ] Fast first-frame/loading state — 1.3 basic; 3.2/3.3 refinement and measurements
+- [ ] Short explanation — 1.3 basic; 3.1 approved copy, 3.5 polish
+- [ ] Dynamic periods — 2.6
+- [ ] No-location state — 1.3 basic; 2.6 fallback; 3.2 polish
+- [ ] No-weather state — 1.3 basic; 2.6 fallback; 3.2 polish
+- [ ] Stale-data state — 2.6; 3.2 polish
+- [ ] Permission UX — 0.5 functional; 1.4 device proof; 3.2 polish
+- [ ] Accessibility — 3.1 approved details, 3.4 implementation/device checks
+- [ ] Visual polish — 3.5
 
 ## Early follow-up features
 
-- [ ] Decide exact V1 timing/scope for iOS widget
-- [ ] Decide exact V1 timing/scope for notifications
-- [ ] Implement widget when approved for the active phase
-- [ ] Implement notifications when approved for the active phase
+- [ ] Decide exact V1 timing/scope for iOS widget — T-12; follow-up after 1.4, not a core-plan prerequisite
+- [ ] Decide exact V1 timing/scope for notifications — T-12; follow-up after 1.4, not a core-plan prerequisite
+- [ ] Implement widget when approved for the active phase — outside numbered execution scope pending approval
+- [ ] Implement notifications when approved for the active phase — outside numbered execution scope pending approval
 
 ## Tests
 
-- [ ] Dry + <=15°C
-- [ ] Dry + 15–20°C
-- [ ] Dry + >20°C
-- [ ] Few drops
-- [ ] Normal rain
-- [ ] Heavy rain
-- [ ] Rain + cold
-- [ ] Rain + warm
-- [ ] Morning rain only
-- [ ] Later-day rain only
-- [ ] Noisy alternating forecast
-- [ ] Missing weather
-- [ ] Missing location
-- [ ] Network unavailable
-- [ ] Recent cached data
-- [ ] Stale cached data
-- [ ] Real-device startup
-- [ ] Real-device permission flow
+- [ ] Dry + <=15°C — 1.1; 4.1 regression audit
+- [ ] Dry + 15–20°C — 1.1; 4.1 (exactly 15°C belongs to the okay band)
+- [ ] Dry + >20°C — 1.1; 4.1
+- [ ] Few drops — 1.1 after 0.7 approval; 4.1/4.2
+- [ ] Normal rain — 1.1; 4.1/4.2
+- [ ] Heavy rain — 1.1; 4.1/4.2
+- [ ] Rain + cold — 1.1; 4.1
+- [ ] Rain + warm — 1.1; 4.1
+- [ ] Morning rain only — 1.2 summary, 2.1/2.2 periods; 4.1/4.2
+- [ ] Later-day rain only — 1.2 summary, 2.1/2.2 periods; 4.1/4.2
+- [ ] Noisy alternating forecast — 2.3/2.7; 4.1
+- [ ] Missing weather — 1.1/1.3, 2.6/2.7; 4.1/4.3
+- [ ] Missing location — 0.5/1.3, 2.6/2.7; 4.1/4.3
+- [ ] Network unavailable — 0.6/1.3, 2.6/2.7; 4.3
+- [ ] Recent cached data — 2.4–2.7; 4.1/4.3
+- [ ] Stale cached data — 2.4–2.7; 4.1/4.3
+- [ ] Real-device startup — 0.3 baseline, 1.4 live flow; 3.3/4.4 measurements
+- [ ] Real-device permission flow — 0.5/1.4; 3.2/4.3
+
+Additional required checks: exact temperature/rain/freshness/grouping boundaries (1.1/2.3–2.5), provider mapping (0.6), timezones/day boundaries/coverage gaps (1.2/2.1), wrong-location cache (2.5/2.6), and accessibility (3.4). Audit completeness in 4.1; do not mark device observations complete from fixtures alone.
 
 ## Quality validation
 
-- [ ] Measure startup/perceived startup
-- [ ] Measure location acquisition
-- [ ] Measure weather fetch
-- [ ] Verify no unnecessary location/background work
-- [ ] Test on real iPhone
-- [ ] Test slow network
-- [ ] Test denied permissions
-- [ ] Test app relaunch
-- [ ] Test forecast changes
-- [ ] Test App Store/TestFlight build
+- [ ] Measure startup/perceived startup — 1.4 initial evidence; 3.3/4.4
+- [ ] Measure location acquisition — 0.5/1.4 initial evidence; 3.3
+- [ ] Measure weather fetch — 0.6/1.4 initial evidence; 3.3/4.2
+- [ ] Verify no unnecessary location/background work — 0.5/1.4; 3.3/4.4
+- [ ] Test on real iPhone — 0.3 scaffold; first major milestone 1.4; daily flow 2.7
+- [ ] Test multiple real devices across approved support — 4.4
+- [ ] Test slow network — 3.3/4.3
+- [ ] Test denied permissions — 0.5/1.4; 3.2/4.3
+- [ ] Test app relaunch — 1.4/2.7; 4.3/4.4
+- [ ] Test forecast changes — 2.6/2.7; 4.2/4.3
+- [ ] Test App Store/TestFlight build — 5.5
+
+## Store delivery details
+
+- [ ] Final release identity and telemetry/privacy policy — 5.1
+- [ ] App icon and listing metadata — 5.2
+- [ ] Privacy information and required support material — 5.3
+- [ ] Verify current provider attribution/submission requirements against actual app behavior — 0.6/5.3
+- [ ] App Store screenshots — 5.4
+- [ ] Signed archive and TestFlight testing — 5.5
+- [ ] App Store review preparation and submission — 5.6
+- [ ] Accepted build and V1 release — 5.6; do not mark complete at upload/submission
 
 ## Explicit rule
 

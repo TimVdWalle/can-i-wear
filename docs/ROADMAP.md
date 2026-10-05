@@ -10,6 +10,10 @@ Until the first working real-phone version exists, the project is V1.
 
 Do not call unfinished work V2, V3, etc.
 
+## Detailed execution plan
+
+[IMPLEMENTATION_PLAN.md](IMPLEMENTATION_PLAN.md) breaks the phases below into numbered, independently reviewable subphases with scope, acceptance criteria, tests/device validation, dependencies, non-goals and explicit TBD blockers. Track execution in [TODO.md](TODO.md). The detailed plan does not change this roadmap's strategy or approve unresolved product decisions.
+
 ## Phase 0 — Decisions & technical foundation
 
 Goal:

@@ -65,6 +65,12 @@ The exact measurable API threshold for "a few drops" remains an implementation/c
 
 ## Approved technical direction
 
+### D-019 — Development bundle identifier
+**Decision:** Use `mobi.vandewalle.caniwear` for development and provider setup. The final App Store bundle identity remains TBD.
+
+### D-020 — Minimum supported iOS version
+**Decision:** V1 supports iOS 26.2 and newer.
+
 ### D-017 — Framework and platform implementation
 **Decision:** Build V1 as a native iOS app using **Swift + SwiftUI**.
 
