@@ -1,41 +1,78 @@
-//
-//  Can_I_WearUITests.swift
-//  Can I WearUITests
-//
-//  Created by Tim Vande Walle on 04/10/2026.
-//
-
 import XCTest
 
 final class Can_I_WearUITests: XCTestCase {
-
     override func setUpWithError() throws {
-        // Put setup code here. This method is called before the invocation of each test method in the class.
-
-        // In UI tests it is usually best to stop immediately when a failure occurs.
         continueAfterFailure = false
-
-        // In UI tests it’s important to set the initial state - such as interface orientation - required for your tests before they run. The setUp method is a good place to do this.
-    }
-
-    override func tearDownWithError() throws {
-        // Put teardown code here. This method is called after the invocation of each test method in the class.
     }
 
     @MainActor
-    func testExample() throws {
-        // UI tests must launch the application that they test.
-        let app = XCUIApplication()
-        app.launch()
+    func testDisplaysOrderedRecommendationPeriods() throws {
+        let app = launch(scenario: "periods")
 
-        // Use XCTAssert and related functions to verify your tests produce the correct results.
+        let avoid = app.descendants(matching: .any)["period-0"]
+        let wear = app.descendants(matching: .any)["period-1"]
+        let caution = app.descendants(matching: .any)["period-2"]
+        XCTAssertTrue(avoid.waitForExistence(timeout: 3))
+        XCTAssertTrue(wear.exists)
+        XCTAssertTrue(caution.exists)
+        XCTAssertTrue(avoid.label.contains("–"))
+        XCTAssertTrue(wear.label.contains("–"))
+        XCTAssertTrue(caution.label.contains("–"))
+        XCTAssertTrue(avoid.label.contains("Don’t wear"))
+        XCTAssertTrue(avoid.label.contains("Precipitation is expected"))
+        XCTAssertTrue(wear.label.contains("Wear"))
+        XCTAssertTrue(caution.label.contains("Maybe"))
+    }
+
+    @MainActor
+    func testDisplaysCachedAgeAfterFailedRefresh() throws {
+        let app = launch(scenario: "cached")
+
+        let cacheStatus = app.descendants(matching: .any)["cache-status"]
+        XCTAssertTrue(cacheStatus.waitForExistence(timeout: 3))
+        XCTAssertEqual(cacheStatus.label, "Cached • Updated 10 minutes ago")
+        XCTAssertFalse(app.descendants(matching: .any)["refresh-status"].exists)
+    }
+
+    @MainActor
+    func testDisplaysCachedResultWhileRefreshing() throws {
+        let app = launch(scenario: "refreshing")
+
+        XCTAssertTrue(
+            app.descendants(matching: .any)["cache-status"].waitForExistence(timeout: 3)
+        )
+        XCTAssertTrue(app.descendants(matching: .any)["refresh-status"].exists)
+    }
+
+    @MainActor
+    func testExplainsWhenSavedForecastIsExpired() throws {
+        let app = launch(scenario: "expired")
+
+        let title = app.staticTexts["failure-title"]
+        let message = app.staticTexts["failure-message"]
+        XCTAssertTrue(title.waitForExistence(timeout: 3))
+        XCTAssertEqual(title.label, "Weather unavailable")
+        XCTAssertEqual(
+            message.label,
+            "The saved forecast is too old to use. Connect to the internet and try again."
+        )
+        XCTAssertTrue(app.buttons["Try Again"].exists)
     }
 
     @MainActor
     func testLaunchPerformance() throws {
-        // This measures how long it takes to launch your application.
         measure(metrics: [XCTApplicationLaunchMetric()]) {
-            XCUIApplication().launch()
+            let app = XCUIApplication()
+            app.launchArguments = ["-ui-test-scenario", "periods"]
+            app.launch()
         }
+    }
+
+    @MainActor
+    private func launch(scenario: String) -> XCUIApplication {
+        let app = XCUIApplication()
+        app.launchArguments = ["-ui-test-scenario", scenario]
+        app.launch()
+        return app
     }
 }

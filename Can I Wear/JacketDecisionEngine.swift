@@ -24,6 +24,40 @@ nonisolated struct HourlyRecommendation: Equatable, Sendable {
     let reason: RecommendationReason
 }
 
+nonisolated extension HourlyRecommendation {
+    static func mostProtective<S: Sequence>(in recommendations: S) -> HourlyRecommendation?
+    where S.Element == HourlyRecommendation {
+        recommendations.max(by: isLessProtective)
+    }
+
+    static func isLessProtective(
+        _ lhs: HourlyRecommendation,
+        _ rhs: HourlyRecommendation
+    ) -> Bool {
+        if lhs.level != rhs.level {
+            return lhs.level < rhs.level
+        }
+        return reasonPriority(lhs.reason) < reasonPriority(rhs.reason)
+    }
+
+    private static func reasonPriority(_ reason: RecommendationReason) -> Int {
+        switch reason {
+        case .suitableTemperature:
+            0
+        case .warmTemperature:
+            1
+        case .incompleteForecast:
+            2
+        case .precipitationRisk:
+            3
+        case .excessiveHeat:
+            4
+        case .precipitation:
+            5
+        }
+    }
+}
+
 nonisolated struct JacketDecisionEngine: Sendable {
     private let config: JacketRulesConfig
 
@@ -115,15 +149,15 @@ nonisolated struct DailyRecommendationEngine: Sendable {
         self.hourlyEngine = hourlyEngine
     }
 
-    /// Summarizes the remaining local calendar day. Returns nil when timezone or
-    /// hourly coverage is insufficient for the approved conservative policy.
-    func evaluate(_ forecast: NormalizedForecast, now: Date) -> HourlyRecommendation? {
+    /// Returns an ordered classification for every hour in the remaining local
+    /// day. Nil means the timezone or approved coverage policy cannot be met.
+    func evaluateHours(_ forecast: NormalizedForecast, now: Date) -> DailyEvaluation? {
+        let timezoneIdentifiers = Set(forecast.hours.compactMap(\.timezoneIdentifier))
         guard
-            let timezoneIdentifier = forecast.hours.compactMap(\.timezoneIdentifier).first,
+            timezoneIdentifiers.count == 1,
+            let timezoneIdentifier = timezoneIdentifiers.first,
             let timezone = TimeZone(identifier: timezoneIdentifier)
-        else {
-            return nil
-        }
+        else { return nil }
 
         var calendar = Calendar(identifier: .gregorian)
         calendar.timeZone = timezone
@@ -143,14 +177,19 @@ nonisolated struct DailyRecommendationEngine: Sendable {
             timestamp = timestamp.addingTimeInterval(3_600)
         }
 
-        var recommendations: [HourlyRecommendation?] = []
-        for expectedTimestamp in expectedTimestamps {
-            let matches = forecast.hours.filter { $0.timestamp == expectedTimestamp }
-            guard matches.count <= 1 else {
+        var hoursByTimestamp: [Date: HourlyWeather] = [:]
+        for hour in forecast.hours where hour.timestamp >= currentHour && hour.timestamp < day.end {
+            guard hoursByTimestamp.updateValue(hour, forKey: hour.timestamp) == nil else {
                 return nil
             }
+        }
 
-            guard let hour = matches.first, hour.timezoneIdentifier == timezoneIdentifier else {
+        var recommendations: [HourlyRecommendation?] = []
+        for expectedTimestamp in expectedTimestamps {
+            guard
+                let hour = hoursByTimestamp[expectedTimestamp],
+                hour.timezoneIdentifier == timezoneIdentifier
+            else {
                 recommendations.append(nil)
                 continue
             }
@@ -176,35 +215,40 @@ nonisolated struct DailyRecommendationEngine: Sendable {
             return nil
         }
 
-        return recommendations.compactMap { $0 }.max(by: Self.isLessProtective)
+        let evaluatedHours = zip(expectedTimestamps, recommendations).compactMap { timestamp, recommendation in
+            recommendation.map {
+                EvaluatedHour(timestamp: timestamp, recommendation: $0)
+            }
+        }
+        guard evaluatedHours.count == expectedTimestamps.count, !evaluatedHours.isEmpty else {
+            return nil
+        }
+
+        return DailyEvaluation(
+            interval: DateInterval(start: currentHour, end: day.end),
+            timezoneIdentifier: timezoneIdentifier,
+            hours: evaluatedHours
+        )
     }
 
-    private static func isLessProtective(
-        _ lhs: HourlyRecommendation,
-        _ rhs: HourlyRecommendation
-    ) -> Bool {
-        if lhs.level != rhs.level {
-            return lhs.level < rhs.level
-        }
-        return reasonPriority(lhs.reason) < reasonPriority(rhs.reason)
+    /// The Phase 1 coarse summary remains available to callers that need it.
+    func evaluate(_ forecast: NormalizedForecast, now: Date) -> HourlyRecommendation? {
+        guard let evaluation = evaluateHours(forecast, now: now) else { return nil }
+        return HourlyRecommendation.mostProtective(
+            in: evaluation.hours.map(\.recommendation)
+        )
     }
+}
 
-    private static func reasonPriority(_ reason: RecommendationReason) -> Int {
-        switch reason {
-        case .suitableTemperature:
-            0
-        case .warmTemperature:
-            1
-        case .incompleteForecast:
-            2
-        case .precipitationRisk:
-            3
-        case .excessiveHeat:
-            4
-        case .precipitation:
-            5
-        }
-    }
+nonisolated struct EvaluatedHour: Equatable, Sendable {
+    let timestamp: Date
+    let recommendation: HourlyRecommendation
+}
+
+nonisolated struct DailyEvaluation: Equatable, Sendable {
+    let interval: DateInterval
+    let timezoneIdentifier: String
+    let hours: [EvaluatedHour]
 }
 
 private extension PrecipitationType {

@@ -1,7 +1,7 @@
 # Can I Wear — TODO
 
 > Status: ACTIVE
-> Last updated: 2026-10-05
+> Last updated: 2026-10-06
 > Source of truth: YES
 
 This is an execution list, not a source of product decisions.
@@ -31,13 +31,13 @@ The numbered review units and their acceptance criteria are in [IMPLEMENTATION_P
 
 ### Phase 2 — V1 daily intelligence
 
-- [ ] 2.1 Expose per-hour daily evaluation — implementation/testing
-- [ ] 2.2 Group contiguous meaningful periods — implementation/testing
-- [ ] 2.3 Consolidate noisy forecasts conservatively — implementation/testing
-- [ ] 2.4 Add recent-location reuse — implementation/testing
-- [ ] 2.5 Add weather cache and validity checks — implementation/testing
-- [ ] 2.6 Present daily periods and integrate safe fallback — implementation/integration testing
-- [ ] 2.7 Review daily-intelligence completeness — testing/device validation
+- [x] 2.1 Expose per-hour daily evaluation — ordered remaining-day classifications retain timestamps, timezone and conservative inferred gaps; DST and ordering fixtures pass
+- [x] 2.2 Group contiguous meaningful periods — ordered, non-overlapping period output and stable/change fixtures implemented
+- [x] 2.3 Consolidate noisy forecasts conservatively — D-026 duration, isolated Avoid expansion, safer-gap absorption and alternating-span rules centralized and tested
+- [x] 2.4 Add recent-location reuse — latest-only persistent cache applies the inclusive 30-minute and accepted-accuracy policy without location history
+- [x] 2.5 Add weather cache and validity checks — normalized persistent cache enforces inclusive 30-minute freshness, current-day coverage and 5 km matching
+- [x] 2.6 Present daily periods and integrate safe fallback — period ranges/reasons, age-labeled cached results, live refresh replacement/fallback, explicit approved expired-forecast state and 10-second timeout integrated and tested
+- [~] 2.7 Review daily-intelligence completeness — 57 deterministic tests pass on iPhone 13/iOS 26.6.2; 3 rendered Phase 2 UI scenarios pass in the simulator and expired-state UI coverage is implemented but awaits simulator-runtime recovery. The signed app installed/launched and a live **Maybe** result with its warm-weather reason was visually confirmed. A naturally split forecast was unavailable; final manual cached/offline fallback visibility remains
 
 ### Phase 3 — V1 polish
 
@@ -78,7 +78,7 @@ No Swift implementation, build, real-device run, live service validation or rele
 - [~] Approve development identity and final bundle identifiers — development identifier approved as `mobi.vandewalle.caniwear`; final bundle identity remains TBD — T-08, 0.2/5.1
 - [ ] Decide analytics/telemetry policy — T-09, 5.1; before any collection
 - [ ] Approve exact result/caution labels, reasons, palette and layout — T-10, basic proposal 1.3; final 3.1
-- [ ] Approve loading/failure/stale/permission UX and accessibility details — T-11, basic proposal 1.3/2.6; final 3.1
+- [~] Approve loading/failure/stale/permission UX and accessibility details — basic loading/failure copy and expired-forecast wording are approved through D-025/D-028; final broader details remain for 3.1
 
 All unchecked decisions remain **TBD**. T-12 (widget/notification timing/scope) is retained in the follow-up list below. Icon, listing, screenshots, required support/privacy material and release timing/method require review during Phase 5; no final release details are chosen by the plan.
 
@@ -87,26 +87,26 @@ All unchecked decisions remain **TBD**. T-12 (widget/notification timing/scope) 
 - [x] Initialize native Swift + SwiftUI Xcode project — 0.1; app and test-target scaffold exists
 - [x] Establish iOS real-device build/run — 0.3 baseline complete; 1.4 complete live flow remains
 - [ ] Configure WeatherKit capability — deferred until a paid Apple Developer Program team is available; Open-Meteo is approved for unpaid prototyping in D-022
-- [~] Implement location provider — 0.4 interface and 0.5 adapter/tests/device validation complete; 2.4 reuse remains
+- [x] Implement location provider — one-time acquisition plus latest-only 30-minute reuse implemented and device-tested
 - [x] Implement weather provider abstraction — 0.4
 - [x] Define normalized internal weather model independent of provider — 0.4
 - [~] Implement thin WeatherKit provider adapter — mapping/error adapter implemented and compiling; focused tests and live capability validation remain
 - [x] Implement Open-Meteo development adapter — request, decoding, normalization and focused tests complete; live location-to-forecast probe passed on iPhone 13/iOS 26.6.2
 - [ ] Validate the production weather provider against accuracy, rain resolution, speed, reliability, cost and deployment complexity — Open-Meteo development setup/live fetch observed in 0.6; field validation remains for 4.2 and the production provider remains to be selected before release
-- [ ] Implement cache — 2.4 recent location, 2.5 weather, 2.6 fallback integration
-- [~] Create centralized product configuration — 0.5 acquisition parameters added; extend for 1.1 rules and approved period/cache settings in 2.3–2.5
+- [x] Implement cache — recent location, normalized weather, validity checks and fallback integration complete
+- [x] Create centralized product configuration — acquisition, jacket rules, period/noise values, freshness, distance and weather timeout are concentrated in `AppConfiguration`
 - [x] Create deterministic jacket decision engine — 1.1 hourly engine and 1.2 daily summary implemented and device-tested
-- [ ] Create period grouping engine — 2.1 daily inputs, 2.2 grouping, 2.3 consolidation
+- [x] Create period grouping engine — ordered daily inputs, contiguous grouping and D-026 consolidation complete
 
 ## V1 UX
 
 - [~] Main recommendation screen — 1.3 basic screen complete; 3.5 final polish remains
 - [~] Fast first-frame/loading state — 1.3 automatic loading state complete; 3.2/3.3 refinement and measurements remain
 - [~] Short explanation — 1.3 basic reason mapping complete; 3.1 final copy and 3.5 polish remain
-- [ ] Dynamic periods — 2.6
+- [~] Dynamic periods — 2.6 basic presentation complete; final visual treatment remains in 3.1/3.5
 - [~] No-location state — 1.3 basic denied/unavailable states and retry complete; 2.6 fallback and 3.2 polish remain
 - [~] No-weather state — 1.3 basic unavailable/incomplete states and retry complete; 2.6 fallback and 3.2 polish remain
-- [ ] Stale-data state — 2.6; 3.2 polish
+- [~] Stale-data state — expired data is rejected with the approved D-028 explanation/retry and valid cached age is visible; final styling remains in 3.1/3.2
 - [~] Permission UX — 0.5 provider behavior and 1.3 integrated state complete; 1.4 denied-screen device proof and 3.2 polish remain
 - [ ] Accessibility — 3.1 approved details, 3.4 implementation/device checks
 - [ ] Visual polish — 3.5
@@ -128,14 +128,14 @@ All unchecked decisions remain **TBD**. T-12 (widget/notification timing/scope) 
 - [~] Heavy rain — 1.1 focused test passes; 4.1/4.2 remain
 - [~] Rain + cold — 1.1 focused test passes; 4.1 remains
 - [~] Rain + warm — 1.1 focused tests pass, including rain precedence over excessive heat; 4.1 remains
-- [ ] Morning rain only — 1.2 summary, 2.1/2.2 periods; 4.1/4.2
-- [ ] Later-day rain only — 1.2 summary, 2.1/2.2 periods; 4.1/4.2
-- [ ] Noisy alternating forecast — 2.3/2.7; 4.1
+- [~] Morning rain only — deterministic period fixtures pass; real-condition validation remains in 4.2
+- [~] Later-day rain only — deterministic period fixtures pass; real-condition validation remains in 4.2
+- [~] Noisy alternating forecast — conservative period fixtures pass on device; 4.1 audit remains
 - [~] Missing weather — 1.1 rejects missing/invalid required hourly inputs; 1.3, 2.6/2.7 and 4.1/4.3 remain
 - [ ] Missing location — 0.5/1.3, 2.6/2.7; 4.1/4.3
 - [~] Network unavailable — 0.6 provider mapping, 1.3 presentation mapping, and 1.4 live offline/recovery checks complete; 2.6/2.7 and 4.3 remain
-- [ ] Recent cached data — 2.4–2.7; 4.1/4.3
-- [ ] Stale cached data — 2.4–2.7; 4.1/4.3
+- [~] Recent cached data — inclusive boundary, relaunch storage, immediate display, refresh replacement and failed-refresh fallback tests pass; 4.1/4.3 remain
+- [~] Stale cached data — expiry, malformed, wrong-day and wrong-location rejection tests pass; expired-state UI coverage is implemented but awaits simulator-runtime recovery; 4.1/4.3 remain
 - [x] Real-device startup — 0.3 scaffold baseline complete; 1.4 live flow and 3.3/4.4 measurements remain
 - [~] Real-device permission flow — 0.5 allowed/denied provider checks and 1.4 allowed/relaunch/integrated-denied checks complete; 3.2/4.3 polish/recovery remain
 
@@ -147,11 +147,11 @@ Additional required checks: exact temperature/rain/freshness/grouping boundaries
 - [~] Measure location acquisition — 1.4 warm authorized acquisition measured 0.007 s; cold/slow measurements remain for 3.3
 - [~] Measure weather fetch — 0.6 live fetch succeeded and 1.4 warm fetch measured 0.030 s; broader 3.3/4.2 measurements remain
 - [ ] Verify no unnecessary location/background work — 0.5/1.4; 3.3/4.4
-- [~] Test on real iPhone — 35 focused tests and the complete live Phase 1 success/denied/offline/retry flow pass on iPhone 13/iOS 26.6.2; formal 1.4 gate and 2.7 period flow remain
+- [~] Test on real iPhone — 57 focused tests pass and the signed Phase 2 app installs, launches and relaunches on iPhone 13/iOS 26.6.2; live **Maybe** presentation is visually confirmed, while manual cached/offline visibility remains
 - [ ] Test multiple real devices across approved support — 4.4
 - [ ] Test slow network — 3.3/4.3; live offline failure/recovery passed in 1.4 but is not a slow-network measurement
 - [~] Test denied permissions — 0.5 provider/device and 1.4 integrated-screen checks complete; 3.2/4.3 recovery/polish checks remain
-- [~] Test app relaunch — 1.4 allowed-permission live relaunch passed; 2.7 and 4.3/4.4 scenarios remain
+- [~] Test app relaunch — Phase 1 live relaunch and Phase 2 signed install/launch/relaunch passed; visible cached-state walkthrough and 4.3/4.4 remain
 - [ ] Test forecast changes — 2.6/2.7; 4.2/4.3
 - [ ] Test App Store/TestFlight build — 5.5
 

@@ -108,6 +108,66 @@ struct DailyRecommendationEngineTests {
         #expect(engine.evaluate(forecast(duplicate), now: now) == nil)
     }
 
+    @Test func exposesOrderedPerHourEvaluationsFromOutOfOrderInput() throws {
+        var hours = completeRemainingDay().reversed().map { $0 }
+        hours[5] = hour(at: hours[5].timestamp, actual: 18, apparent: 18)
+        let evaluation = try #require(engine.evaluateHours(forecast(hours), now: now))
+
+        #expect(evaluation.hours.count == 10)
+        #expect(evaluation.hours.map(\.timestamp) == evaluation.hours.map(\.timestamp).sorted())
+        #expect(evaluation.hours.contains { $0.recommendation.level == .caution })
+        #expect(evaluation.interval.start == currentHour)
+        #expect(evaluation.timezoneIdentifier == "Europe/Brussels")
+    }
+
+    @Test func exposesConservativelyInferredHourAtItsOriginalTimestamp() throws {
+        var hours = completeRemainingDay()
+        let missingTimestamp = hours[4].timestamp
+        hours.remove(at: 4)
+
+        let evaluation = try #require(engine.evaluateHours(forecast(hours), now: now))
+
+        #expect(evaluation.hours[4].timestamp == missingTimestamp)
+        #expect(evaluation.hours[4].recommendation == HourlyRecommendation(
+            level: .caution,
+            reason: .incompleteForecast
+        ))
+    }
+
+    @Test func respectsShortAndLongDaylightSavingDays() throws {
+        let timezone = try #require(TimeZone(identifier: "Europe/Brussels"))
+        var calendar = Calendar(identifier: .gregorian)
+        calendar.timeZone = timezone
+
+        for (month, day, expectedHours) in [(3, 29, 23), (10, 25, 25)] {
+            let start = try #require(calendar.date(from: DateComponents(
+                timeZone: timezone,
+                year: 2026,
+                month: month,
+                day: day,
+                hour: 0
+            )))
+            let interval = try #require(calendar.dateInterval(of: .day, for: start))
+            let hours = (0..<expectedHours).map { offset in
+                hour(at: start.addingTimeInterval(TimeInterval(offset * 3_600)))
+            }
+            let forecast = NormalizedForecast(
+                hours: hours,
+                metadata: ForecastMetadata(fetchedAt: start, location: LocationIdentity(
+                    latitude: 50.85,
+                    longitude: 4.35
+                ))
+            )
+
+            let evaluation = try #require(engine.evaluateHours(
+                forecast,
+                now: start.addingTimeInterval(30 * 60)
+            ))
+            #expect(evaluation.hours.count == expectedHours)
+            #expect(evaluation.interval == interval)
+        }
+    }
+
     private func completeRemainingDay() -> [HourlyWeather] {
         (0..<10).map { offset in
             hour(at: currentHour.addingTimeInterval(TimeInterval(offset * 3_600)))

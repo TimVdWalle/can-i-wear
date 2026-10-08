@@ -17,21 +17,27 @@ struct RecommendationViewModelTests {
         await caution.loadIfNeeded()
         await avoid.loadIfNeeded()
 
-        #expect(wear.state.result?.title == "Wear")
-        #expect(caution.state.result?.title == "Maybe")
-        #expect(avoid.state.result?.title == "Don’t wear")
-        #expect(avoid.state.result?.reason.contains("damage leather") == true)
+        #expect(wear.state.result?.periods.first?.recommendation.title == "Wear")
+        #expect(caution.state.result?.periods.first?.recommendation.title == "Maybe")
+        #expect(avoid.state.result?.periods.first?.recommendation.title == "Don’t wear")
+        #expect(avoid.state.result?.periods.first?.recommendation.reason.contains("damage leather") == true)
     }
 
     @Test func representsLocationAndWeatherFailuresExplicitly() async {
+        let deniedStore = MemoryCacheDataStore()
         let denied = RecommendationViewModel(
             locationProvider: FixedLocationProvider(result: .failure(.permissionDenied)),
             weatherProvider: FixedWeatherProvider(result: .failure(.unavailable)),
+            locationCache: LocationCache(store: deniedStore),
+            weatherCache: WeatherCache(store: deniedStore),
             now: { self.now }
         )
+        let weatherStore = MemoryCacheDataStore()
         let weatherFailure = RecommendationViewModel(
             locationProvider: fixedLocationProvider(),
             weatherProvider: FixedWeatherProvider(result: .failure(.network)),
+            locationCache: LocationCache(store: weatherStore),
+            weatherCache: WeatherCache(store: weatherStore),
             now: { self.now }
         )
 
@@ -50,12 +56,24 @@ struct RecommendationViewModelTests {
         #expect(model.state == .forecastIncomplete)
     }
 
+    @Test func presentsMaterialWeatherChangesAsOrderedPeriods() async {
+        let model = makeModel(forecast: forecast(amounts: [1, 1, 1, 0, 0, 0, 0, 0, 0, 0]))
+
+        await model.loadIfNeeded()
+
+        #expect(model.state.result?.periods.map(\.recommendation.title) == ["Don’t wear", "Wear"])
+        #expect(model.state.result?.periods[0].interval.end == model.state.result?.periods[1].interval.start)
+    }
+
     @Test func repeatedLoadDoesNotDuplicateProviderRequests() async {
         let locationProvider = CountingLocationProvider(reading: locationReading())
         let weatherProvider = CountingWeatherProvider(forecast: forecast())
+        let store = MemoryCacheDataStore()
         let model = RecommendationViewModel(
             locationProvider: locationProvider,
             weatherProvider: weatherProvider,
+            locationCache: LocationCache(store: store),
+            weatherCache: WeatherCache(store: store),
             now: { self.now }
         )
 
@@ -66,10 +84,119 @@ struct RecommendationViewModelTests {
         #expect(await weatherProvider.requestCount == 1)
     }
 
+    @Test func reusesRecentLocationWithoutRequestingAnotherFix() async {
+        let store = MemoryCacheDataStore()
+        let locationCache = LocationCache(store: store)
+        await locationCache.save(locationReading())
+        let locationProvider = CountingLocationProvider(reading: locationReading())
+        let model = RecommendationViewModel(
+            locationProvider: locationProvider,
+            weatherProvider: FixedWeatherProvider(result: .success(forecast())),
+            locationCache: locationCache,
+            weatherCache: WeatherCache(store: store),
+            now: { self.now }
+        )
+
+        await model.loadIfNeeded()
+
+        #expect(locationProvider.requestCount == 0)
+        #expect(model.state.result != nil)
+    }
+
+    @Test func displaysCachedResultImmediatelyThenReplacesItWithLiveData() async throws {
+        let store = MemoryCacheDataStore()
+        let locationCache = LocationCache(store: store)
+        let weatherCache = WeatherCache(store: store)
+        await locationCache.save(locationReading())
+        await weatherCache.save(forecast(fetchedAt: now.addingTimeInterval(-10 * 60)))
+        let provider = PendingWeatherProvider()
+        let model = RecommendationViewModel(
+            locationProvider: fixedLocationProvider(),
+            weatherProvider: provider,
+            locationCache: locationCache,
+            weatherCache: weatherCache,
+            now: { self.now }
+        )
+
+        let load = Task { await model.loadIfNeeded() }
+        while await provider.requestCount == 0 { await Task.yield() }
+
+        let initialAge = try #require(model.state.result?.cachedAge)
+        #expect(abs(initialAge - 10 * 60) < 0.001)
+        #expect(model.state.result?.isRefreshing == true)
+        #expect(model.state.result?.periods.first?.recommendation.title == "Wear")
+
+        await provider.complete(with: .success(forecast(temperature: 24)))
+        await load.value
+        #expect(model.state.result?.cachedAge == nil)
+        #expect(model.state.result?.isRefreshing == false)
+        #expect(model.state.result?.periods.first?.recommendation.title == "Don’t wear")
+    }
+
+    @Test func keepsStillValidCacheVisibleWhenRefreshFails() async throws {
+        let store = MemoryCacheDataStore()
+        let locationCache = LocationCache(store: store)
+        let weatherCache = WeatherCache(store: store)
+        await locationCache.save(locationReading())
+        await weatherCache.save(forecast(fetchedAt: now.addingTimeInterval(-20 * 60)))
+        let model = RecommendationViewModel(
+            locationProvider: fixedLocationProvider(),
+            weatherProvider: FixedWeatherProvider(result: .failure(.network)),
+            locationCache: locationCache,
+            weatherCache: weatherCache,
+            now: { self.now }
+        )
+
+        await model.loadIfNeeded()
+
+        let fallbackAge = try #require(model.state.result?.cachedAge)
+        #expect(abs(fallbackAge - 20 * 60) < 0.001)
+        #expect(model.state.result?.isRefreshing == false)
+        #expect(model.state.result?.periods.first?.recommendation.title == "Wear")
+    }
+
+    @Test func staleWeatherNeverProducesFallbackResult() async {
+        let store = MemoryCacheDataStore()
+        let locationCache = LocationCache(store: store)
+        let weatherCache = WeatherCache(store: store)
+        await locationCache.save(locationReading())
+        await weatherCache.save(forecast(fetchedAt: now.addingTimeInterval(-(30 * 60 + 0.001))))
+        let model = RecommendationViewModel(
+            locationProvider: fixedLocationProvider(),
+            weatherProvider: FixedWeatherProvider(result: .failure(.network)),
+            locationCache: locationCache,
+            weatherCache: weatherCache,
+            now: { self.now }
+        )
+
+        await model.loadIfNeeded()
+
+        #expect(model.state == .weatherDataExpired)
+    }
+
+    @Test func weatherRequestTimeoutProducesExplicitFailure() async {
+        let store = MemoryCacheDataStore()
+        let model = RecommendationViewModel(
+            locationProvider: fixedLocationProvider(),
+            weatherProvider: SlowWeatherProvider(),
+            locationCache: LocationCache(store: store),
+            weatherCache: WeatherCache(store: store),
+            now: { self.now },
+            sleep: { _ in }
+        )
+
+        await model.loadIfNeeded()
+
+        #expect(model.state == .weatherUnavailable)
+    }
+
     private func makeModel(forecast: NormalizedForecast) -> RecommendationViewModel {
-        RecommendationViewModel(
+        let store = MemoryCacheDataStore()
+        return RecommendationViewModel(
             locationProvider: fixedLocationProvider(),
             weatherProvider: FixedWeatherProvider(result: .success(forecast)),
+            locationCache: LocationCache(store: store),
+            weatherCache: WeatherCache(store: store),
             now: { self.now }
         )
     }
@@ -82,21 +209,27 @@ struct RecommendationViewModelTests {
         LocationReading(identity: location, accuracyMeters: 25, timestamp: now)
     }
 
-    private func forecast(amount: Double = 0, chance: Double = 0) -> NormalizedForecast {
+    private func forecast(
+        fetchedAt: Date? = nil,
+        amount: Double = 0,
+        amounts: [Double]? = nil,
+        chance: Double = 0,
+        temperature: Double = 12
+    ) -> NormalizedForecast {
         let hours = (0..<10).map { offset in
             HourlyWeather(
                 timestamp: currentHour.addingTimeInterval(TimeInterval(offset * 3_600)),
                 timezoneIdentifier: "Europe/Brussels",
-                actualTemperatureCelsius: 12,
-                apparentTemperatureCelsius: 12,
-                precipitationAmountMillimeters: amount,
-                precipitationType: PrecipitationType.none,
+                actualTemperatureCelsius: temperature,
+                apparentTemperatureCelsius: temperature,
+                precipitationAmountMillimeters: amounts?[safe: offset] ?? amount,
+                precipitationType: (amounts?[safe: offset] ?? amount) > 0 ? .rain : .none,
                 precipitationChanceFraction: chance
             )
         }
         return NormalizedForecast(
             hours: hours,
-            metadata: ForecastMetadata(fetchedAt: now, location: location)
+            metadata: ForecastMetadata(fetchedAt: fetchedAt ?? now, location: location)
         )
     }
 }
@@ -130,8 +263,32 @@ private actor CountingWeatherProvider: WeatherProvider {
     }
 }
 
+private actor PendingWeatherProvider: WeatherProvider {
+    private(set) var requestCount = 0
+    private var continuation: CheckedContinuation<NormalizedForecast, any Error>?
+
+    func hourlyForecast(for location: LocationIdentity) async throws -> NormalizedForecast {
+        requestCount += 1
+        return try await withCheckedThrowingContinuation { continuation in
+            self.continuation = continuation
+        }
+    }
+
+    func complete(with result: Result<NormalizedForecast, WeatherProviderError>) {
+        continuation?.resume(with: result.mapError { $0 as any Error })
+        continuation = nil
+    }
+}
+
+private struct SlowWeatherProvider: WeatherProvider {
+    func hourlyForecast(for location: LocationIdentity) async throws -> NormalizedForecast {
+        try await Task.sleep(for: .seconds(60))
+        throw WeatherProviderError.unavailable
+    }
+}
+
 private extension RecommendationViewModel.State {
-    var result: RecommendationPresentation? {
+    var result: DailyRecommendationPresentation? {
         guard case .result(let presentation) = self else { return nil }
         return presentation
     }
@@ -140,5 +297,11 @@ private extension RecommendationViewModel.State {
 private extension NormalizedForecast {
     func replacingHours(with hours: [HourlyWeather]) -> NormalizedForecast {
         NormalizedForecast(hours: hours, metadata: metadata)
+    }
+}
+
+private extension Array {
+    subscript(safe index: Index) -> Element? {
+        indices.contains(index) ? self[index] : nil
     }
 }

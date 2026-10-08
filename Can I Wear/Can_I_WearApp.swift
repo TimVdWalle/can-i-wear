@@ -11,7 +11,15 @@ import SwiftUI
 struct Can_I_WearApp: App {
     var body: some Scene {
         WindowGroup {
+            #if DEBUG
+            if let model = UITestScenario.model {
+                ContentView(model: model)
+            } else {
+                ContentView()
+            }
+            #else
             ContentView()
+            #endif
         }
     }
 }

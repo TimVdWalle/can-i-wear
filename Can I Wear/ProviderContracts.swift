@@ -2,7 +2,7 @@ import Foundation
 
 /// App-owned location identity. Keeping this independent of Core Location makes
 /// domain code and tests portable.
-nonisolated struct LocationIdentity: Equatable, Sendable {
+nonisolated struct LocationIdentity: Codable, Equatable, Sendable {
     let latitude: Double
     let longitude: Double
 
@@ -12,7 +12,7 @@ nonisolated struct LocationIdentity: Equatable, Sendable {
     }
 }
 
-nonisolated struct LocationReading: Equatable, Sendable {
+nonisolated struct LocationReading: Codable, Equatable, Sendable {
     let identity: LocationIdentity
     let accuracyMeters: Double?
     let timestamp: Date
@@ -30,7 +30,7 @@ nonisolated protocol LocationProvider: Sendable {
     func currentLocation() async throws -> LocationReading
 }
 
-nonisolated enum PrecipitationType: String, Equatable, Sendable {
+nonisolated enum PrecipitationType: String, Codable, Equatable, Sendable {
     case none
     case drizzle
     case rain
@@ -41,7 +41,7 @@ nonisolated enum PrecipitationType: String, Equatable, Sendable {
     case unknown
 }
 
-nonisolated struct HourlyWeather: Equatable, Sendable {
+nonisolated struct HourlyWeather: Codable, Equatable, Sendable {
     let timestamp: Date
     /// Nil when the provider does not supply a timezone for the forecast location.
     let timezoneIdentifier: String?
@@ -53,12 +53,12 @@ nonisolated struct HourlyWeather: Equatable, Sendable {
     let precipitationChanceFraction: Double?
 }
 
-nonisolated struct ForecastMetadata: Equatable, Sendable {
+nonisolated struct ForecastMetadata: Codable, Equatable, Sendable {
     let fetchedAt: Date
     let location: LocationIdentity
 }
 
-nonisolated struct NormalizedForecast: Equatable, Sendable {
+nonisolated struct NormalizedForecast: Codable, Equatable, Sendable {
     let hours: [HourlyWeather]
     let metadata: ForecastMetadata
 }
@@ -68,6 +68,7 @@ nonisolated enum WeatherProviderError: Error, Equatable, Sendable {
     case network
     case unauthorized
     case cancelled
+    case timedOut
 }
 
 nonisolated protocol WeatherProvider: Sendable {

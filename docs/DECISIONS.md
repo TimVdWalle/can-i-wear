@@ -1,7 +1,7 @@
 # Can I Wear — Decisions
 
 > Status: ACTIVE
-> Last updated: 2026-10-05
+> Last updated: 2026-10-06
 > Source of truth: YES
 
 This file records decisions that AI and developers must not casually reopen.
@@ -131,11 +131,12 @@ Any valid cached result up to 30 minutes old should appear immediately with its 
 
 A live weather request may wait at most 10 seconds before falling back to valid cached data or showing an explicit weather failure. The already approved one-time location acquisition timeout remains 15 seconds.
 
+### D-028 — Basic expired-forecast presentation
+**Decision:** When a saved forecast is over 30 minutes old, no valid newer forecast is available and live weather fails, keep the Phase 1 title **“Weather unavailable”** and show: **“The saved forecast is too old to use. Connect to the internet and try again.”** The state provides the existing retry action and must not show a recommendation from the expired forecast. Final broader failure-state styling remains part of Phase 3.
+
 ## Not yet decided
 
 The following are intentionally NOT decisions:
-- exact dynamic-period grouping parameters;
-- exact cache freshness;
 - exact UI labels;
 - exact UI color palette;
 - analytics/telemetry;

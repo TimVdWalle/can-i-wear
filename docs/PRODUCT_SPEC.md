@@ -1,7 +1,7 @@
 # Can I Wear — Product Specification
 
 > Status: ACTIVE
-> Last updated: 2026-10-05
+> Last updated: 2026-10-06
 > Source of truth: YES
 
 ## V1 user story
@@ -99,6 +99,7 @@ No personal settings in V1.
 If weather cannot be obtained:
 - do not invent a recommendation;
 - a recent cached weather result may be used if it is still considered reliable.
+- if the saved forecast is over 30 minutes old and live weather fails, show **“Weather unavailable”** with **“The saved forecast is too old to use. Connect to the internet and try again.”** and provide retry without showing the expired recommendation.
 
 For the initial daily evaluation, one isolated unusable hour may be inferred conservatively from valid immediate neighbors and never as better than Caution. Multiple missing hours or an unbounded edge gap produce no daily recommendation.
 

@@ -1,7 +1,7 @@
 # Can I Wear — Technical Specification
 
 > Status: ACTIVE
-> Last updated: 2026-10-05
+> Last updated: 2026-10-06
 > Source of truth: YES
 
 ## Technical goal
@@ -193,8 +193,6 @@ V1 has no account requirement and no need for a personal profile.
 
 ## Current technical unknowns
 
-- minimum supported iOS version;
-- exact cache freshness;
-- exact location accuracy/freshness;
 - analytics/telemetry policy;
-- final bundle identifiers.
+- final bundle identifiers;
+- production weather provider and terms for distribution.
