@@ -28,6 +28,8 @@ nonisolated struct ReusePolicyConfig: Equatable, Sendable {
 }
 
 nonisolated enum AppConfiguration {
+    static let maximumDiagnosticEvents = 20
+
     static let locationAcquisition = LocationAcquisitionConfig(
         requestedAccuracyMeters: 1_000,
         maximumAcceptedAccuracyMeters: 5_000,

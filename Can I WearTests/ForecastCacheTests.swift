@@ -89,6 +89,84 @@ struct ForecastCacheTests {
         #expect(await oldDayCache.validForecast(at: now, for: location) == nil)
     }
 
+    @Test func weatherCachePreservesFogCondition() async throws {
+        let store = MemoryCacheDataStore()
+        let cache = WeatherCache(store: store)
+        let fogForecast = NormalizedForecast(
+            hours: (0..<10).map {
+                hour(
+                    at: currentHour.addingTimeInterval(TimeInterval($0 * 3_600)),
+                    fogOrMist: .depositingRimeFog
+                )
+            },
+            metadata: ForecastMetadata(fetchedAt: now, location: location)
+        )
+
+        await cache.save(fogForecast)
+        let restored = try #require(await cache.validForecast(at: now, for: location))
+
+        #expect(restored == fogForecast)
+        #expect(restored.hours.first?.fogOrMistCondition == .depositingRimeFog)
+    }
+
+    @Test func weatherCacheDecodesForecastSavedBeforeFogFieldExisted() async throws {
+        let store = MemoryCacheDataStore()
+        let original = forecast()
+        let encoded = try JSONEncoder().encode(original)
+        var object = try #require(
+            JSONSerialization.jsonObject(with: encoded) as? [String: Any]
+        )
+        var hours = try #require(object["hours"] as? [[String: Any]])
+        for index in hours.indices {
+            hours[index].removeValue(forKey: "fogOrMistCondition")
+        }
+        object["hours"] = hours
+        await store.set(
+            try JSONSerialization.data(withJSONObject: object),
+            forKey: "latestNormalizedForecast"
+        )
+
+        let restored = try #require(await WeatherCache(store: store).validForecast(
+            at: now,
+            for: location
+        ))
+
+        #expect(restored.hours.allSatisfy { $0.fogOrMistCondition == nil })
+    }
+
+    @Test func diagnosticCacheLookupsExplainRejectionReasons() async throws {
+        let missingStore = MemoryCacheDataStore()
+        #expect(await LocationCache(store: missingStore).lookup(at: now) == .unavailable(.missing))
+        #expect(await WeatherCache(store: missingStore).diagnosticLookup(
+            at: now,
+            for: location
+        ) == .unavailable(.missing))
+
+        let staleLocationStore = MemoryCacheDataStore()
+        let staleReading = LocationReading(
+            identity: location,
+            accuracyMeters: 25,
+            timestamp: now.addingTimeInterval(-1_801)
+        )
+        await staleLocationStore.set(
+            try JSONEncoder().encode(staleReading),
+            forKey: "latestAcceptedLocation"
+        )
+        #expect(await LocationCache(store: staleLocationStore).lookup(at: now) == .unavailable(.stale(1_801)))
+
+        let distantStore = MemoryCacheDataStore()
+        let cache = WeatherCache(store: distantStore)
+        await cache.save(forecast())
+        guard case .unavailable(.locationMismatch(let distance)) = await cache.diagnosticLookup(
+            at: now,
+            for: LocationIdentity(latitude: 51, longitude: 4.35)
+        ) else {
+            Issue.record("Expected a location mismatch reason")
+            return
+        }
+        #expect(distance > 5_000)
+    }
+
     private func forecast(fetchedAt: Date? = nil) -> NormalizedForecast {
         NormalizedForecast(
             hours: (0..<10).map { hour(at: currentHour.addingTimeInterval(TimeInterval($0 * 3_600))) },
@@ -96,15 +174,19 @@ struct ForecastCacheTests {
         )
     }
 
-    private func hour(at timestamp: Date) -> HourlyWeather {
+    private func hour(
+        at timestamp: Date,
+        fogOrMist: FogOrMistCondition? = nil
+    ) -> HourlyWeather {
         HourlyWeather(
             timestamp: timestamp,
             timezoneIdentifier: "Europe/Brussels",
             actualTemperatureCelsius: 12,
             apparentTemperatureCelsius: 12,
             precipitationAmountMillimeters: 0,
-            precipitationType: .none,
-            precipitationChanceFraction: 0
+            precipitationType: PrecipitationType.none,
+            precipitationChanceFraction: 0,
+            fogOrMistCondition: fogOrMist
         )
     }
 }

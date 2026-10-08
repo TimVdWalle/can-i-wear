@@ -1,7 +1,7 @@
 # Can I Wear — TODO
 
 > Status: ACTIVE
-> Last updated: 2026-10-06
+> Last updated: 2026-10-08
 > Source of truth: YES
 
 This is an execution list, not a source of product decisions.
@@ -37,7 +37,9 @@ The numbered review units and their acceptance criteria are in [IMPLEMENTATION_P
 - [x] 2.4 Add recent-location reuse — latest-only persistent cache applies the inclusive 30-minute and accepted-accuracy policy without location history
 - [x] 2.5 Add weather cache and validity checks — normalized persistent cache enforces inclusive 30-minute freshness, current-day coverage and 5 km matching
 - [x] 2.6 Present daily periods and integrate safe fallback — period ranges/reasons, age-labeled cached results, live refresh replacement/fallback, explicit approved expired-forecast state and 10-second timeout integrated and tested
-- [~] 2.7 Review daily-intelligence completeness — 57 deterministic tests pass on iPhone 13/iOS 26.6.2; 3 rendered Phase 2 UI scenarios pass in the simulator and expired-state UI coverage is implemented but awaits simulator-runtime recovery. The signed app installed/launched and a live **Maybe** result with its warm-weather reason was visually confirmed. A naturally split forecast was unavailable; final manual cached/offline fallback visibility remains
+- [x] 2.7 Review daily-intelligence completeness — accepted complete after review of 57 deterministic passing tests, rendered Phase 2 UI scenarios, signed app installation/launch/relaunch and live recommendation evidence; unavailable natural split-weather and additional manual cache/offline observations remain useful later validation rather than a Phase 2 blocker
+- [x] 2.8 Add fog and mist protection — normalized explicit fog/mist condition, Open-Meteo WMO 45/48 and WeatherKit fog mapping, Avoid precedence, cache compatibility, periods and approved temporary **“Fog is expected.”** presentation implemented; provider/domain/cache/presentation tests and focused UI test pass on connected iPhone 13, and a live Open-Meteo payload confirmed hourly `weather_code`
+- [x] 2.9 Add opt-in local debug diagnostics — off-by-default Apple Settings toggle and active-state refresh, dismissible local report, structured/persisted 20-event bound with disable clearing, cache/fetch/error timing and reasons, asynchronous place lookup, hourly inputs/decisions/periods, diagnostic-only wind and privacy-labeled copy action implemented; 73 unit tests and all 9 UI tests pass on connected iPhone 13, including a real Settings-to-app toggle walkthrough
 
 ### Phase 3 — V1 polish
 
@@ -79,6 +81,8 @@ No Swift implementation, build, real-device run, live service validation or rele
 - [ ] Decide analytics/telemetry policy — T-09, 5.1; before any collection
 - [ ] Approve exact result/caution labels, reasons, palette and layout — T-10, basic proposal 1.3; final 3.1
 - [~] Approve loading/failure/stale/permission UX and accessibility details — basic loading/failure copy and expired-forecast wording are approved through D-025/D-028; final broader details remain for 3.1
+- [x] Define fog/mist protection — explicit provider fog/mist produces Avoid; Open-Meteo WMO codes 45/48 are used, missing fog data alone has no effect, and no humidity/dew-point/visibility inference is allowed — D-029, T-13, 2.8
+- [x] Define local debug direction — one Apple Settings switch defaulting off, local-only diagnostics, last 20 events cleared on disable, place fallback, informational wind and user-initiated copy approved in D-030 — 2.9
 
 All unchecked decisions remain **TBD**. T-12 (widget/notification timing/scope) is retained in the follow-up list below. Icon, listing, screenshots, required support/privacy material and release timing/method require review during Phase 5; no final release details are chosen by the plan.
 
@@ -97,6 +101,8 @@ All unchecked decisions remain **TBD**. T-12 (widget/notification timing/scope) 
 - [x] Create centralized product configuration — acquisition, jacket rules, period/noise values, freshness, distance and weather timeout are concentrated in `AppConfiguration`
 - [x] Create deterministic jacket decision engine — 1.1 hourly engine and 1.2 daily summary implemented and device-tested
 - [x] Create period grouping engine — ordered daily inputs, contiguous grouping and D-026 consolidation complete
+- [x] Normalize and evaluate fog/mist — explicit Open-Meteo WMO 45/48 and WeatherKit fog mapping, deterministic Avoid rule, cache round trip/backward decoding, periods and presentation complete in 2.8
+- [x] Add local diagnostic recorder/store and Apple Settings switch — structured local event persistence, 20-event bound, disable clearing, default registration and packaged `Settings.bundle` complete in 2.9
 
 ## V1 UX
 
@@ -110,6 +116,7 @@ All unchecked decisions remain **TBD**. T-12 (widget/notification timing/scope) 
 - [~] Permission UX — 0.5 provider behavior and 1.3 integrated state complete; 1.4 denied-screen device proof and 3.2 polish remain
 - [ ] Accessibility — 3.1 approved details, 3.4 implementation/device checks
 - [ ] Visual polish — 3.5
+- [~] Opt-in diagnostics sheet — 2.9 implementation and real-device UI checks complete; final visual/accessibility polish remains in 3.1/3.4/3.5
 
 ## Early follow-up features
 
@@ -126,14 +133,16 @@ All unchecked decisions remain **TBD**. T-12 (widget/notification timing/scope) 
 - [~] Few drops — any positive amount avoids and 10%/20% probability boundaries pass in 1.1 tests; 4.1/4.2 remain
 - [~] Normal rain — 1.1 focused test passes; 4.1/4.2 remain
 - [~] Heavy rain — 1.1 focused test passes; 4.1/4.2 remain
+- [~] Fog/mist Avoid — 2.8 provider/domain/cache/presentation and real-device UI fixtures pass; naturally observed fog validation remains in 4.2
+- [~] Missing fog/mist signal — 2.8 proves existing rain/temperature evaluation continues per D-029; 4.1 regression audit remains
 - [~] Rain + cold — 1.1 focused test passes; 4.1 remains
 - [~] Rain + warm — 1.1 focused tests pass, including rain precedence over excessive heat; 4.1 remains
 - [~] Morning rain only — deterministic period fixtures pass; real-condition validation remains in 4.2
 - [~] Later-day rain only — deterministic period fixtures pass; real-condition validation remains in 4.2
 - [~] Noisy alternating forecast — conservative period fixtures pass on device; 4.1 audit remains
-- [~] Missing weather — 1.1 rejects missing/invalid required hourly inputs; 1.3, 2.6/2.7 and 4.1/4.3 remain
-- [ ] Missing location — 0.5/1.3, 2.6/2.7; 4.1/4.3
-- [~] Network unavailable — 0.6 provider mapping, 1.3 presentation mapping, and 1.4 live offline/recovery checks complete; 2.6/2.7 and 4.3 remain
+- [~] Missing weather — hourly rejection, explicit presentation and Phase 2 fallback coverage exist; 4.1/4.3 audit and device validation remain
+- [~] Missing location — provider, presentation and Phase 2 fallback coverage exist; 4.1/4.3 audit and recovery validation remain
+- [~] Network unavailable — provider mapping, presentation mapping, live offline/recovery and Phase 2 fallback coverage are complete; 4.3 degraded-operation validation remains
 - [~] Recent cached data — inclusive boundary, relaunch storage, immediate display, refresh replacement and failed-refresh fallback tests pass; 4.1/4.3 remain
 - [~] Stale cached data — expiry, malformed, wrong-day and wrong-location rejection tests pass; expired-state UI coverage is implemented but awaits simulator-runtime recovery; 4.1/4.3 remain
 - [x] Real-device startup — 0.3 scaffold baseline complete; 1.4 live flow and 3.3/4.4 measurements remain
@@ -147,12 +156,13 @@ Additional required checks: exact temperature/rain/freshness/grouping boundaries
 - [~] Measure location acquisition — 1.4 warm authorized acquisition measured 0.007 s; cold/slow measurements remain for 3.3
 - [~] Measure weather fetch — 0.6 live fetch succeeded and 1.4 warm fetch measured 0.030 s; broader 3.3/4.2 measurements remain
 - [ ] Verify no unnecessary location/background work — 0.5/1.4; 3.3/4.4
-- [~] Test on real iPhone — 57 focused tests pass and the signed Phase 2 app installs, launches and relaunches on iPhone 13/iOS 26.6.2; live **Maybe** presentation is visually confirmed, while manual cached/offline visibility remains
+- [~] Test on real iPhone — 73 unit tests and all 9 UI tests pass on the connected iPhone 13, including fog, diagnostics copy/dismissal and the real Apple Settings on/off walkthrough; signed app launch/relaunch and live **Maybe** presentation are confirmed, while broader manual cached/offline observations remain useful for Phase 4 validation
 - [ ] Test multiple real devices across approved support — 4.4
 - [ ] Test slow network — 3.3/4.3; live offline failure/recovery passed in 1.4 but is not a slow-network measurement
 - [~] Test denied permissions — 0.5 provider/device and 1.4 integrated-screen checks complete; 3.2/4.3 recovery/polish checks remain
 - [~] Test app relaunch — Phase 1 live relaunch and Phase 2 signed install/launch/relaunch passed; visible cached-state walkthrough and 4.3/4.4 remain
-- [ ] Test forecast changes — 2.6/2.7; 4.2/4.3
+- [~] Test forecast changes — Phase 2 live replacement flow is covered; real changing-forecast validation remains in 4.2/4.3
+- [x] Test debug off/on equivalence and diagnostics — deterministic output equality, hidden/visible UI, packaged Settings default, active-state changes, cache rejection reasons, live/timeout/fallback sequences, 20-event bound/clearing, wind neutrality, place success/fallback, report privacy/copy and real-iPhone Settings walkthrough pass in 2.9
 - [ ] Test App Store/TestFlight build — 5.5
 
 ## Store delivery details

@@ -15,7 +15,10 @@ struct WeatherKitProviderTests {
                 apparentTemperature: Measurement(value: 48.2, unit: .fahrenheit),
                 precipitationAmount: Measurement(value: 0.1, unit: .inches),
                 precipitation: .rain,
-                precipitationChance: 0.75
+                precipitationChance: 0.75,
+                condition: .foggy,
+                windSpeed: Measurement(value: 10, unit: .milesPerHour),
+                windGust: Measurement(value: 20, unit: .milesPerHour)
             )
         ]))
         let provider = WeatherKitProvider(service: service, now: { fetchedAt })
@@ -28,6 +31,9 @@ struct WeatherKitProviderTests {
         #expect(abs((hour.precipitationAmountMillimeters ?? 0) - 2.54) < 0.0001)
         #expect(hour.precipitationType == .rain)
         #expect(hour.precipitationChanceFraction == 0.75)
+        #expect(hour.fogOrMistCondition == .fog)
+        #expect(abs((hour.windSpeedKilometersPerHour ?? 0) - 16.0934) < 0.0001)
+        #expect(abs((hour.windGustKilometersPerHour ?? 0) - 32.1868) < 0.0001)
         #expect(hour.timestamp == timestamp)
         #expect(hour.timezoneIdentifier == nil)
         #expect(forecast.metadata.fetchedAt == fetchedAt)
@@ -57,6 +63,9 @@ struct WeatherKitProviderTests {
         #expect(hour.precipitationAmountMillimeters == nil)
         #expect(hour.precipitationType == nil)
         #expect(hour.precipitationChanceFraction == nil)
+        #expect(hour.fogOrMistCondition == nil)
+        #expect(hour.windSpeedKilometersPerHour == nil)
+        #expect(hour.windGustKilometersPerHour == nil)
     }
 
     @Test func mapsProviderFailures() async {

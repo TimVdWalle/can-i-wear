@@ -1,7 +1,7 @@
 # Can I Wear — Project Truth
 
 > Status: ACTIVE
-> Last updated: 2026-10-05
+> Last updated: 2026-10-08
 > Source of truth: YES
 
 ## Purpose
@@ -21,8 +21,10 @@ V1:
 - evaluates the day;
 - can split the day into meaningful periods when conditions change;
 - prioritizes rain protection;
+- treats forecast fog/mist as an avoid condition because atmospheric moisture can damage leather;
 - uses initial fixed thresholds stored in one centralized configuration;
 - has no personal settings;
+- has one off-by-default technical Debug Enabled switch in Apple system Settings for local diagnostics;
 - gives an immediately understandable recommendation;
 - must work on a real iPhone;
 - is implemented natively for iOS using Swift + SwiftUI;
@@ -81,6 +83,8 @@ The project is judged by the final user experience:
 - recommendation history;
 - background location tracking;
 - broad settings.
+
+The approved technical debug switch is not a personal preference or broad settings surface and does not alter recommendation policy.
 
 ## Near-term platform features
 

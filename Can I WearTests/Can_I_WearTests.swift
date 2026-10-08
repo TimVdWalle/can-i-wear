@@ -20,7 +20,8 @@ struct Can_I_WearTests {
             apparentTemperatureCelsius: nil,
             precipitationAmountMillimeters: nil,
             precipitationType: .rain,
-            precipitationChanceFraction: 0.6
+            precipitationChanceFraction: 0.6,
+            fogOrMistCondition: .fog
         )
         let location = LocationIdentity(latitude: 50.85, longitude: 4.35)
         let forecast = NormalizedForecast(
@@ -32,6 +33,7 @@ struct Can_I_WearTests {
         #expect(forecast.hours[0].apparentTemperatureCelsius == nil)
         #expect(forecast.hours[0].precipitationAmountMillimeters == nil)
         #expect(forecast.hours[0].precipitationChanceFraction == 0.6)
+        #expect(forecast.hours[0].fogOrMistCondition == .fog)
         #expect(forecast.hours[0].timestamp == timestamp)
         #expect(forecast.hours[0].timezoneIdentifier == "Europe/Brussels")
         #expect(forecast.metadata.location == location)

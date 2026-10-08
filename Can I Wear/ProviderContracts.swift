@@ -41,6 +41,17 @@ nonisolated enum PrecipitationType: String, Codable, Equatable, Sendable {
     case unknown
 }
 
+nonisolated enum FogOrMistCondition: String, Codable, Equatable, Sendable {
+    case none
+    case mist
+    case fog
+    case depositingRimeFog
+
+    var isLeatherMoistureHazard: Bool {
+        self != .none
+    }
+}
+
 nonisolated struct HourlyWeather: Codable, Equatable, Sendable {
     let timestamp: Date
     /// Nil when the provider does not supply a timezone for the forecast location.
@@ -51,6 +62,36 @@ nonisolated struct HourlyWeather: Codable, Equatable, Sendable {
     let precipitationType: PrecipitationType?
     /// A provider-normalized value from 0 (impossible) through 1 (certain).
     let precipitationChanceFraction: Double?
+    /// Nil when the provider supplies no explicit fog/mist condition signal.
+    let fogOrMistCondition: FogOrMistCondition?
+    /// Informational provider data for local diagnostics only.
+    let windSpeedKilometersPerHour: Double?
+    /// Informational provider data for local diagnostics only.
+    let windGustKilometersPerHour: Double?
+
+    init(
+        timestamp: Date,
+        timezoneIdentifier: String?,
+        actualTemperatureCelsius: Double?,
+        apparentTemperatureCelsius: Double?,
+        precipitationAmountMillimeters: Double?,
+        precipitationType: PrecipitationType?,
+        precipitationChanceFraction: Double?,
+        fogOrMistCondition: FogOrMistCondition? = nil,
+        windSpeedKilometersPerHour: Double? = nil,
+        windGustKilometersPerHour: Double? = nil
+    ) {
+        self.timestamp = timestamp
+        self.timezoneIdentifier = timezoneIdentifier
+        self.actualTemperatureCelsius = actualTemperatureCelsius
+        self.apparentTemperatureCelsius = apparentTemperatureCelsius
+        self.precipitationAmountMillimeters = precipitationAmountMillimeters
+        self.precipitationType = precipitationType
+        self.precipitationChanceFraction = precipitationChanceFraction
+        self.fogOrMistCondition = fogOrMistCondition
+        self.windSpeedKilometersPerHour = windSpeedKilometersPerHour
+        self.windGustKilometersPerHour = windGustKilometersPerHour
+    }
 }
 
 nonisolated struct ForecastMetadata: Codable, Equatable, Sendable {
@@ -72,5 +113,10 @@ nonisolated enum WeatherProviderError: Error, Equatable, Sendable {
 }
 
 nonisolated protocol WeatherProvider: Sendable {
+    var diagnosticName: String { get }
     func hourlyForecast(for location: LocationIdentity) async throws -> NormalizedForecast
+}
+
+nonisolated extension WeatherProvider {
+    var diagnosticName: String { String(describing: Self.self) }
 }

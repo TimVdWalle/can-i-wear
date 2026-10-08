@@ -10,8 +10,11 @@ enum UITestScenario {
             arguments.indices.contains(flagIndex + 1)
         else { return nil }
 
+        let scenario = arguments[flagIndex + 1]
+        UserDefaults.standard.set(scenario == "diagnostics", forKey: DebugSettings.enabledKey)
+
         let state: RecommendationViewModel.State
-        switch arguments[flagIndex + 1] {
+        switch scenario {
         case "periods":
             state = .result(periodResult)
         case "cached":
@@ -20,6 +23,15 @@ enum UITestScenario {
             state = .result(singleResult(cachedAge: 60, isRefreshing: true))
         case "expired":
             state = .weatherDataExpired
+        case "fog":
+            state = .result(singleResult(
+                cachedAge: nil,
+                isRefreshing: false,
+                level: .avoid,
+                reason: .fogOrMist
+            ))
+        case "diagnostics":
+            state = .result(singleResult(cachedAge: nil, isRefreshing: false))
         default:
             return nil
         }
@@ -55,16 +67,18 @@ enum UITestScenario {
     }
 
     private static func singleResult(
-        cachedAge: TimeInterval,
-        isRefreshing: Bool
+        cachedAge: TimeInterval?,
+        isRefreshing: Bool,
+        level: RecommendationLevel = .caution,
+        reason: RecommendationReason = .warmTemperature
     ) -> DailyRecommendationPresentation {
         DailyRecommendationPresentation(
             periods: [
                 period(
                     start: Date(timeIntervalSince1970: 1_791_180_000),
                     duration: 9 * 3_600,
-                    level: .caution,
-                    reason: .warmTemperature
+                    level: level,
+                    reason: reason
                 )
             ],
             cachedAge: cachedAge,

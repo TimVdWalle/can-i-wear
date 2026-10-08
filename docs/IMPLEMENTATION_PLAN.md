@@ -1,7 +1,7 @@
 # Can I Wear — V1 Implementation Plan
 
 > Status: ACTIVE — proposed execution breakdown; not new product decisions
-> Last updated: 2026-10-04
+> Last updated: 2026-10-08
 > Source of truth: execution detail subordinate to the existing truth files
 
 ## Authority and execution rules
@@ -23,9 +23,11 @@ All product thresholds, freshness windows, grouping parameters, location accurac
 - **Not verified:** successful build/test run, signing on a real iPhone, live location/weather, meaningful automated tests, or performance.
 - **Not implemented:** provider interfaces, normalized weather model, WeatherKit adapter/capability, location permission description/provider, centralized rules, decision/period engines, cache, and recommendation UI.
 
-## Remaining decisions — all TBD
+## Decision tracking
 
-| ID | Unresolved decision | Needed by |
+These identifiers originated as implementation-blocking TBDs. Their current resolution status is authoritative only when recorded in `DECISIONS.md` and `TODO.md`; this table tracks the topic and where it is needed.
+
+| ID | Decision topic/status | Needed by |
 | --- | --- | --- |
 | T-01 | Measurable “few drops” tolerance; precipitation amount/type/probability interpretation and normal/heavy rain classification | 0.7, 1.1 |
 | T-02 | Actual versus apparent temperature selection/weighting, including unavailable selected input | 0.7, 1.1 |
@@ -39,6 +41,7 @@ All product thresholds, freshness windows, grouping parameters, location accurac
 | T-10 | Exact recommendation/caution labels, reason copy, semantic palette and final layout | Basic proposal in 1.3; final decisions in 3.1 |
 | T-11 | Loading presentation, no-location/no-weather/stale-data wording, permission-denied UX and accessibility details | Basic proposal in 1.3; final decisions in 3.1–3.4 |
 | T-12 | Exact V1 inclusion/timing/scope for widget and notifications | Follow-up decision only; not a core-plan blocker |
+| T-13 | **Resolved in D-029:** use only an explicit provider fog/mist forecast condition; Open-Meteo WMO codes 45/48 produce Avoid. Do not infer from humidity, dew point or visibility. | 2.8 |
 
 No row is resolved by creating this plan. Record approved material choices in `DECISIONS.md` and affected specifications before implementing them. When a blocker covers only part of a subphase, independent evidence gathering or contract work may proceed, but the subphase cannot be marked complete with invented defaults.
 
@@ -296,6 +299,32 @@ Goal: add meaningful periods and safe reuse/fallback while retaining determinist
 - **Non-goals:** Exhaustive field validation, final design, declaring release readiness.
 - **Blocking TBDs:** None after prerequisites.
 
+### 2.8 — Add fog and mist protection
+
+- **Type:** Product-detail decision, provider/domain implementation and testing.
+- **Objective:** Prevent recommending leather during forecast fog/mist because atmospheric moisture can damage it.
+- **Exact scope:** Add an app-owned normalized fog/mist signal; map explicit Open-Meteo WMO codes 45/48 to it without humidity/dew-point/visibility inference; make a positive signal produce Avoid with an explicit domain reason; preserve it through daily evaluation, period grouping, caching and presentation. A missing fog/mist-specific signal alone has no effect and does not invalidate otherwise usable rain/temperature data. Keep informational wind separate from decision logic.
+- **Likely files/components:** Provider contracts, `OpenMeteoProvider`, future provider adapters, forecast cache schema, jacket engine/reasons, presentation mapping, deterministic fixtures and affected truth files.
+- **Acceptance criteria:** Approved fog/mist inputs always produce Avoid; comfortable/dry conditions cannot override them; absent fog data follows D-029; provider types do not leak into domain/UI; cached forecasts preserve the normalized signal; the user-visible reason remains short and truthful.
+- **Tests/validation:** Explicit fog and rime-fog fixtures, dry/cool fog, warm fog, fog plus rain, absent signal, provider mapping, cache round trip, daily/period behavior and presentation state. Validate at least one live provider payload containing or structurally supporting the approved signal; do not fabricate a naturally foggy field observation.
+- **Dependencies:** 2.7, 0.6 and D-029/T-13.
+- **Non-goals:** Visibility-based comfort advice, unapproved humidity/dew-point thresholds, nowcasting, changing rain/temperature thresholds.
+- **Blocking TBDs:** None; the temporary **“Fog is expected.”** reason is approved, while final copy remains part of T-10/3.1.
+
+### 2.9 — Add opt-in local debug diagnostics
+
+- **Type:** Technical settings, diagnostic implementation, testing and device validation.
+- **Objective:** Make location, weather, cache and recommendation behavior inspectable without intruding on normal use or adding telemetry.
+- **Exact scope:** Add a `Settings.bundle` **Debug Enabled** switch defaulting off and register the default in app code. When enabled, show a subtle main-screen control opening a clean dismissible diagnostics view. Capture structured location/weather/cache triggers, timestamps, durations, outcomes and rejection reasons; normalized remaining-day jacket inputs and per-hour results; final periods; provider/timezone metadata; and errors/timeouts. Keep the latest 20 local diagnostic events, clear them when disabled, and provide a user-initiated readable copy report. Reverse-geocode asynchronously for street when readily returned, otherwise city/region. Include provider-supplied wind speed/gusts as informational diagnostics only; missing wind never affects validity or recommendations.
+- **Likely files/components:** `Settings.bundle`, app settings/default registration, diagnostic models/store/recorder, cache lookup diagnostics, providers/view model instrumentation, reverse-geocoding adapter, diagnostics SwiftUI sheet, copy action and tests.
+- **Acceptance criteria:** Debug is off by default and the normal UI has no debug affordance; changing the Apple Settings switch is reflected when the app becomes active; enabled diagnostics explain why and when location/weather were reused or fetched and how raw normalized hours became periods; history never exceeds 20 events and is cleared after disabling; debug adds no upload/telemetry and does not change recommendation output or block its delivery; place lookup and copy failure degrade harmlessly.
+- **Tests/validation:** Default/setting changes, hidden/visible diagnostics UI, cache hit/expiry/invalid reasons, live fetch/retry/timeout/fallback event sequences, 20-event bound and clear-on-disable, wind present/missing, reverse-geocode success/fallback, copy report content/privacy label, deterministic recommendation equality with debug off/on, and real-iPhone Settings-to-app walkthrough.
+- **Dependencies:** 2.7; diagnostic infrastructure may proceed while 2.8 is decided, but final hourly diagnostics include the 2.8 fog/mist field.
+- **Non-goals:** Remote logging, analytics, automatic report upload, a general settings screen, recommendation customization, retaining location history beyond the bounded diagnostic need, or making wind a decision rule.
+- **Blocking TBDs:** T-09 remains unresolved but does not block strictly local diagnostics; no collection/upload may be added.
+
+**Updated Phase 2 exit:** 2.1–2.9 criteria met. Local debug tooling remains technical and opt-in; fog/mist behavior must be resolved and tested before Phase 3 presentation approval.
+
 ## Phase 3 — V1 polish
 
 Goal: remove measured/user-visible friction without adding features.
@@ -304,11 +333,11 @@ Goal: remove measured/user-visible friction without adding features.
 
 - **Type:** Product/UX decision.
 - **Objective:** Settle the existing screen and state design.
-- **Exact scope:** Review concrete result/period/loading/error examples; obtain approval for exact labels/caution wording, short reasons, semantic palette, layout, permission/stale copy and accessibility behavior. Preserve recommendation-first hierarchy and meaning without color alone.
+- **Exact scope:** Review concrete result/period/loading/error and enabled-debug examples; obtain approval for exact labels/caution wording, short reasons, semantic palette, layout, permission/stale copy and accessibility behavior. Preserve recommendation-first hierarchy and meaning without color alone; diagnostics remain visually subordinate and absent when disabled.
 - **Likely files/components:** `UX.md`, `DECISIONS.md` where material, `TODO.md`, proposed SwiftUI previews/mockups.
 - **Acceptance criteria:** T-10/T-11 are resolved for all existing states; no settings/features are added; approved designs are reviewable before implementation.
-- **Tests/validation:** Review dry/rain/caution/heat/period/error examples, large-text and non-color interpretation.
-- **Dependencies:** 2.7.
+- **Tests/validation:** Review dry/rain/fog/caution/heat/period/error and enabled-debug examples, large-text and non-color interpretation.
+- **Dependencies:** 2.9.
 - **Non-goals:** New screens/features, final icon/marketing assets, notification/widget design.
 - **Blocking TBDs:** T-10, T-11.
 
@@ -320,7 +349,7 @@ Goal: remove measured/user-visible friction without adding features.
 - **Likely files/components:** Location adapter, presentation model, `ContentView`, permission description, integration/UI tests.
 - **Acceptance criteria:** First use, denial, disabled location, no weather and stale-data states are clear; repeated opens do not prompt unnecessarily; recovery does not invent certainty.
 - **Tests/validation:** Fake state transitions and real-phone first permission, denial, permission changes, failure/retry and relaunch.
-- **Dependencies:** 3.1, 2.6.
+- **Dependencies:** 3.1, 2.9.
 - **Non-goals:** Onboarding funnel, broad settings, manual location entry.
 - **Blocking TBDs:** None after T-11 approval; any new recovery interaction must be proposed before adding it.
 
@@ -332,7 +361,7 @@ Goal: remove measured/user-visible friction without adding features.
 - **Likely files/components:** App lifecycle, presentation model, adapters/caches, configuration; local device profiling tools and `TODO.md` evidence.
 - **Acceptance criteria:** Before/after evidence explains each fix; first frame remains responsive; no unnecessary location/network/background work; no unmeasured performance claims or hidden data collection.
 - **Tests/validation:** Real-device cold/warm launch, cached path, slow network, cancellation/background/foreground; targeted regressions for fixed behavior and request counts.
-- **Dependencies:** 2.7, 3.2.
+- **Dependencies:** 2.9, 3.2.
 - **Non-goals:** Speculative optimization, production telemetry SDK, continuous refresh.
 - **Blocking TBDs:** Any changed behavior-affecting timeout needs approval; T-09 blocks collection, not local measurement without telemetry.
 
@@ -340,7 +369,7 @@ Goal: remove measured/user-visible friction without adding features.
 
 - **Type:** UX implementation and testing.
 - **Objective:** Make recommendations and periods usable beyond the default visual presentation.
-- **Exact scope:** Apply approved accessible labels/order, Dynamic Type layout, contrast/non-color cues, touch targets and reduced-motion behavior for existing controls/states.
+- **Exact scope:** Apply approved accessible labels/order, Dynamic Type layout, contrast/non-color cues, touch targets and reduced-motion behavior for existing controls/states, including the enabled diagnostics surface.
 - **Likely files/components:** `ContentView` and small view components, UI tests, `UX.md` approved guidance.
 - **Acceptance criteria:** VoiceOver conveys recommendation, reason and period; large text does not hide essential content; meaning survives color differences; controls remain usable.
 - **Tests/validation:** Accessibility inspection/UI checks plus manual VoiceOver, large text, contrast and reduced-motion checks on a phone.
@@ -372,7 +401,7 @@ Goal: prove existing V1 behavior under real conditions. Record actual results; t
 - **Likely files/components:** Existing unit/integration test targets and fixture helpers; `TODO.md` evidence.
 - **Acceptance criteria:** Every required core scenario maps to a meaningful passing test; expected outcomes reflect approved rules; test runs need no GPS/network/live weather/time.
 - **Tests/validation:** Full deterministic suite plus focused UI state tests; review assertions for behavior rather than implementation mirroring.
-- **Dependencies:** 3.5, 2.7.
+- **Dependencies:** 3.5, 2.9.
 - **Non-goals:** Arbitrary coverage target, giant generated suite, duplicate tests without added behavioral value.
 - **Blocking TBDs:** None after prerequisite decisions; uncovered ambiguity is surfaced for approval.
 
@@ -384,7 +413,7 @@ Goal: prove existing V1 behavior under real conditions. Record actual results; t
 - **Likely files/components:** Active weather adapter, rules/config/period engine, `TODO.md` validation evidence; affected truth files only for approved tuning.
 - **Acceptance criteria:** Observed scenarios and discrepancies are recorded honestly; mapping/logic defects are fixed; provider limitations and unresolved safety issues are visible. Unobserved conditions remain pending rather than fabricated; fixtures supplement field evidence.
 - **Tests/validation:** Real-phone observations, deterministic replay where useful, targeted regression tests for discoveries. If provider suitability fails, propose a decision review rather than silently switch providers.
-- **Dependencies:** 1.4, 2.7, 3.5; provider observation can begin in 0.6 and accumulate earlier.
+- **Dependencies:** 1.4, 2.9, 3.5; provider observation can begin in 0.6 and accumulate earlier.
 - **Non-goals:** Guaranteeing forecasts, automatic rule tuning, additional providers without approval, location-history collection.
 - **Blocking TBDs:** None after prerequisites; field weather/location availability may limit completion evidence.
 
@@ -492,9 +521,9 @@ Goal: deliver the validated V1 through TestFlight and the App Store. Verify curr
 
 1. **Foundation gate:** 0.1–0.9. Scaffold exists; device/provider/decision readiness still needs evidence and approvals.
 2. **First major product milestone:** 1.4, the full live real-iPhone vertical slice.
-3. **Daily-intelligence gate:** 2.7, meaningful periods plus trustworthy fallback.
+3. **Daily-intelligence and diagnostics gate:** 2.9, meaningful periods, trustworthy fallback, fog/mist protection and opt-in local diagnostics.
 4. **Polish gate:** 3.5, approved presentation, accessible states and measured friction fixes.
 5. **Validation gate:** 4.4, regression coverage and real-condition/device evidence.
 6. **Shipping gate:** 5.6, accepted and released V1.
 
-The next review unit is **0.2**, confirming minimum iOS support and development identity. Do not reopen Swift/SwiftUI or WeatherKit architecture. After that, **0.3** proves the real-phone development baseline, and **0.4** is the first small code foundation change. Independent fixture/contract preparation can proceed when its listed dependencies permit it; unresolved product choices must remain explicit.
+The next review unit is **3.1**, the explicit approval review for final V1 presentation details. Subphase 2.9 is complete with the packaged Apple Settings switch, local bounded diagnostics, cache/fetch/evaluation explanations, place and copy behavior, diagnostic-only wind, deterministic coverage and a connected-iPhone Settings-to-app walkthrough. Unresolved product choices must remain explicit.

@@ -87,6 +87,19 @@ struct DayPeriodEngineTests {
         #expect(periods.contains { $0.recommendation.reason == .precipitation })
     }
 
+    @Test func retainsFogReasonWhenGroupingAvoidHours() {
+        let periods = engine.periods(for: evaluation([
+            recommendation(.avoid, reason: .fogOrMist),
+            recommendation(.avoid, reason: .fogOrMist),
+            recommendation(.avoid, reason: .fogOrMist),
+            recommendation(.okay),
+            recommendation(.okay),
+            recommendation(.okay)
+        ]))
+
+        #expect(periods.first?.recommendation.reason == .fogOrMist)
+    }
+
     private func evaluation(_ levels: [RecommendationLevel]) -> DailyEvaluation {
         evaluation(levels.map { recommendation($0) })
     }

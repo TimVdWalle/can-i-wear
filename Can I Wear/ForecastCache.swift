@@ -42,12 +42,30 @@ nonisolated struct LocationCache: Sendable {
     }
 
     func validReading(at now: Date) async -> LocationReading? {
-        guard
-            let data = await store.data(forKey: key),
-            let reading = try? JSONDecoder().decode(LocationReading.self, from: data),
-            isValid(reading, at: now)
-        else { return nil }
+        guard case .valid(let reading, _) = await lookup(at: now) else { return nil }
         return reading
+    }
+
+    func lookup(at now: Date) async -> LocationCacheDiagnosticLookup {
+        guard let data = await store.data(forKey: key) else {
+            return .unavailable(.missing)
+        }
+        guard let reading = try? JSONDecoder().decode(LocationReading.self, from: data) else {
+            return .unavailable(.malformed)
+        }
+        guard reading.identity.isValidCoordinate else {
+            return .unavailable(.invalidCoordinate)
+        }
+        guard let accuracy = reading.accuracyMeters else {
+            return .unavailable(.missingAccuracy)
+        }
+        guard accuracy.isFinite, accuracy >= 0, accuracy <= maximumAcceptedAccuracyMeters else {
+            return .unavailable(.inadequateAccuracy(accuracy))
+        }
+        let age = now.timeIntervalSince(reading.timestamp)
+        guard age >= 0 else { return .unavailable(.futureTimestamp(age)) }
+        guard age <= config.locationFreshness else { return .unavailable(.stale(age)) }
+        return .valid(reading, age: age)
     }
 
     func save(_ reading: LocationReading) async {
@@ -56,11 +74,6 @@ nonisolated struct LocationCache: Sendable {
             let data = try? JSONEncoder().encode(reading)
         else { return }
         await store.set(data, forKey: key)
-    }
-
-    private func isValid(_ reading: LocationReading, at now: Date) -> Bool {
-        let age = now.timeIntervalSince(reading.timestamp)
-        return age >= 0 && age <= config.locationFreshness && isAccepted(reading)
     }
 
     private func isAccepted(_ reading: LocationReading) -> Bool {
@@ -104,21 +117,45 @@ nonisolated struct WeatherCache: Sendable {
         at now: Date,
         for location: LocationIdentity
     ) async -> WeatherCacheLookup {
-        guard
-            location.isValidCoordinate,
-            let data = await store.data(forKey: key),
-            let forecast = try? JSONDecoder().decode(NormalizedForecast.self, from: data),
-            isStructurallyValid(forecast),
-            hasPotentialCoverage(forecast, at: now)
-        else { return .unavailable }
-
-        guard forecast.metadata.location.distance(to: location) <= config.maximumForecastDistanceMeters else {
+        switch await diagnosticLookup(at: now, for: location) {
+        case .valid(let forecast, _, _):
+            return .valid(forecast)
+        case .expired:
+            return .expired
+        case .unavailable:
             return .unavailable
         }
+    }
+
+    func diagnosticLookup(
+        at now: Date,
+        for location: LocationIdentity
+    ) async -> WeatherCacheDiagnosticLookup {
+        guard location.isValidCoordinate else {
+            return .unavailable(.invalidRequestedLocation)
+        }
+        guard let data = await store.data(forKey: key) else {
+            return .unavailable(.missing)
+        }
+        guard let forecast = try? JSONDecoder().decode(NormalizedForecast.self, from: data) else {
+            return .unavailable(.malformed)
+        }
+        guard isStructurallyValid(forecast) else {
+            return .unavailable(.invalidStructure)
+        }
+        guard hasPotentialCoverage(forecast, at: now) else {
+            return .unavailable(.inadequateDayCoverage)
+        }
+        let distance = forecast.metadata.location.distance(to: location)
+        guard distance <= config.maximumForecastDistanceMeters else {
+            return .unavailable(.locationMismatch(distanceMeters: distance))
+        }
         let age = now.timeIntervalSince(forecast.metadata.fetchedAt)
-        guard age >= 0 else { return .unavailable }
-        guard age <= config.weatherFreshness else { return .expired }
-        return .valid(forecast)
+        guard age >= 0 else { return .unavailable(.futureTimestamp(age)) }
+        guard age <= config.weatherFreshness else {
+            return .expired(forecast, age: age, distanceMeters: distance)
+        }
+        return .valid(forecast, age: age, distanceMeters: distance)
     }
 
     func save(_ forecast: NormalizedForecast) async {
@@ -162,6 +199,37 @@ nonisolated enum WeatherCacheLookup: Equatable, Sendable {
     case valid(NormalizedForecast)
     case expired
     case unavailable
+}
+
+nonisolated enum LocationCacheDiagnosticLookup: Equatable, Sendable {
+    case valid(LocationReading, age: TimeInterval)
+    case unavailable(LocationCacheRejectionReason)
+}
+
+nonisolated enum LocationCacheRejectionReason: Equatable, Sendable {
+    case missing
+    case malformed
+    case invalidCoordinate
+    case missingAccuracy
+    case inadequateAccuracy(Double)
+    case futureTimestamp(TimeInterval)
+    case stale(TimeInterval)
+}
+
+nonisolated enum WeatherCacheDiagnosticLookup: Equatable, Sendable {
+    case valid(NormalizedForecast, age: TimeInterval, distanceMeters: Double)
+    case expired(NormalizedForecast, age: TimeInterval, distanceMeters: Double)
+    case unavailable(WeatherCacheRejectionReason)
+}
+
+nonisolated enum WeatherCacheRejectionReason: Equatable, Sendable {
+    case missing
+    case malformed
+    case invalidRequestedLocation
+    case invalidStructure
+    case inadequateDayCoverage
+    case locationMismatch(distanceMeters: Double)
+    case futureTimestamp(TimeInterval)
 }
 
 nonisolated private extension LocationIdentity {

@@ -1,7 +1,7 @@
 # Can I Wear — Implementation Phases & Roadmap
 
 > Status: ACTIVE
-> Last updated: 2026-10-05
+> Last updated: 2026-10-08
 > Source of truth: YES
 
 ## Version rule
@@ -60,6 +60,8 @@ Add:
 - temperature bands;
 - conservative noise consolidation;
 - safe cache/fallback behavior.
+- fog/mist protection for leather;
+- opt-in local debug diagnostics through one Apple system Settings switch.
 
 Still V1.
 

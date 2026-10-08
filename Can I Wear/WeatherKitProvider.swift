@@ -9,6 +9,31 @@ nonisolated struct WeatherKitHourlySnapshot: Sendable {
     let precipitationAmount: Measurement<UnitLength>?
     let precipitation: WeatherKit.Precipitation?
     let precipitationChance: Double?
+    let condition: WeatherKit.WeatherCondition?
+    let windSpeed: Measurement<UnitSpeed>?
+    let windGust: Measurement<UnitSpeed>?
+
+    init(
+        timestamp: Date,
+        actualTemperature: Measurement<UnitTemperature>?,
+        apparentTemperature: Measurement<UnitTemperature>?,
+        precipitationAmount: Measurement<UnitLength>?,
+        precipitation: WeatherKit.Precipitation?,
+        precipitationChance: Double?,
+        condition: WeatherKit.WeatherCondition? = nil,
+        windSpeed: Measurement<UnitSpeed>? = nil,
+        windGust: Measurement<UnitSpeed>? = nil
+    ) {
+        self.timestamp = timestamp
+        self.actualTemperature = actualTemperature
+        self.apparentTemperature = apparentTemperature
+        self.precipitationAmount = precipitationAmount
+        self.precipitation = precipitation
+        self.precipitationChance = precipitationChance
+        self.condition = condition
+        self.windSpeed = windSpeed
+        self.windGust = windGust
+    }
 }
 
 nonisolated protocol WeatherKitServing: Sendable {
@@ -30,13 +55,17 @@ nonisolated struct SystemWeatherKitService: WeatherKitServing {
                 apparentTemperature: hour.apparentTemperature,
                 precipitationAmount: hour.precipitationAmount,
                 precipitation: hour.precipitation,
-                precipitationChance: hour.precipitationChance
+                precipitationChance: hour.precipitationChance,
+                condition: hour.condition,
+                windSpeed: hour.wind.speed,
+                windGust: hour.wind.gust
             )
         }
     }
 }
 
 nonisolated struct WeatherKitProvider: WeatherProvider {
+    let diagnosticName = "Apple Weather"
     private let service: any WeatherKitServing
     private let now: @Sendable () -> Date
 
@@ -86,8 +115,18 @@ nonisolated struct WeatherKitProvider: WeatherProvider {
             precipitationAmountMillimeters: snapshot.precipitationAmount?
                 .converted(to: .millimeters).value,
             precipitationType: snapshot.precipitation.map(normalize),
-            precipitationChanceFraction: snapshot.precipitationChance
+            precipitationChanceFraction: snapshot.precipitationChance,
+            fogOrMistCondition: normalize(snapshot.condition),
+            windSpeedKilometersPerHour: snapshot.windSpeed?
+                .converted(to: .kilometersPerHour).value,
+            windGustKilometersPerHour: snapshot.windGust?
+                .converted(to: .kilometersPerHour).value
         )
+    }
+
+    private static func normalize(_ condition: WeatherKit.WeatherCondition?) -> FogOrMistCondition? {
+        guard let condition else { return nil }
+        return condition == .foggy ? .fog : FogOrMistCondition.none
     }
 
     private static func normalize(_ precipitation: WeatherKit.Precipitation) -> PrecipitationType {

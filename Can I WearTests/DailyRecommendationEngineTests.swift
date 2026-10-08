@@ -54,6 +54,16 @@ struct DailyRecommendationEngineTests {
         ))
     }
 
+    @Test func explicitFogProducesAnAvoidDailyResult() {
+        var hours = completeRemainingDay()
+        hours[4] = hour(at: hours[4].timestamp, fogOrMist: .fog)
+
+        #expect(engine.evaluate(forecast(hours), now: now) == HourlyRecommendation(
+            level: .avoid,
+            reason: .fogOrMist
+        ))
+    }
+
     @Test func infersOneBracketedGapAsAtLeastCaution() {
         var hours = completeRemainingDay()
         hours.remove(at: 4)
@@ -190,7 +200,8 @@ struct DailyRecommendationEngineTests {
         actual: Double? = 12,
         apparent: Double? = 12,
         amount: Double? = 0,
-        chance: Double? = 0
+        chance: Double? = 0,
+        fogOrMist: FogOrMistCondition? = nil
     ) -> HourlyWeather {
         HourlyWeather(
             timestamp: timestamp,
@@ -199,7 +210,8 @@ struct DailyRecommendationEngineTests {
             apparentTemperatureCelsius: apparent,
             precipitationAmountMillimeters: amount,
             precipitationType: PrecipitationType.none,
-            precipitationChanceFraction: chance
+            precipitationChanceFraction: chance,
+            fogOrMistCondition: fogOrMist
         )
     }
 }

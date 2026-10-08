@@ -60,6 +60,108 @@ final class Can_I_WearUITests: XCTestCase {
     }
 
     @MainActor
+    func testDisplaysExplicitFogReason() throws {
+        let app = launch(scenario: "fog")
+
+        XCTAssertTrue(app.staticTexts["Don’t wear"].waitForExistence(timeout: 3))
+        XCTAssertTrue(app.staticTexts["Fog is expected."].exists)
+    }
+
+    @MainActor
+    func testDiagnosticsIsHiddenByDefault() throws {
+        let app = launch(scenario: "periods")
+
+        XCTAssertFalse(app.buttons["diagnostics-button"].exists)
+    }
+
+    @MainActor
+    func testEnabledDiagnosticsCanOpenCopyAndDismiss() throws {
+        let app = launch(scenario: "diagnostics")
+        let diagnostics = app.buttons["diagnostics-button"]
+        XCTAssertTrue(diagnostics.waitForExistence(timeout: 3))
+
+        diagnostics.tap()
+        XCTAssertTrue(app.descendants(matching: .any)["diagnostics-sheet"].waitForExistence(timeout: 3))
+        XCTAssertTrue(app.staticTexts["Place used for weather"].exists)
+        XCTAssertTrue(app.staticTexts["This place is included if you copy the report. Exact coordinates are not shown."].exists)
+
+        let copy = app.buttons["copy-diagnostics-report"]
+        for _ in 0..<8 where !copy.isHittable {
+            app.swipeUp()
+        }
+        XCTAssertTrue(copy.isHittable)
+        copy.tap()
+        XCTAssertTrue(app.buttons["Report Copied"].exists)
+        app.buttons["Done"].tap()
+        XCTAssertFalse(app.descendants(matching: .any)["diagnostics-sheet"].exists)
+    }
+
+    @MainActor
+    func testSystemSettingsToggleIsReflectedWhenAppBecomesActive() throws {
+        let app = launch(scenario: "periods")
+        XCTAssertFalse(app.buttons["diagnostics-button"].exists)
+
+        let settings = XCUIApplication(bundleIdentifier: "com.apple.Preferences")
+        settings.launch()
+        let apps = settings.staticTexts["Apps"]
+        for _ in 0..<5 where !apps.exists {
+            let back = settings.navigationBars.buttons.element(boundBy: 0)
+            if back.exists {
+                back.tap()
+            }
+        }
+        for _ in 0..<12 where !apps.isHittable {
+            settings.swipeUp()
+        }
+        XCTAssertTrue(apps.isHittable)
+        apps.tap()
+
+        let appRow = settings.staticTexts["Can I Wear"]
+        for _ in 0..<12 where !appRow.isHittable {
+            settings.swipeUp()
+        }
+        XCTAssertTrue(appRow.isHittable)
+        appRow.tap()
+
+        let debugSwitch = settings.switches["Debug Enabled"]
+        XCTAssertTrue(debugSwitch.waitForExistence(timeout: 5))
+        if switchIsOn(debugSwitch) {
+            toggle(debugSwitch)
+        }
+        XCTAssertFalse(switchIsOn(debugSwitch))
+        toggle(debugSwitch)
+        XCTAssertTrue(switchIsOn(debugSwitch), "Switch value: \(String(describing: debugSwitch.value))")
+
+        app.activate()
+        XCTAssertTrue(app.buttons["diagnostics-button"].waitForExistence(timeout: 5))
+
+        settings.activate()
+        XCTAssertTrue(debugSwitch.waitForExistence(timeout: 5))
+        if switchIsOn(debugSwitch) {
+            toggle(debugSwitch)
+        }
+
+        app.activate()
+        let diagnostics = app.buttons["diagnostics-button"]
+        let disappeared = NSPredicate(format: "exists == false")
+        expectation(for: disappeared, evaluatedWith: diagnostics)
+        waitForExpectations(timeout: 5)
+    }
+
+    private func switchIsOn(_ element: XCUIElement) -> Bool {
+        guard let rawValue = element.value else { return false }
+        if let number = rawValue as? NSNumber {
+            return number.boolValue
+        }
+        let value = String(describing: rawValue).lowercased()
+        return value == "1" || value == "on" || value == "aan" || value == "true"
+    }
+
+    private func toggle(_ element: XCUIElement) {
+        element.coordinate(withNormalizedOffset: CGVector(dx: 0.9, dy: 0.5)).tap()
+    }
+
+    @MainActor
     func testLaunchPerformance() throws {
         measure(metrics: [XCTApplicationLaunchMetric()]) {
             let app = XCUIApplication()

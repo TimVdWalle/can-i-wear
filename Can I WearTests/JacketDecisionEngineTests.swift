@@ -57,6 +57,49 @@ struct JacketDecisionEngineTests {
         }
     }
 
+    @Test func explicitFogOrMistAlwaysMeansAvoid() {
+        let hazards: [FogOrMistCondition] = [.mist, .fog, .depositingRimeFog]
+
+        for hazard in hazards {
+            #expect(engine.evaluate(hour(actual: 12, fogOrMist: hazard)) == HourlyRecommendation(
+                level: .avoid,
+                reason: .fogOrMist
+            ))
+            #expect(engine.evaluate(hour(actual: 24, fogOrMist: hazard))?.reason == .fogOrMist)
+        }
+    }
+
+    @Test func absentOrExplicitlyClearFogSignalUsesExistingRules() {
+        #expect(engine.evaluate(hour(fogOrMist: nil))?.level == .okay)
+        #expect(engine.evaluate(hour(fogOrMist: FogOrMistCondition.none))?.level == .okay)
+        #expect(engine.evaluate(hour(actual: 18, fogOrMist: nil))?.level == .caution)
+    }
+
+    @Test func precipitationRemainsThePrimaryReasonWhenRainAndFogOverlap() {
+        #expect(engine.evaluate(hour(amount: 1, type: .rain, fogOrMist: .fog)) == HourlyRecommendation(
+            level: .avoid,
+            reason: .precipitation
+        ))
+    }
+
+    @Test func informationalWindDoesNotChangeRecommendation() {
+        let calm = hour(actual: 12)
+        let windy = HourlyWeather(
+            timestamp: calm.timestamp,
+            timezoneIdentifier: calm.timezoneIdentifier,
+            actualTemperatureCelsius: calm.actualTemperatureCelsius,
+            apparentTemperatureCelsius: calm.apparentTemperatureCelsius,
+            precipitationAmountMillimeters: calm.precipitationAmountMillimeters,
+            precipitationType: calm.precipitationType,
+            precipitationChanceFraction: calm.precipitationChanceFraction,
+            fogOrMistCondition: calm.fogOrMistCondition,
+            windSpeedKilometersPerHour: 120,
+            windGustKilometersPerHour: 180
+        )
+
+        #expect(engine.evaluate(windy) == engine.evaluate(calm))
+    }
+
     @Test func moreProtectiveResultWins() {
         #expect(engine.evaluate(hour(actual: 21, chance: 0.10)) == HourlyRecommendation(
             level: .avoid,
@@ -84,7 +127,8 @@ struct JacketDecisionEngineTests {
         apparent: Double? = 12,
         amount: Double? = 0,
         type: PrecipitationType? = PrecipitationType.none,
-        chance: Double? = 0
+        chance: Double? = 0,
+        fogOrMist: FogOrMistCondition? = nil
     ) -> HourlyWeather {
         HourlyWeather(
             timestamp: Date(timeIntervalSince1970: 1_700_000_000),
@@ -93,7 +137,8 @@ struct JacketDecisionEngineTests {
             apparentTemperatureCelsius: apparent,
             precipitationAmountMillimeters: amount,
             precipitationType: type,
-            precipitationChanceFraction: chance
+            precipitationChanceFraction: chance,
+            fogOrMistCondition: fogOrMist
         )
     }
 }

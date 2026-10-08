@@ -1,7 +1,7 @@
 # Can I Wear — UX
 
 > Status: ACTIVE
-> Last updated: 2026-10-04
+> Last updated: 2026-10-08
 > Source of truth: YES
 
 ## Core UX goal
@@ -97,3 +97,9 @@ Recent cached data may be used according to the centralized freshness policy.
 - stale-data wording;
 - permission-denied wording;
 - accessibility details.
+
+## Debug diagnostics
+
+Debugging is off by default and enabled through the app's single switch in Apple system Settings. When enabled, a subtle control on the main screen opens a clean, dismissible diagnostics view; diagnostics must not be mixed into the normal recommendation hierarchy.
+
+The view should be readable rather than a raw log dump: summarize location, weather/cache state, fetch reasons/timing and final periods first, with remaining-hour inputs and the bounded event history available below. It may scroll, so optional provider-supplied wind context does not compete with the recommendation. Place information and the copy-report action must be clearly identified. Exact visual treatment follows the delegated implementation review and Phase 3 polish.

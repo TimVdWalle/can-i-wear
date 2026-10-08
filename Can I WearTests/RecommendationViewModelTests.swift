@@ -12,15 +12,19 @@ struct RecommendationViewModelTests {
         let wear = makeModel(forecast: forecast())
         let caution = makeModel(forecast: forecast(chance: 0.10))
         let avoid = makeModel(forecast: forecast(amount: 1))
+        let fog = makeModel(forecast: forecast(fogOrMist: .fog))
 
         await wear.loadIfNeeded()
         await caution.loadIfNeeded()
         await avoid.loadIfNeeded()
+        await fog.loadIfNeeded()
 
         #expect(wear.state.result?.periods.first?.recommendation.title == "Wear")
         #expect(caution.state.result?.periods.first?.recommendation.title == "Maybe")
         #expect(avoid.state.result?.periods.first?.recommendation.title == "Don’t wear")
         #expect(avoid.state.result?.periods.first?.recommendation.reason.contains("damage leather") == true)
+        #expect(fog.state.result?.periods.first?.recommendation.title == "Don’t wear")
+        #expect(fog.state.result?.periods.first?.recommendation.reason == "Fog is expected.")
     }
 
     @Test func representsLocationAndWeatherFailuresExplicitly() async {
@@ -63,6 +67,19 @@ struct RecommendationViewModelTests {
 
         #expect(model.state.result?.periods.map(\.recommendation.title) == ["Don’t wear", "Wear"])
         #expect(model.state.result?.periods[0].interval.end == model.state.result?.periods[1].interval.start)
+    }
+
+    @Test func presentsExplicitFogAsAnAvoidPeriod() async {
+        let fogConditions: [FogOrMistCondition] = [
+            .fog, .fog, .fog,
+            .none, .none, .none, .none, .none, .none, .none
+        ]
+        let model = makeModel(forecast: forecast(fogConditions: fogConditions))
+
+        await model.loadIfNeeded()
+
+        #expect(model.state.result?.periods.map(\.recommendation.title) == ["Don’t wear", "Wear"])
+        #expect(model.state.result?.periods.first?.recommendation.reason == "Fog is expected.")
     }
 
     @Test func repeatedLoadDoesNotDuplicateProviderRequests() async {
@@ -214,7 +231,9 @@ struct RecommendationViewModelTests {
         amount: Double = 0,
         amounts: [Double]? = nil,
         chance: Double = 0,
-        temperature: Double = 12
+        temperature: Double = 12,
+        fogOrMist: FogOrMistCondition? = nil,
+        fogConditions: [FogOrMistCondition]? = nil
     ) -> NormalizedForecast {
         let hours = (0..<10).map { offset in
             HourlyWeather(
@@ -223,8 +242,11 @@ struct RecommendationViewModelTests {
                 actualTemperatureCelsius: temperature,
                 apparentTemperatureCelsius: temperature,
                 precipitationAmountMillimeters: amounts?[safe: offset] ?? amount,
-                precipitationType: (amounts?[safe: offset] ?? amount) > 0 ? .rain : .none,
-                precipitationChanceFraction: chance
+                precipitationType: (amounts?[safe: offset] ?? amount) > 0
+                    ? PrecipitationType.rain
+                    : PrecipitationType.none,
+                precipitationChanceFraction: chance,
+                fogOrMistCondition: fogConditions?[safe: offset] ?? fogOrMist
             )
         }
         return NormalizedForecast(

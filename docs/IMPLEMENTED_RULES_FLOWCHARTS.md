@@ -78,7 +78,7 @@ Cache-age boundaries are inclusive: exactly 30 minutes is valid; any amount over
 
 ```mermaid
 flowchart TD
-    A["Normalized hourly weather"] --> B{"Required data valid?<br/>• amount exists, finite, and ≥0 mm<br/>• chance exists, finite, and 0–100%<br/>• type is not `unknown`<br/>• at least one temperature exists<br/>• every available temperature is finite"}
+    A["Normalized hourly weather"] --> B{"Required data valid?<br/>• amount exists, finite, and ≥0 mm<br/>• chance exists, finite, and 0–100%<br/>• precipitation type is not `unknown`<br/>• at least one temperature exists<br/>• every available temperature is finite<br/>• fog/mist is optional and never inferred"}
     B -- "No" --> NR["No hourly recommendation"]
     B -- "Yes" --> C["Selected temperature = warmer of actual and apparent<br/>If only one exists, use it"]
 
@@ -86,13 +86,15 @@ flowchart TD
     D -- "Yes" --> AP["AVOID<br/>Reason: precipitation<br/>UI: Don’t wear"]
     D -- "No" --> E{"Precipitation chance ≥20%?"}
     E -- "Yes" --> AP
-    E -- "No" --> F{"Selected temperature >20°C?"}
-    F -- "Yes" --> AH["AVOID<br/>Reason: excessive heat<br/>UI: Don’t wear"]
-    F -- "No" --> G{"Precipitation chance ≥10%?"}
-    G -- "Yes" --> CP["CAUTION<br/>Reason: precipitation risk<br/>UI: Maybe"]
-    G -- "No" --> H{"Selected temperature >15°C?"}
-    H -- "Yes; ≤20°C" --> CW["CAUTION<br/>Reason: warm temperature<br/>UI: Maybe"]
-    H -- "No; ≤15°C" --> OK["OK<br/>Reason: suitable temperature<br/>UI: Wear"]
+    E -- "No" --> F{"Explicit provider fog/mist condition?"}
+    F -- "Yes" --> AF["AVOID<br/>Reason: fog/mist<br/>UI reason: Fog is expected."]
+    F -- "No / unavailable" --> G{"Selected temperature >20°C?"}
+    G -- "Yes" --> AH["AVOID<br/>Reason: excessive heat<br/>UI: Don’t wear"]
+    G -- "No" --> H{"Precipitation chance ≥10%?"}
+    H -- "Yes" --> CP["CAUTION<br/>Reason: precipitation risk<br/>UI: Maybe"]
+    H -- "No" --> I{"Selected temperature >15°C?"}
+    I -- "Yes; ≤20°C" --> CW["CAUTION<br/>Reason: warm temperature<br/>UI: Maybe"]
+    I -- "No; ≤15°C" --> OK["OK<br/>Reason: suitable temperature<br/>UI: Wear"]
 ```
 
 The ordering implements protective precedence:
@@ -100,8 +102,9 @@ The ordering implements protective precedence:
 1. Invalid data produces no answer.
 2. Actual precipitation or an explicit precipitation type overrides everything.
 3. A precipitation chance of at least 20% produces Avoid.
-4. Excessive heat outranks a precipitation-only Caution.
-5. A 10%–less-than-20% precipitation chance outranks an otherwise OK temperature.
+4. An explicit fog/mist condition produces Avoid and outranks heat/caution/okay results.
+5. Excessive heat outranks a precipitation-only Caution.
+6. A 10%–less-than-20% precipitation chance outranks an otherwise OK temperature.
 
 `nil` precipitation type does not by itself invalidate an hour; `unknown` does. Amount and probability are still required.
 
@@ -109,7 +112,7 @@ When multiple recommendations of the same level must be reduced to one reason, t
 
 ```mermaid
 flowchart LR
-    A["Suitable temperature"] --> B["Warm temperature"] --> C["Incomplete forecast"] --> D["Precipitation risk"] --> E["Excessive heat"] --> F["Precipitation"]
+    A["Suitable temperature"] --> B["Warm temperature"] --> C["Incomplete forecast"] --> D["Precipitation risk"] --> E["Excessive heat"] --> F["Fog/mist"] --> G["Precipitation"]
 ```
 
 ## 3. Daily forecast window and completeness
@@ -191,9 +194,9 @@ Additional implemented implications:
 - A normal change must survive for at least three hours to remain a separate part.
 - Replacement repeats until there are no more absorbable short non-Avoid runs.
 
-## 5. Provider precipitation normalization
+## 5. Provider precipitation and fog normalization
 
-The active Open-Meteo adapter converts provider data before the hourly rules run. This chart is included because the resulting precipitation type can independently trigger Avoid.
+The active Open-Meteo adapter converts provider data before the hourly rules run. The resulting precipitation type and separately normalized explicit fog/mist condition can independently trigger Avoid.
 
 ```mermaid
 flowchart TD
@@ -229,16 +232,38 @@ flowchart TD
 Other active mapping rules:
 
 - Open-Meteo precipitation probability is converted from percent to a 0–1 fraction.
+- Open-Meteo weather code 45 maps to explicit fog and code 48 to depositing rime fog. Any other present code maps to no fog/mist; a missing code remains unavailable. Humidity, dew point and visibility are not used to infer fog.
 - Actual temperature, apparent temperature, precipitation amount, and missing values are preserved by index against the provider’s timestamp array.
 - The forecast timezone is copied onto each normalized hour.
+- Provider wind speed and gusts are normalized to km/h for diagnostics only. Missing wind is allowed, and wind is never passed into recommendation rules.
 - HTTP 401/403 maps to unauthorized; other non-success HTTP responses map to unavailable; URL errors map to network failure; cancellation remains cancellation.
-- The WeatherKit adapter maps Apple units and precipitation types into the same normalized model, but it is not the active provider. It currently supplies no forecast timezone, so its output cannot yet pass the implemented daily-evaluation requirement without further integration work.
+- The WeatherKit adapter maps Apple units, precipitation types, wind and its explicit `foggy` condition into the same normalized model, but it is not the active provider. It currently supplies no forecast timezone, so its output cannot yet pass the implemented daily-evaluation requirement without further integration work.
+
+## 6. Opt-in local diagnostics
+
+```mermaid
+flowchart TD
+    A["App becomes active"] --> B{"Apple Settings:<br/>Debug Enabled?"}
+    B -- "No" --> C["Clear retained diagnostic events and current diagnostic snapshot<br/>Hide diagnostics control"]
+    B -- "Yes" --> D["Show subtle Diagnostics control"]
+    D --> E["Record structured location/weather/cache/evaluation events locally"]
+    E --> F["Retain latest 20 events only"]
+    E --> G["Summarize remaining-hour inputs, decisions and final periods<br/>Wind is informational only"]
+    E --> H["Reverse-geocode place asynchronously<br/>Street → city/region → unavailable"]
+    F --> I["Dismissible diagnostics sheet"]
+    G --> I
+    H --> I
+    I --> J{"User chooses Copy Report?"}
+    J -- "No" --> I
+    J -- "Yes" --> K["Copy readable local report with visible place/privacy notice<br/>No automatic upload"]
+```
 
 ## Implementation coverage
 
 The charts cover the implemented behavior in:
 
 - `AppConfiguration.swift`
+- `ProviderContracts.swift`
 - `CoreLocationProvider.swift`
 - `ForecastCache.swift`
 - `RecommendationViewModel.swift`
@@ -247,5 +272,7 @@ The charts cover the implemented behavior in:
 - `JacketDecisionEngine.swift`
 - `DayPeriodEngine.swift`
 - `ContentView.swift`
+- `DebugDiagnostics.swift`
+- `Settings.bundle/Root.plist`
 
-Phase 3’s final wording, palette, layout, permission recovery, and accessibility details remain TBD. The temporary implemented labels and states shown here must not be mistaken for those future approvals.
+Phase 2.9 local diagnostics and the Phase 2 fog/mist protection are implemented. Phase 3’s final wording, palette, layout, permission recovery, and accessibility details remain TBD. The temporary implemented labels and states shown here must not be mistaken for those future approvals.

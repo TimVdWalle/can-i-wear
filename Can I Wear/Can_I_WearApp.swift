@@ -9,6 +9,10 @@ import SwiftUI
 
 @main
 struct Can_I_WearApp: App {
+    init() {
+        DebugSettings.registerDefaults()
+    }
+
     var body: some Scene {
         WindowGroup {
             #if DEBUG

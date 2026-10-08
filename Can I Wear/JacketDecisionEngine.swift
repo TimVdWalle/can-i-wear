@@ -16,6 +16,7 @@ nonisolated enum RecommendationReason: Equatable, Sendable {
     case excessiveHeat
     case precipitationRisk
     case precipitation
+    case fogOrMist
     case incompleteForecast
 }
 
@@ -52,8 +53,10 @@ nonisolated extension HourlyRecommendation {
             3
         case .excessiveHeat:
             4
-        case .precipitation:
+        case .fogOrMist:
             5
+        case .precipitation:
+            6
         }
     }
 }
@@ -89,6 +92,9 @@ nonisolated struct JacketDecisionEngine: Sendable {
 
         if precipitationLevel == .avoid {
             return HourlyRecommendation(level: .avoid, reason: .precipitation)
+        }
+        if hour.fogOrMistCondition?.isLeatherMoistureHazard == true {
+            return HourlyRecommendation(level: .avoid, reason: .fogOrMist)
         }
         if temperatureLevel == .avoid {
             return HourlyRecommendation(level: .avoid, reason: .excessiveHeat)

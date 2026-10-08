@@ -1,7 +1,7 @@
 # Can I Wear — Weather Logic
 
 > Status: ACTIVE
-> Last updated: 2026-10-05
+> Last updated: 2026-10-08
 > Source of truth: YES
 
 ## Goal
@@ -12,7 +12,7 @@ The logic should be deterministic, testable and easy to tune.
 
 ## Core rule priorities
 
-1. Protect the leather jacket from rain.
+1. Protect the leather jacket from rain and atmospheric moisture hazards such as fog/mist.
 2. Avoid clearly excessive heat.
 3. Use the daily forecast rather than only current conditions.
 4. When conditions materially change, represent the change with meaningful periods.
@@ -33,6 +33,12 @@ otherwise -> evaluate temperature
 
 Even the smallest forecast precipitation amount or explicit precipitation type produces **Avoid**. When the forecast amount is 0 mm, probability handles forecast uncertainty: below 10% has no rain effect, 10% through less than 20% produces **Caution**, and 20% or more produces **Avoid**. These initial values remain centralized and tunable.
 
+## Fog and mist are protection constraints
+
+An hour identified as foggy or misty produces **Avoid**, regardless of temperature or otherwise dry precipitation inputs. The concern is moisture exposure, not reduced visibility.
+
+Use only an explicit provider forecast condition identifying fog or mist. For Open-Meteo, WMO weather codes 45 (fog) and 48 (depositing rime fog) produce Avoid. Do not infer fog/mist from humidity, dew point or visibility, and do not invent a probability when the provider supplies none. If the fog/mist-specific signal is absent, that absence alone has no effect and does not invalidate the hour.
+
 ## Temperature
 
 Initial product rules:
@@ -52,7 +58,7 @@ Use the warmer of actual and apparent temperature. If only one value is availabl
 Initial conceptual precedence:
 
 1. Data validity
-2. Rain protection
+2. Rain/fog/mist protection
 3. Excessive heat
 4. Temperature comfort/caution
 
@@ -105,6 +111,8 @@ At minimum:
 - rain + 12°C -> AVOID;
 - rain + 18°C -> AVOID;
 - heavy rain + any reasonable temperature -> AVOID;
+- forecast fog/mist + any reasonable temperature -> AVOID;
+- missing fog/mist signal with otherwise valid inputs -> use the existing rain/temperature result;
 - morning rain then dry -> meaningful split;
 - alternating noisy hourly rain -> consolidated conservative period;
 - missing precipitation data;

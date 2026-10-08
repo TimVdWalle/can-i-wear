@@ -1,7 +1,7 @@
 # Can I Wear — Product Specification
 
 > Status: ACTIVE
-> Last updated: 2026-10-06
+> Last updated: 2026-10-08
 > Source of truth: YES
 
 ## V1 user story
@@ -36,8 +36,11 @@ The weather data must support at least:
 - precipitation amount;
 - precipitation/rain type;
 - precipitation timing/probability;
+- forecast fog/mist condition when the provider supplies it;
 - hourly forecast;
 - timezone/local time.
+
+Provider-supplied wind speed/gusts may be retained for diagnostics, but wind is not currently a direct recommendation input. Apparent temperature remains the approved temperature input that can reflect wind effects.
 
 ## Decision output
 
@@ -73,6 +76,14 @@ The app should optimize for **not ruining the jacket**, not for maximizing time 
 
 These initial probability thresholds are centralized and may be tuned after real-world validation.
 
+## Fog and mist interpretation
+
+Fog or mist is an Avoid condition because moisture in the air can damage leather. It is a protection rule, not a visibility-comfort rule.
+
+Use only an explicit provider forecast condition identifying fog or mist. For Open-Meteo, WMO weather codes 45 (fog) and 48 (depositing rime fog) are Avoid. Do not infer fog/mist from humidity, dew point or visibility, and do not invent a probability when the provider supplies none. A missing fog/mist-specific signal does not by itself invalidate an otherwise usable hour; existing rain and temperature rules still apply.
+
+The temporary Phase 2 user-facing reason is **“Fog is expected.”** Final reason copy remains part of the Phase 3 presentation review.
+
 ## Dynamic day periods
 
 Preferred behavior:
@@ -93,6 +104,20 @@ Initial V1 grouping uses 3 hours for a normal meaningful change. A one-hour Don'
 ## Personalization
 
 No personal settings in V1.
+
+The Apple system Settings app contains one off-by-default **Debug Enabled** technical switch. It only reveals local diagnostics and does not personalize or alter recommendations.
+
+## Local debug diagnostics
+
+When enabled, diagnostics should make a recommendation and its data flow explainable without intruding on the normal experience. They include:
+- the latest place used for weather, preferring street when readily available and otherwise city/region;
+- location source, reading/fetch time, age, accuracy, cache status and reason for reuse or acquisition;
+- weather provider, fetch time, request reason/outcome, cache age/status and location matching;
+- remaining-day actual/apparent/selected temperature, precipitation amount/type/chance, fog/mist signal and informational wind when supplied;
+- per-hour recommendation/reason, final periods and relevant failures/timeouts;
+- a bounded local history of the latest 20 diagnostic events.
+
+Turning debug off clears retained diagnostics. A deliberate copy action may copy a readable report containing the displayed place information. Debugging remains local and does not settle the separate telemetry-policy TBD.
 
 ## Failure behavior
 

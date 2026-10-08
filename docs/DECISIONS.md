@@ -1,7 +1,7 @@
 # Can I Wear — Decisions
 
 > Status: ACTIVE
-> Last updated: 2026-10-06
+> Last updated: 2026-10-08
 > Source of truth: YES
 
 This file records decisions that AI and developers must not casually reopen.
@@ -134,13 +134,25 @@ A live weather request may wait at most 10 seconds before falling back to valid 
 ### D-028 — Basic expired-forecast presentation
 **Decision:** When a saved forecast is over 30 minutes old, no valid newer forecast is available and live weather fails, keep the Phase 1 title **“Weather unavailable”** and show: **“The saved forecast is too old to use. Connect to the internet and try again.”** The state provides the existing retry action and must not show a recommendation from the expired forecast. Final broader failure-state styling remains part of Phase 3.
 
+### D-029 — Fog and mist are leather hazards
+**Decision:** Forecast fog or mist is an **Avoid** condition because atmospheric moisture can damage a leather jacket. Comfortable temperature and otherwise dry precipitation inputs do not override it.
+
+The measurable signal is an explicit provider forecast condition identifying fog or mist. For Open-Meteo, WMO weather codes 45 (fog) and 48 (depositing rime fog) produce Avoid. Do not infer fog/mist from humidity, dew point or visibility, and do not invent a chance-of-mist value when the provider supplies none. If a provider omits the fog/mist-specific signal for an hour, that absence alone does not make the hour unusable and the existing rain and temperature rules still apply. The approved temporary Phase 2 reason is **“Fog is expected.”**; final copy remains part of Phase 3.1.
+
+### D-030 — Opt-in local debug diagnostics
+**Decision:** Add one technical setting, **Debug Enabled**, through the Apple system Settings app. It is off by default and is the only app setting initially. This is diagnostic tooling, not a personal recommendation preference.
+
+When enabled, the app exposes a clean, non-intrusive in-app diagnostics view that can be shown and dismissed without changing the recommendation experience. Diagnostics remain on-device and do not approve analytics or telemetry. Keep at most the latest 20 timestamped diagnostic events and clear them when debug is disabled.
+
+Diagnostics cover location/cache source, age, timing, trigger/reason and outcome; weather/cache/provider timing, trigger/reason and outcome; relevant normalized hourly jacket inputs and per-hour/final decisions; resulting periods; and failures/timeouts. Show a reverse-geocoded street when readily available, otherwise city/region, without blocking the recommendation. Include provider-supplied wind information as diagnostic context only; wind does not affect recommendation rules unless separately approved later. Include a user-initiated action to copy the readable local report, and make its place information clear to the user.
+
 ## Not yet decided
 
 The following are intentionally NOT decisions:
 - exact UI labels;
 - exact UI color palette;
 - analytics/telemetry;
-- final bundle identifiers.
+- final bundle identifiers;
 
 ## Rule for AI
 

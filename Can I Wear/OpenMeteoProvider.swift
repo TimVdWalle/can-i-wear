@@ -15,6 +15,7 @@ nonisolated struct URLSessionHTTPClient: HTTPClient {
 }
 
 nonisolated struct OpenMeteoProvider: WeatherProvider {
+    let diagnosticName = "Open-Meteo"
     private let client: any HTTPClient
     private let now: @Sendable () -> Date
     private let decoder: JSONDecoder
@@ -71,11 +72,14 @@ nonisolated struct OpenMeteoProvider: WeatherProvider {
                     "rain",
                     "showers",
                     "snowfall",
-                    "weather_code"
+                    "weather_code",
+                    "wind_speed_10m",
+                    "wind_gusts_10m"
                 ].joined(separator: ",")
             ),
             URLQueryItem(name: "temperature_unit", value: "celsius"),
             URLQueryItem(name: "precipitation_unit", value: "mm"),
+            URLQueryItem(name: "wind_speed_unit", value: "kmh"),
             URLQueryItem(name: "timeformat", value: "unixtime"),
             URLQueryItem(name: "timezone", value: "auto")
         ]
@@ -114,8 +118,20 @@ nonisolated private struct OpenMeteoResponse: Decodable {
                     weatherCode: weatherCode
                 ),
                 precipitationChanceFraction: (hourly.precipitationProbability?[safe: index] ?? nil)
-                    .map { $0 / 100 }
+                    .map { $0 / 100 },
+                fogOrMistCondition: Self.fogOrMistCondition(weatherCode: weatherCode),
+                windSpeedKilometersPerHour: hourly.windSpeed?[safe: index] ?? nil,
+                windGustKilometersPerHour: hourly.windGusts?[safe: index] ?? nil
             )
+        }
+    }
+
+    private static func fogOrMistCondition(weatherCode: Int?) -> FogOrMistCondition? {
+        guard let weatherCode else { return nil }
+        return switch weatherCode {
+        case 45: .fog
+        case 48: .depositingRimeFog
+        default: FogOrMistCondition.none
         }
     }
 
@@ -160,6 +176,8 @@ nonisolated private struct OpenMeteoResponse: Decodable {
         let showers: [Double?]?
         let snowfall: [Double?]?
         let weatherCode: [Int?]?
+        let windSpeed: [Double?]?
+        let windGusts: [Double?]?
 
         enum CodingKeys: String, CodingKey {
             case time
@@ -171,6 +189,8 @@ nonisolated private struct OpenMeteoResponse: Decodable {
             case showers
             case snowfall
             case weatherCode = "weather_code"
+            case windSpeed = "wind_speed_10m"
+            case windGusts = "wind_gusts_10m"
         }
     }
 }
