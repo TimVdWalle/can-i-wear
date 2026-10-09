@@ -69,7 +69,7 @@ struct DebugDiagnosticsTests {
             reading,
             source: "Live device location",
             ageSeconds: 0,
-            cacheStatus: "Fetched because no saved location exists"
+            cacheStatus: "New reading • No saved location"
         )
         for _ in 0..<5 { await Task.yield() }
 
@@ -87,7 +87,10 @@ struct DebugDiagnosticsTests {
         )
         let forecast = NormalizedForecast(
             hours: [hour],
-            metadata: ForecastMetadata(fetchedAt: now, location: location)
+            metadata: ForecastMetadata(
+                fetchedAt: now.addingTimeInterval(-125),
+                location: location
+            )
         )
         let recommendation = HourlyRecommendation(level: .okay, reason: .suitableTemperature)
         let evaluation = DailyEvaluation(
@@ -117,13 +120,54 @@ struct DebugDiagnosticsTests {
         )
 
         let report = diagnostics.readableReport
-        #expect(report.contains("Place (included in copied report): Wetstraat, Brussels"))
+        #expect(report.contains("Place: Wetstraat, Brussels"))
         #expect(report.contains("Provider: Open-Meteo"))
+        #expect(report.contains("age 2 min"))
         #expect(report.contains("wind 12 km/h, gust 25 km/h"))
         #expect(report.contains("decision wear (suitable temperature)"))
         #expect(report.contains("FINAL PERIODS"))
         #expect(report.contains("[evaluation/success]"))
         #expect(!report.contains("50.85"))
+    }
+
+    @Test func structuredHourlyDetailsIdentifyCautionAndAvoidInputs() {
+        let diagnostics = makeDiagnostics(enabled: true)
+        let hour = HourlyWeather(
+            timestamp: currentHour,
+            timezoneIdentifier: "Europe/Brussels",
+            actualTemperatureCelsius: 21,
+            apparentTemperatureCelsius: 19,
+            precipitationAmountMillimeters: 0,
+            precipitationType: PrecipitationType.none,
+            precipitationChanceFraction: 0.15,
+            fogOrMistCondition: FogOrMistCondition.none
+        )
+        let forecast = NormalizedForecast(
+            hours: [hour],
+            metadata: ForecastMetadata(fetchedAt: now, location: location)
+        )
+        let recommendation = HourlyRecommendation(level: .avoid, reason: .excessiveHeat)
+        let evaluation = DailyEvaluation(
+            interval: DateInterval(start: currentHour, duration: 3_600),
+            timezoneIdentifier: "Europe/Brussels",
+            hours: [EvaluatedHour(timestamp: currentHour, recommendation: recommendation)]
+        )
+        diagnostics.updateEvaluation(
+            forecast: forecast,
+            evaluation: evaluation,
+            periods: [DayPeriod(
+                interval: evaluation.interval,
+                timezoneIdentifier: evaluation.timezoneIdentifier,
+                recommendation: recommendation
+            )]
+        )
+
+        let detail = diagnostics.hourlyDetails.first
+        #expect(detail?.selectedTemperatureSeverity == .avoid)
+        #expect(detail?.precipitationChanceSeverity == .caution)
+        #expect(detail?.precipitationAmountSeverity == .neutral)
+        #expect(detail?.fogOrMistSeverity == .neutral)
+        #expect(diagnostics.periodDetails.first?.level == .avoid)
     }
 
     @Test func debugEnabledDoesNotChangeRecommendation() async {
@@ -157,7 +201,9 @@ struct DebugDiagnosticsTests {
         #expect(offModel.state == onModel.state)
         #expect(offDiagnostics.events.isEmpty)
         #expect(!onDiagnostics.events.isEmpty)
-        #expect(onDiagnostics.hourlyDetails.contains { $0.contains("wind 80 km/h") })
+        #expect(onDiagnostics.hourlyDetails.contains {
+            $0.windSpeedKilometersPerHour == 80
+        })
     }
 
     @Test func timeoutAndFreshCacheFallbackProduceExplainableEventSequence() async {
@@ -165,7 +211,9 @@ struct DebugDiagnosticsTests {
         let store = MemoryCacheDataStore()
         let reading = LocationReading(identity: location, accuracyMeters: 25, timestamp: now)
         await LocationCache(store: store).save(reading)
-        await WeatherCache(store: store).save(completeForecast())
+        await WeatherCache(store: store).save(completeForecast(
+            fetchedAt: now.addingTimeInterval(-20 * 60)
+        ))
         let model = RecommendationViewModel(
             locationProvider: FixedLocationProvider(result: .success(reading)),
             weatherProvider: SlowDiagnosticWeatherProvider(),
@@ -178,7 +226,7 @@ struct DebugDiagnosticsTests {
 
         await model.loadIfNeeded()
 
-        #expect(model.state.result?.cachedAge == 0)
+        #expect(model.state.result?.isUsingSavedWeather == true)
         #expect(diagnostics.events.contains {
             $0.title == "Weather request" && $0.detail == "Request timed out"
         })
@@ -216,7 +264,7 @@ struct DebugDiagnosticsTests {
         )
     }
 
-    private func completeForecast() -> NormalizedForecast {
+    private func completeForecast(fetchedAt: Date? = nil) -> NormalizedForecast {
         NormalizedForecast(
             hours: (0..<10).map { offset in
                 HourlyWeather(
@@ -231,7 +279,7 @@ struct DebugDiagnosticsTests {
                     windGustKilometersPerHour: 120
                 )
             },
-            metadata: ForecastMetadata(fetchedAt: now, location: location)
+            metadata: ForecastMetadata(fetchedAt: fetchedAt ?? now, location: location)
         )
     }
 

@@ -2,7 +2,7 @@
 
 > Status: DESCRIPTIVE IMPLEMENTATION REFERENCE
 > Source of truth: NO — approved behavior remains in `DECISIONS.md` and the other truth files
-> Generated from the implementation on 2026-10-08
+> Generated from the implementation on 2026-10-09
 
 These charts describe the rules currently implemented in the app. They do not approve any remaining TBD product or UX decisions. Values shown below come from `AppConfiguration.swift`.
 
@@ -37,12 +37,13 @@ flowchart TD
 
     F --> H["Look up saved normalized forecast for this location"]
     G6 --> H
-    H --> I{"Stored forecast is usable?<br/>• decodes; valid metadata coordinate<br/>• nonempty hours; finite timestamps<br/>• one valid forecast timezone<br/>• at least one hour from current local hour to day end<br/>• forecast location is within 5 km<br/>• age is 0–30 minutes inclusive"}
-    I -- "Yes, and full daily evaluation succeeds" --> J["Immediately show cached periods + age + Refreshing"]
-    I -- "No" --> K["Do not show a cached recommendation"]
-    I -- "Otherwise valid but age >30 minutes" --> X["Remember cache as expired; never show its recommendation"]
+    H --> I{"Stored forecast otherwise usable?<br/>• decodes; valid metadata coordinate<br/>• nonempty hours; finite timestamps<br/>• one valid forecast timezone<br/>• at least one hour from current local hour to day end<br/>• forecast location is within 5 km<br/>• timestamp is not in the future"}
+    I -- "No" --> K["Do not show a saved recommendation"]
+    I -- "Yes; age under 15 minutes" --> SKIP["Show saved periods + age<br/>Skip network refresh"]
+    I -- "Yes; age 15–90 minutes inclusive" --> J["Immediately show saved periods + Updating"]
+    I -- "Yes; age over 90 minutes" --> X["Do not show the expired recommendation"]
 
-    J --> L["Always request live weather"]
+    J --> L["Request live weather"]
     K --> L
     X --> L
     L --> M{"Live request finishes within 10 seconds?"}
@@ -59,20 +60,22 @@ flowchart TD
     Q --> U{"A currently valid, presentable cache exists?"}
     U -- "Yes" --> T
     U -- "No; structurally/location invalid, future-dated, wrong day, or absent" --> WU["Show: Weather unavailable"]
-    U -- "No; cache is otherwise usable but older than 30 minutes" --> WE["Show: Weather unavailable<br/>Saved forecast is too old; connect and retry"]
+    U -- "No; cache is otherwise usable but older than 90 minutes" --> WE["Show: Weather unavailable<br/>Saved forecast is too old; connect and retry"]
 
     R --> V{"Valid, presentable cache exists?"}
     V -- "Yes" --> T
     V -- "No / expired" --> G8
 
-    LD --> RT["Try Again resets state to idle and reruns the flow"]
+    LD --> RT["Try Again reruns the flow<br/>30-second cooldown after a failed user retry"]
     LU --> RT
     FI --> RT
     WU --> RT
     WE --> RT
 ```
 
-Cache-age boundaries are inclusive: exactly 30 minutes is valid; any amount over 30 minutes is stale. A stale forecast is classified as “expired” only after its storage, structure, current-day coverage, location match, and non-future timestamp checks pass. Other rejected cache entries are simply unavailable.
+The app applies the same weather-age policy on launch, foreground activation and active-screen boundaries. Exactly 15 minutes starts refresh; exactly 90 minutes remains visible while refresh runs; any amount over 90 minutes is stale. A stale forecast is classified as “expired” only after storage, structure, current-day coverage, location match and non-future timestamp checks pass. Other rejected cache entries are unavailable.
+
+Pull-to-refresh uses the same flow but never starts a provider request before 15 minutes, while another request runs, or during the 30-second post-failure cooldown. A blocked pull retains the current recommendation and the home-screen status explains when refresh is available. No two weather requests run concurrently.
 
 ## 2. Hourly OK, Caution, and Avoid rules
 

@@ -46,7 +46,7 @@ struct ForecastCacheTests {
     @Test func weatherIsReusableThroughInclusiveFreshnessBoundary() async {
         let store = MemoryCacheDataStore()
         let cache = WeatherCache(store: store)
-        let forecast = forecast(fetchedAt: now.addingTimeInterval(-30 * 60))
+        let forecast = forecast(fetchedAt: now.addingTimeInterval(-90 * 60))
         await cache.save(forecast)
 
         #expect(await cache.validForecast(at: now, for: location) == forecast)

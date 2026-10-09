@@ -120,12 +120,235 @@ struct RecommendationViewModelTests {
         #expect(model.state.result != nil)
     }
 
+    @Test func weatherYoungerThanFifteenMinutesIsUsedWithoutFetching() async {
+        let store = MemoryCacheDataStore()
+        await LocationCache(store: store).save(locationReading())
+        await WeatherCache(store: store).save(forecast(
+            fetchedAt: now.addingTimeInterval(-(15 * 60 - 0.001))
+        ))
+        let provider = CountingWeatherProvider(forecast: forecast(temperature: 24))
+        let model = RecommendationViewModel(
+            locationProvider: fixedLocationProvider(),
+            weatherProvider: provider,
+            locationCache: LocationCache(store: store),
+            weatherCache: WeatherCache(store: store),
+            now: { self.now }
+        )
+
+        await model.loadIfNeeded()
+
+        #expect(await provider.requestCount == 0)
+        #expect(model.state.result?.isUsingSavedWeather == true)
+        #expect(model.state.result?.isRefreshing == false)
+        #expect(model.state.result?.periods.first?.recommendation.title == "Wear")
+    }
+
+    @Test func weatherAtFifteenMinutesIsShownAndRefreshed() async throws {
+        let store = MemoryCacheDataStore()
+        await LocationCache(store: store).save(locationReading())
+        await WeatherCache(store: store).save(forecast(
+            fetchedAt: now.addingTimeInterval(-15 * 60)
+        ))
+        let provider = PendingWeatherProvider()
+        let model = RecommendationViewModel(
+            locationProvider: fixedLocationProvider(),
+            weatherProvider: provider,
+            locationCache: LocationCache(store: store),
+            weatherCache: WeatherCache(store: store),
+            now: { self.now }
+        )
+
+        let load = Task { await model.loadIfNeeded() }
+        while await provider.requestCount == 0 { await Task.yield() }
+
+        #expect(model.state.result?.isUsingSavedWeather == true)
+        #expect(model.state.result?.isRefreshing == true)
+        await provider.complete(with: .success(forecast(temperature: 24)))
+        await load.value
+        #expect(model.state.result?.isUsingSavedWeather == false)
+    }
+
+    @Test func weatherAtNinetyMinutesIsShownWhileOverNinetyIsNot() async {
+        let boundaryClock = LockedTestClock(now)
+        let boundaryStore = MemoryCacheDataStore()
+        await LocationCache(store: boundaryStore).save(locationReading())
+        await WeatherCache(store: boundaryStore).save(forecast(
+            fetchedAt: now.addingTimeInterval(-90 * 60)
+        ))
+        let boundaryProvider = PendingWeatherProvider()
+        let boundary = RecommendationViewModel(
+            locationProvider: fixedLocationProvider(),
+            weatherProvider: boundaryProvider,
+            locationCache: LocationCache(store: boundaryStore),
+            weatherCache: WeatherCache(store: boundaryStore),
+            now: { boundaryClock.value }
+        )
+
+        let boundaryLoad = Task { await boundary.loadIfNeeded() }
+        while await boundaryProvider.requestCount == 0 { await Task.yield() }
+        #expect(boundary.state.result?.isRefreshing == true)
+        await boundaryProvider.complete(with: .failure(.network))
+        await boundaryLoad.value
+        boundaryClock.advance(by: 0.001)
+        await boundary.appBecameActive()
+        #expect(boundary.state == .weatherDataExpired)
+        #expect(await boundaryProvider.requestCount == 1)
+
+        let expiredStore = MemoryCacheDataStore()
+        await LocationCache(store: expiredStore).save(locationReading())
+        await WeatherCache(store: expiredStore).save(forecast(
+            fetchedAt: now.addingTimeInterval(-(90 * 60 + 0.001))
+        ))
+        let expiredProvider = PendingWeatherProvider()
+        let expired = RecommendationViewModel(
+            locationProvider: fixedLocationProvider(),
+            weatherProvider: expiredProvider,
+            locationCache: LocationCache(store: expiredStore),
+            weatherCache: WeatherCache(store: expiredStore),
+            now: { self.now }
+        )
+
+        let expiredLoad = Task { await expired.loadIfNeeded() }
+        while await expiredProvider.requestCount == 0 { await Task.yield() }
+        #expect(expired.state == .loading)
+        await expiredProvider.complete(with: .failure(.network))
+        await expiredLoad.value
+        #expect(expired.state == .weatherDataExpired)
+    }
+
+    @Test func pullToRefreshIsBlockedUntilFifteenMinutesAndWhileRunning() async {
+        let clock = LockedTestClock(now)
+        let store = MemoryCacheDataStore()
+        await LocationCache(store: store).save(locationReading())
+        await WeatherCache(store: store).save(forecast(
+            fetchedAt: now.addingTimeInterval(-10 * 60)
+        ))
+        let provider = PendingWeatherProvider()
+        let model = RecommendationViewModel(
+            locationProvider: fixedLocationProvider(),
+            weatherProvider: provider,
+            locationCache: LocationCache(store: store),
+            weatherCache: WeatherCache(store: store),
+            now: { clock.value }
+        )
+        await model.loadIfNeeded()
+
+        await model.manualRefresh()
+        #expect(await provider.requestCount == 0)
+
+        clock.advance(by: 5 * 60)
+        let refresh = Task { await model.manualRefresh() }
+        while await provider.requestCount == 0 { await Task.yield() }
+        await model.manualRefresh()
+        #expect(await provider.requestCount == 1)
+        #expect(model.state.result?.isRefreshing == true)
+
+        await provider.complete(with: .success(forecast(fetchedAt: clock.value)))
+        await refresh.value
+        #expect(model.state.result?.isRefreshing == false)
+    }
+
+    @Test func foregroundActivationRefreshesWeatherAtFifteenMinutes() async {
+        let clock = LockedTestClock(now)
+        let store = MemoryCacheDataStore()
+        await LocationCache(store: store).save(locationReading())
+        await WeatherCache(store: store).save(forecast(
+            fetchedAt: now.addingTimeInterval(-10 * 60)
+        ))
+        let provider = CountingWeatherProvider(forecast: forecast())
+        let model = RecommendationViewModel(
+            locationProvider: fixedLocationProvider(),
+            weatherProvider: provider,
+            locationCache: LocationCache(store: store),
+            weatherCache: WeatherCache(store: store),
+            now: { clock.value }
+        )
+        await model.loadIfNeeded()
+        #expect(await provider.requestCount == 0)
+
+        clock.advance(by: 5 * 60)
+        await model.appBecameActive()
+
+        #expect(await provider.requestCount == 1)
+    }
+
+    @Test func failedManualRefreshAppliesThirtySecondCooldown() async {
+        let clock = LockedTestClock(now)
+        let store = MemoryCacheDataStore()
+        await LocationCache(store: store).save(locationReading())
+        await WeatherCache(store: store).save(forecast(
+            fetchedAt: now.addingTimeInterval(-10 * 60)
+        ))
+        let provider = CountingResultWeatherProvider(result: .failure(.network))
+        let model = RecommendationViewModel(
+            locationProvider: fixedLocationProvider(),
+            weatherProvider: provider,
+            locationCache: LocationCache(store: store),
+            weatherCache: WeatherCache(store: store),
+            now: { clock.value }
+        )
+        await model.loadIfNeeded()
+        clock.advance(by: 5 * 60)
+
+        await model.manualRefresh()
+        #expect(await provider.requestCount == 1)
+        #expect(model.state.result?.refreshFailed == true)
+        await model.manualRefresh()
+        #expect(await provider.requestCount == 1)
+
+        clock.advance(by: 31)
+        await model.manualRefresh()
+        #expect(await provider.requestCount == 2)
+    }
+
+    @Test func retryFailureAppliesThirtySecondCooldown() async {
+        let clock = LockedTestClock(now)
+        let store = MemoryCacheDataStore()
+        let provider = CountingResultWeatherProvider(result: .failure(.network))
+        let model = RecommendationViewModel(
+            locationProvider: fixedLocationProvider(),
+            weatherProvider: provider,
+            locationCache: LocationCache(store: store),
+            weatherCache: WeatherCache(store: store),
+            now: { clock.value }
+        )
+
+        await model.loadIfNeeded()
+        #expect(await provider.requestCount == 1)
+        #expect(model.canRetry(at: clock.value))
+        await model.retry()
+        #expect(await provider.requestCount == 2)
+        #expect(!model.canRetry(at: clock.value))
+        await model.retry()
+        #expect(await provider.requestCount == 2)
+
+        clock.advance(by: 31)
+        await model.retry()
+        #expect(await provider.requestCount == 3)
+    }
+
+    @Test func presentsConciseResolvedLocality() async {
+        let model = RecommendationViewModel(
+            locationProvider: fixedLocationProvider(),
+            weatherProvider: FixedWeatherProvider(result: .success(forecast())),
+            locationCache: LocationCache(store: MemoryCacheDataStore()),
+            weatherCache: WeatherCache(store: MemoryCacheDataStore()),
+            localityResolver: FixedLocalityResolver(value: "Wenduine"),
+            now: { self.now }
+        )
+
+        await model.loadIfNeeded()
+        while model.locality == nil { await Task.yield() }
+
+        #expect(model.locality == "Wenduine")
+    }
+
     @Test func displaysCachedResultImmediatelyThenReplacesItWithLiveData() async throws {
         let store = MemoryCacheDataStore()
         let locationCache = LocationCache(store: store)
         let weatherCache = WeatherCache(store: store)
         await locationCache.save(locationReading())
-        await weatherCache.save(forecast(fetchedAt: now.addingTimeInterval(-10 * 60)))
+        await weatherCache.save(forecast(fetchedAt: now.addingTimeInterval(-20 * 60)))
         let provider = PendingWeatherProvider()
         let model = RecommendationViewModel(
             locationProvider: fixedLocationProvider(),
@@ -138,14 +361,14 @@ struct RecommendationViewModelTests {
         let load = Task { await model.loadIfNeeded() }
         while await provider.requestCount == 0 { await Task.yield() }
 
-        let initialAge = try #require(model.state.result?.cachedAge)
-        #expect(abs(initialAge - 10 * 60) < 0.001)
+        #expect(model.state.result?.weatherFetchedAt == now.addingTimeInterval(-20 * 60))
+        #expect(model.state.result?.isUsingSavedWeather == true)
         #expect(model.state.result?.isRefreshing == true)
         #expect(model.state.result?.periods.first?.recommendation.title == "Wear")
 
         await provider.complete(with: .success(forecast(temperature: 24)))
         await load.value
-        #expect(model.state.result?.cachedAge == nil)
+        #expect(model.state.result?.isUsingSavedWeather == false)
         #expect(model.state.result?.isRefreshing == false)
         #expect(model.state.result?.periods.first?.recommendation.title == "Don’t wear")
     }
@@ -166,8 +389,9 @@ struct RecommendationViewModelTests {
 
         await model.loadIfNeeded()
 
-        let fallbackAge = try #require(model.state.result?.cachedAge)
-        #expect(abs(fallbackAge - 20 * 60) < 0.001)
+        #expect(model.state.result?.weatherFetchedAt == now.addingTimeInterval(-20 * 60))
+        #expect(model.state.result?.isUsingSavedWeather == true)
+        #expect(model.state.result?.refreshFailed == true)
         #expect(model.state.result?.isRefreshing == false)
         #expect(model.state.result?.periods.first?.recommendation.title == "Wear")
     }
@@ -177,7 +401,7 @@ struct RecommendationViewModelTests {
         let locationCache = LocationCache(store: store)
         let weatherCache = WeatherCache(store: store)
         await locationCache.save(locationReading())
-        await weatherCache.save(forecast(fetchedAt: now.addingTimeInterval(-(30 * 60 + 0.001))))
+        await weatherCache.save(forecast(fetchedAt: now.addingTimeInterval(-(90 * 60 + 0.001))))
         let model = RecommendationViewModel(
             locationProvider: fixedLocationProvider(),
             weatherProvider: FixedWeatherProvider(result: .failure(.network)),
@@ -285,6 +509,20 @@ private actor CountingWeatherProvider: WeatherProvider {
     }
 }
 
+private actor CountingResultWeatherProvider: WeatherProvider {
+    let result: Result<NormalizedForecast, WeatherProviderError>
+    private(set) var requestCount = 0
+
+    init(result: Result<NormalizedForecast, WeatherProviderError>) {
+        self.result = result
+    }
+
+    func hourlyForecast(for location: LocationIdentity) async throws -> NormalizedForecast {
+        requestCount += 1
+        return try result.get()
+    }
+}
+
 private actor PendingWeatherProvider: WeatherProvider {
     private(set) var requestCount = 0
     private var continuation: CheckedContinuation<NormalizedForecast, any Error>?
@@ -306,6 +544,32 @@ private struct SlowWeatherProvider: WeatherProvider {
     func hourlyForecast(for location: LocationIdentity) async throws -> NormalizedForecast {
         try await Task.sleep(for: .seconds(60))
         throw WeatherProviderError.unavailable
+    }
+}
+
+@MainActor
+private struct FixedLocalityResolver: LocalityResolving {
+    let value: String?
+
+    func locality(for location: LocationIdentity) async -> String? {
+        value
+    }
+}
+
+private final class LockedTestClock: @unchecked Sendable {
+    private let lock = NSLock()
+    private var date: Date
+
+    init(_ date: Date) {
+        self.date = date
+    }
+
+    var value: Date {
+        lock.withLock { date }
+    }
+
+    func advance(by interval: TimeInterval) {
+        lock.withLock { date = date.addingTimeInterval(interval) }
     }
 }
 

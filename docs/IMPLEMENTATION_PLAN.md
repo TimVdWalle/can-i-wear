@@ -1,7 +1,7 @@
 # Can I Wear — V1 Implementation Plan
 
 > Status: ACTIVE — proposed execution breakdown; not new product decisions
-> Last updated: 2026-10-08
+> Last updated: 2026-10-09
 > Source of truth: execution detail subordinate to the existing truth files
 
 ## Authority and execution rules
@@ -35,12 +35,12 @@ These identifiers originated as implementation-blocking TBDs. Their current reso
 | T-04 | Minimum meaningful period duration, material-change/grouping rules, and conservative noise-consolidation parameters | 0.8, 2.2–2.3 |
 | T-05 | Weather cache freshness/reliability, expiry behavior, and matching cached forecasts to location | 0.9, 2.5–2.6 |
 | T-06 | Location accuracy and freshness, safe reuse, and behavior-affecting acquisition/request timeout values | 0.5, 0.9, 2.4 |
-| T-07 | Minimum supported iOS version; current iOS 26.2 setting is not an approved product decision | 0.2, 0.3, 5.5 |
-| T-08 | Final bundle identifiers; whether the current identifier can be used for development/provider setup before finalization | 0.2, 0.6, 5.1 |
-| T-09 | Analytics/telemetry policy, including whether any collection is allowed | 5.1, 5.3; before any instrumentation that collects data |
+| T-07 | Minimum supported iOS version; current iOS 26.2 setting is not an approved product decision | 0.2, 0.3, 6.5 |
+| T-08 | Final bundle identifiers; whether the current identifier can be used for development/provider setup before finalization | 0.2, 0.6, 6.1 |
+| T-09 | Analytics/telemetry policy, including whether any collection is allowed | 6.1, 6.3; before any instrumentation that collects data |
 | T-10 | Exact recommendation/caution labels, reason copy, semantic palette and final layout | Basic proposal in 1.3; final decisions in 3.1 |
 | T-11 | Loading presentation, no-location/no-weather/stale-data wording, permission-denied UX and accessibility details | Basic proposal in 1.3; final decisions in 3.1–3.4 |
-| T-12 | Exact V1 inclusion/timing/scope for widget and notifications | Follow-up decision only; not a core-plan blocker |
+| T-12 | Exact V1 inclusion/timing/scope for widget and notifications | Widget: 4.1. Notifications remain follow-up scope |
 | T-13 | **Resolved in D-029:** use only an explicit provider fog/mist forecast condition; Open-Meteo WMO codes 45/48 produce Avoid. Do not infer from humidity, dew point or visibility. | 2.8 |
 
 No row is resolved by creating this plan. Record approved material choices in `DECISIONS.md` and affected specifications before implementing them. When a blocker covers only part of a subphase, independent evidence gathering or contract work may proceed, but the subphase cannot be marked complete with invented defaults.
@@ -362,7 +362,7 @@ Goal: remove measured/user-visible friction without adding features.
 - **Acceptance criteria:** Before/after evidence explains each fix; first frame remains responsive; no unnecessary location/network/background work; no unmeasured performance claims or hidden data collection.
 - **Tests/validation:** Real-device cold/warm launch, cached path, slow network, cancellation/background/foreground; targeted regressions for fixed behavior and request counts.
 - **Dependencies:** 2.9, 3.2.
-- **Non-goals:** Speculative optimization, production telemetry SDK, continuous refresh.
+- **Non-goals:** Speculative optimization, production telemetry SDK, background refresh, or requests more frequent than the approved D-031 policy.
 - **Blocking TBDs:** Any changed behavior-affecting timeout needs approval; T-09 blocks collection, not local measurement without telemetry.
 
 ### 3.4 — Implement and verify accessibility
@@ -389,11 +389,33 @@ Goal: remove measured/user-visible friction without adding features.
 - **Non-goals:** New animations/features, marketing screenshots, icon design.
 - **Blocking TBDs:** None after T-10/T-11 approval.
 
-## Phase 4 — V1 validation
+## Phase 4 — iOS widget
+
+Goal: add an approved, glanceable widget without duplicating recommendation logic.
+
+### 4.1 — Approve widget scope and refresh behavior
+
+- **Type:** Product/UX decision.
+- **Objective:** Define the widget’s supported content, freshness, stale-data and interaction behavior.
+- **Exact scope:** Approve widget states, refresh policy, privacy treatment and accessibility expectations; reuse the app’s recommendation/cache contracts.
+- **Acceptance criteria:** Widget scope is recorded in the truth files and does not introduce personal settings, background location or new recommendation rules.
+- **Dependencies:** 3.5.
+- **Blocking TBDs:** T-12.
+
+### 4.2 — Implement and validate the iOS widget
+
+- **Type:** Extension implementation, testing and device validation.
+- **Objective:** Show the current approved recommendation and safe fallback state at a glance.
+- **Exact scope:** Implement the approved widget, shared data handoff, refresh behavior, stale/no-data states and accessibility; keep widget refresh independent of continuous location tracking.
+- **Acceptance criteria:** The widget reflects the app’s deterministic result, never fabricates stale confidence, and works on the approved device/OS matrix.
+- **Dependencies:** 4.1, 3.5.
+- **Non-goals:** Notifications, new clothing types, personal settings or separate recommendation logic.
+
+## Phase 5 — V1 validation
 
 Goal: prove existing V1 behavior under real conditions. Record actual results; tests are not complete merely because a checklist exists. Correct failures in focused changes to the responsible component, then rerun affected checks. Changes to approved policies go through the truth-file decision process.
 
-### 4.1 — Complete the deterministic regression matrix
+### 5.1 — Complete the deterministic regression matrix
 
 - **Type:** Testing.
 - **Objective:** Close gaps in core rules, periods and failure/fallback coverage.
@@ -405,7 +427,7 @@ Goal: prove existing V1 behavior under real conditions. Record actual results; t
 - **Non-goals:** Arbitrary coverage target, giant generated suite, duplicate tests without added behavioral value.
 - **Blocking TBDs:** None after prerequisite decisions; uncovered ambiguity is surfaced for approval.
 
-### 4.2 — Validate weather behavior across real conditions
+### 5.2 — Validate weather behavior across real conditions
 
 - **Type:** Real-device/provider validation.
 - **Objective:** Assess whether live forecasts support trustworthy jacket protection.
@@ -417,7 +439,7 @@ Goal: prove existing V1 behavior under real conditions. Record actual results; t
 - **Non-goals:** Guaranteeing forecasts, automatic rule tuning, additional providers without approval, location-history collection.
 - **Blocking TBDs:** None after prerequisites; field weather/location availability may limit completion evidence.
 
-### 4.3 — Validate degraded operation and recovery
+### 5.3 — Validate degraded operation and recovery
 
 - **Type:** Integration testing and real-device validation.
 - **Objective:** Prove failures do not produce unsafe confidence or frustrating loops.
@@ -425,11 +447,11 @@ Goal: prove existing V1 behavior under real conditions. Record actual results; t
 - **Likely files/components:** Providers, caches, presentation, integration/UI tests, `TODO.md` evidence.
 - **Acceptance criteria:** Approved fallback/expiry behavior holds on device; useful recent data remains clearly represented; unusable data never yields a confident answer; recovery updates the visible result without repeated prompts/request loops.
 - **Tests/validation:** Device offline/slow-network and permission checks; deterministic failure injection for cases live services cannot reliably reproduce; regression tests for fixes.
-- **Dependencies:** 3.5, 4.1.
+- **Dependencies:** 3.5, 5.1.
 - **Non-goals:** Background delivery, manual cities, adding offline forecast products.
 - **Blocking TBDs:** None after prerequisites.
 
-### 4.4 — Validate supported devices and close the V1 quality gate
+### 5.4 — Validate supported devices and close the V1 quality gate
 
 - **Type:** Real-device validation and release-quality review.
 - **Objective:** Confirm reliable operation beyond one successful demo.
@@ -437,15 +459,15 @@ Goal: prove existing V1 behavior under real conditions. Record actual results; t
 - **Likely files/components:** Existing app/tests, project deployment settings, `TODO.md` quality evidence.
 - **Acceptance criteria:** Core scenarios pass on the recorded device/OS matrix; no unresolved defect undermines trustworthy recommendations, required accessibility or reliable operation; performance claims have measurements; no continuous/background location tracking.
 - **Tests/validation:** Real-device matrix, local profiling where needed, full automated suite after necessary fixes; document unavailable matrix coverage explicitly.
-- **Dependencies:** 4.1–4.3, 3.3–3.5, approved T-07.
+- **Dependencies:** 5.1–5.3, 3.3–3.5, approved T-07.
 - **Non-goals:** Declaring App Store submission complete, expanding platform support, invented performance numbers.
 - **Blocking TBDs:** None after prerequisites; access to multiple devices is an external prerequisite.
 
-## Phase 5 — Store readiness
+## Phase 6 — Store readiness
 
 Goal: deliver the validated V1 through TestFlight and the App Store. Verify current Apple/provider requirements when executing these subphases; this plan does not assume a frozen submission checklist. Store/account artifacts are likely involved, but this documentation task does not authorize uploads, submissions or release actions now.
 
-### 5.1 — Finalize release identity and telemetry policy
+### 6.1 — Finalize release identity and telemetry policy
 
 - **Type:** Product/technical decision and App Store readiness.
 - **Objective:** Lock the remaining identity/privacy choices before distribution setup.
@@ -453,11 +475,11 @@ Goal: deliver the validated V1 through TestFlight and the App Store. Verify curr
 - **Likely files/components:** `DECISIONS.md`, `TECH_SPEC.md`, `TODO.md`; eventual project identifiers and App Store Connect identity.
 - **Acceptance criteria:** T-08/T-09 are resolved; configured release identity/support matches approved decisions; telemetry approval does not implicitly approve a new SDK/integration.
 - **Tests/validation:** Review identity/signing/service implications and actual data flows; build recheck after any approved identifier change.
-- **Dependencies:** 0.2, 4.4. Final identity may be decided earlier when necessary for provisioning.
+- **Dependencies:** 0.2, 5.4. Final identity may be decided earlier when necessary for provisioning.
 - **Non-goals:** Accounts, sync, adding analytics merely because it is common, changing the locked app name.
 - **Blocking TBDs:** Remaining T-08, T-09.
 
-### 5.2 — Prepare the app icon and listing metadata
+### 6.2 — Prepare the app icon and listing metadata
 
 - **Type:** App Store readiness and asset implementation.
 - **Objective:** Replace release placeholders and accurately describe V1.
@@ -469,7 +491,7 @@ Goal: deliver the validated V1 through TestFlight and the App Store. Verify curr
 - **Non-goals:** Renaming, broad branding project, advertising new features.
 - **Blocking TBDs:** Icon/metadata designs require review; exact release asset details are not specified by truth files and are not selected here.
 
-### 5.3 — Prepare privacy and provider-compliance material
+### 6.3 — Prepare privacy and provider-compliance material
 
 - **Type:** App Store readiness and verification.
 - **Objective:** Make release declarations match actual app behavior.
@@ -481,7 +503,7 @@ Goal: deliver the validated V1 through TestFlight and the App Store. Verify curr
 - **Non-goals:** Adding collection, legal boilerplate unrelated to actual behavior, account infrastructure.
 - **Blocking TBDs:** None after T-09 approval; required release contact/support/privacy artifact details need completion/review when preparing materials.
 
-### 5.4 — Capture App Store screenshots
+### 6.4 — Capture App Store screenshots
 
 - **Type:** App Store readiness and visual validation.
 - **Objective:** Show the final V1 experience accurately.
@@ -493,7 +515,7 @@ Goal: deliver the validated V1 through TestFlight and the App Store. Verify curr
 - **Non-goals:** Product redesign, new marketing features, changing recommendation logic for screenshots.
 - **Blocking TBDs:** Screenshot/caption selections require review; no final UI details are chosen here.
 
-### 5.5 — Validate a distribution build through TestFlight
+### 6.5 — Validate a distribution build through TestFlight
 
 - **Type:** App Store readiness, testing and real-device validation.
 - **Objective:** Prove the packaged app works with production distribution settings.
@@ -501,11 +523,11 @@ Goal: deliver the validated V1 through TestFlight and the App Store. Verify curr
 - **Likely files/components:** Xcode signing/release settings, existing targets/assets, App Store Connect/TestFlight, `TODO.md` evidence.
 - **Acceptance criteria:** Distribution archive validates and TestFlight installs; live location/weather/recommendation works on a real iPhone; required privacy/assets are present; release-only issues are resolved with appropriate regressions.
 - **Tests/validation:** Automated suite, archive validation, TestFlight cold launch/live flow/denial/offline/relaunch/accessibility smoke tests on approved support.
-- **Dependencies:** 4.4, 5.1–5.3; 5.4 is required before the later submission gate, not to start TestFlight.
+- **Dependencies:** 5.4, 6.1–6.3; 6.4 is required before the later submission gate, not to start TestFlight.
 - **Non-goals:** Public release, inviting others or uploading without the applicable task authorization, adding beta-only product features.
 - **Blocking TBDs:** None after prerequisites; account/distribution access and release-action authorization are external prerequisites.
 
-### 5.6 — Prepare review, submit and release V1
+### 6.6 — Prepare review, submit and release V1
 
 - **Type:** App Store readiness and release validation.
 - **Objective:** Complete the roadmap's shipping requirement.
@@ -513,7 +535,7 @@ Goal: deliver the validated V1 through TestFlight and the App Store. Verify curr
 - **Likely files/components:** App Store Connect listing/review/release fields, distribution build, `TODO.md` final evidence; narrow source/docs fixes only if required and approved by scope.
 - **Acceptance criteria:** Review materials are complete, validated build is accepted and V1 is released; status distinguishes prepared/submitted/accepted/released rather than marking all complete at upload.
 - **Tests/validation:** Final release-candidate smoke check; targeted regressions and renewed distribution check after review-driven changes; verify published listing/build after release.
-- **Dependencies:** 5.4, 5.5 and all Phase 5 material complete.
+- **Dependencies:** 6.4, 6.5 and all Phase 6 material complete.
 - **Non-goals:** V2 scope, feature additions to appease hypothetical review concerns, submission/release without applicable authorization.
 - **Blocking TBDs:** Release timing/method and review material must be confirmed when executing the release task; Store review outcome is external, not a locally completed test.
 
@@ -523,7 +545,8 @@ Goal: deliver the validated V1 through TestFlight and the App Store. Verify curr
 2. **First major product milestone:** 1.4, the full live real-iPhone vertical slice.
 3. **Daily-intelligence and diagnostics gate:** 2.9, meaningful periods, trustworthy fallback, fog/mist protection and opt-in local diagnostics.
 4. **Polish gate:** 3.5, approved presentation, accessible states and measured friction fixes.
-5. **Validation gate:** 4.4, regression coverage and real-condition/device evidence.
-6. **Shipping gate:** 5.6, accepted and released V1.
+5. **Widget gate:** 4.2, approved and validated widget.
+6. **Validation gate:** 5.4, regression coverage and real-condition/device evidence.
+7. **Shipping gate:** 6.6, accepted and released V1.
 
 The next review unit is **3.1**, the explicit approval review for final V1 presentation details. Subphase 2.9 is complete with the packaged Apple Settings switch, local bounded diagnostics, cache/fetch/evaluation explanations, place and copy behavior, diagnostic-only wind, deterministic coverage and a connected-iPhone Settings-to-app walkthrough. Unresolved product choices must remain explicit.

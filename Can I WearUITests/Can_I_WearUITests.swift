@@ -28,9 +28,9 @@ final class Can_I_WearUITests: XCTestCase {
     func testDisplaysCachedAgeAfterFailedRefresh() throws {
         let app = launch(scenario: "cached")
 
-        let cacheStatus = app.descendants(matching: .any)["cache-status"]
-        XCTAssertTrue(cacheStatus.waitForExistence(timeout: 3))
-        XCTAssertEqual(cacheStatus.label, "Cached • Updated 10 minutes ago")
+        let weatherStatus = app.descendants(matching: .any)["weather-status"]
+        XCTAssertTrue(weatherStatus.waitForExistence(timeout: 3))
+        XCTAssertEqual(weatherStatus.label, "Weather updated 10 min ago • Refresh available in 5 min")
         XCTAssertFalse(app.descendants(matching: .any)["refresh-status"].exists)
     }
 
@@ -39,7 +39,11 @@ final class Can_I_WearUITests: XCTestCase {
         let app = launch(scenario: "refreshing")
 
         XCTAssertTrue(
-            app.descendants(matching: .any)["cache-status"].waitForExistence(timeout: 3)
+            app.descendants(matching: .any)["weather-status"].waitForExistence(timeout: 3)
+        )
+        XCTAssertEqual(
+            app.descendants(matching: .any)["weather-status"].label,
+            "Showing saved weather • Updating…"
         )
         XCTAssertTrue(app.descendants(matching: .any)["refresh-status"].exists)
     }
@@ -83,7 +87,7 @@ final class Can_I_WearUITests: XCTestCase {
         diagnostics.tap()
         XCTAssertTrue(app.descendants(matching: .any)["diagnostics-sheet"].waitForExistence(timeout: 3))
         XCTAssertTrue(app.staticTexts["Place used for weather"].exists)
-        XCTAssertTrue(app.staticTexts["This place is included if you copy the report. Exact coordinates are not shown."].exists)
+        XCTAssertFalse(app.staticTexts["This place is included if you copy the report. Exact coordinates are not shown."].exists)
 
         let copy = app.buttons["copy-diagnostics-report"]
         for _ in 0..<8 where !copy.isHittable {

@@ -1,7 +1,7 @@
 # Can I Wear — UX
 
 > Status: ACTIVE
-> Last updated: 2026-10-08
+> Last updated: 2026-10-09
 > Source of truth: YES
 
 ## Core UX goal
@@ -18,6 +18,10 @@ This is not a weather app. Weather is supporting information for a jacket-protec
 4. Show the recommendation prominently.
 5. If the day changes materially, show meaningful periods.
 6. Give a very short reason.
+
+The recommendation screen also shows a quiet weather-status line and concise locality. Status examples include **“Weather updated 8 min ago • Refresh available in 7 min”**, **“Showing saved weather • Updating…”**, and **“Refresh failed • Using weather from 34 min ago • Try again in 18 s”**. Technical location age, accuracy, source and exact street remain in diagnostics.
+
+The standard pull-down gesture refreshes weather once it is at least 15 minutes old. Pulling sooner, during a request or during the 30-second post-failure cooldown performs no network request; the status line explains availability. There is no separate Refresh button. Failure states without a usable recommendation retain **Try Again**, with a visible cooldown after a failed retry.
 
 ## Information hierarchy
 
@@ -103,3 +107,5 @@ Recent cached data may be used according to the centralized freshness policy.
 Debugging is off by default and enabled through the app's single switch in Apple system Settings. When enabled, a subtle control on the main screen opens a clean, dismissible diagnostics view; diagnostics must not be mixed into the normal recommendation hierarchy.
 
 The view should be readable rather than a raw log dump: summarize location, weather/cache state, fetch reasons/timing and final periods first, with remaining-hour inputs and the bounded event history available below. It may scroll, so optional provider-supplied wind context does not compete with the recommendation. Place information and the copy-report action must be clearly identified. Exact visual treatment follows the delegated implementation review and Phase 3 polish.
+
+The implemented diagnostic detail view uses compact same-day times, minute-based ages after the first minute, structured period rows and grouped hourly inputs. Only recommendation status text and weather values that cross Caution/Avoid thresholds receive semantic green/orange/red color; labels and reasons preserve meaning without color. The activity history is newest-first and labels category, outcome, detail and duration so it reads as an explanation of app work rather than a raw log.

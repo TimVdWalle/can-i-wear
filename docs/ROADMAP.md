@@ -83,7 +83,19 @@ Focus:
 
 Still V1.
 
-## Phase 4 — V1 validation
+## Phase 4 — iOS widget
+
+Goal:
+Extend the core recommendation to a glanceable iOS widget without changing recommendation rules.
+
+Tasks:
+- approve widget scope and refresh behavior;
+- implement the widget using the shared recommendation/cache contracts;
+- validate loading, stale-data, location and accessibility states.
+
+Still V1; exact scope requires approval before implementation.
+
+## Phase 5 — V1 validation
 
 Goal:
 Prove the app works in real conditions.
@@ -103,7 +115,7 @@ Test:
 - stale cache;
 - multiple real devices.
 
-## Phase 5 — Store readiness
+## Phase 6 — Store readiness
 
 Goal:
 Ship V1.

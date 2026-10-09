@@ -22,9 +22,11 @@ nonisolated struct DayPeriodConfig: Equatable, Sendable {
 
 nonisolated struct ReusePolicyConfig: Equatable, Sendable {
     let locationFreshness: TimeInterval
+    let weatherRefreshInterval: TimeInterval
     let weatherFreshness: TimeInterval
     let maximumForecastDistanceMeters: Double
     let weatherRequestTimeout: Duration
+    let failedRequestCooldown: TimeInterval
 }
 
 nonisolated enum AppConfiguration {
@@ -52,8 +54,10 @@ nonisolated enum AppConfiguration {
 
     static let reusePolicy = ReusePolicyConfig(
         locationFreshness: 30 * 60,
-        weatherFreshness: 30 * 60,
+        weatherRefreshInterval: 15 * 60,
+        weatherFreshness: 90 * 60,
         maximumForecastDistanceMeters: 5_000,
-        weatherRequestTimeout: .seconds(10)
+        weatherRequestTimeout: .seconds(10),
+        failedRequestCooldown: 30
     )
 }

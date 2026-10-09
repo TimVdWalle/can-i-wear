@@ -1,7 +1,7 @@
 # Can I Wear — Decisions
 
 > Status: ACTIVE
-> Last updated: 2026-10-08
+> Last updated: 2026-10-09
 > Source of truth: YES
 
 This file records decisions that AI and developers must not casually reopen.
@@ -124,14 +124,14 @@ The approved temporary status copy is: **“Checking today’s weather…”**, 
 
 A short safer interval must not override surrounding risk. Repeated hour-by-hour alternation is consolidated into one period using the most protective result in the noisy span. The period/noise values remain centralized and tunable.
 
-### D-027 — Freshness, reuse and weather timeout policy
+### D-027 — Freshness, reuse and weather timeout policy (superseded in part by D-031)
 **Decision:** A recent accepted location may be reused for up to and including 30 minutes. A cached forecast may be used only through 30 minutes after it was fetched and, when a fresh location is available, only when its forecast location is within 5 km of that location.
 
 Any valid cached result up to 30 minutes old should appear immediately with its age while a live refresh runs. Fresh data replaces it when available; if refresh fails, the still-valid cached result remains visibly identified as cached. Forecasts older than 30 minutes must not produce a recommendation.
 
 A live weather request may wait at most 10 seconds before falling back to valid cached data or showing an explicit weather failure. The already approved one-time location acquisition timeout remains 15 seconds.
 
-### D-028 — Basic expired-forecast presentation
+### D-028 — Basic expired-forecast presentation (age threshold superseded by D-031)
 **Decision:** When a saved forecast is over 30 minutes old, no valid newer forecast is available and live weather fails, keep the Phase 1 title **“Weather unavailable”** and show: **“The saved forecast is too old to use. Connect to the internet and try again.”** The state provides the existing retry action and must not show a recommendation from the expired forecast. Final broader failure-state styling remains part of Phase 3.
 
 ### D-029 — Fog and mist are leather hazards
@@ -145,6 +145,13 @@ The measurable signal is an explicit provider forecast condition identifying fog
 When enabled, the app exposes a clean, non-intrusive in-app diagnostics view that can be shown and dismissed without changing the recommendation experience. Diagnostics remain on-device and do not approve analytics or telemetry. Keep at most the latest 20 timestamped diagnostic events and clear them when debug is disabled.
 
 Diagnostics cover location/cache source, age, timing, trigger/reason and outcome; weather/cache/provider timing, trigger/reason and outcome; relevant normalized hourly jacket inputs and per-hour/final decisions; resulting periods; and failures/timeouts. Show a reverse-geocoded street when readily available, otherwise city/region, without blocking the recommendation. Include provider-supplied wind information as diagnostic context only; wind does not affect recommendation rules unless separately approved later. Include a user-initiated action to copy the readable local report, and make its place information clear to the user.
+
+### D-031 — Weather refresh, maximum age and home-screen provenance
+**Decision:** Separate weather refresh age from maximum usable age. A matching, otherwise valid forecast under 15 minutes old is used without a network request. From 15 minutes through exactly 90 minutes, show the saved recommendation immediately and request current weather. Over 90 minutes, do not show the saved recommendation; request current weather. Apply this policy on app load, foreground activation and while the app remains active. Keep the 30-minute location-reuse, 5 km forecast-location matching and 10-second weather-request timeout from D-027.
+
+The recommendation screen is pull-to-refresh rather than adding a refresh button. Pulling before 15 minutes, while a request is running or during a 30-second post-failure cooldown does not contact the provider. The screen explains when refresh is available, when weather is updating, and when saved weather remains after a failed refresh. A successful request restarts the 15-minute interval. Retry remains for failures with no usable recommendation; a failed user retry applies the same 30-second cooldown. Never run concurrent weather requests.
+
+Show concise weather age/update status and a reverse-geocoded locality on the normal screen. Do not show exact street, coordinates, location age, accuracy or cache source there; those details remain in diagnostics. Locality lookup must not block the recommendation. Universal Clipboard from the existing copy action is sufficient for moving a diagnostic report to a Mac for now.
 
 ## Not yet decided
 

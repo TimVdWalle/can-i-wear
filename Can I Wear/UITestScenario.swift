@@ -18,20 +18,21 @@ enum UITestScenario {
         case "periods":
             state = .result(periodResult)
         case "cached":
-            state = .result(singleResult(cachedAge: 10 * 60, isRefreshing: false))
+            state = .result(singleResult(weatherAge: 10 * 60, isUsingSavedWeather: true, isRefreshing: false))
         case "refreshing":
-            state = .result(singleResult(cachedAge: 60, isRefreshing: true))
+            state = .result(singleResult(weatherAge: 60, isUsingSavedWeather: true, isRefreshing: true))
         case "expired":
             state = .weatherDataExpired
         case "fog":
             state = .result(singleResult(
-                cachedAge: nil,
+                weatherAge: 0,
+                isUsingSavedWeather: false,
                 isRefreshing: false,
                 level: .avoid,
                 reason: .fogOrMist
             ))
         case "diagnostics":
-            state = .result(singleResult(cachedAge: nil, isRefreshing: false))
+            state = .result(singleResult(weatherAge: 0, isUsingSavedWeather: false, isRefreshing: false))
         default:
             return nil
         }
@@ -61,18 +62,23 @@ enum UITestScenario {
                     reason: .warmTemperature
                 )
             ],
-            cachedAge: nil,
-            isRefreshing: false
+            weatherFetchedAt: Date(),
+            isUsingSavedWeather: false,
+            isRefreshing: false,
+            refreshFailed: false,
+            refreshAvailableAt: Date().addingTimeInterval(15 * 60)
         )
     }
 
     private static func singleResult(
-        cachedAge: TimeInterval?,
+        weatherAge: TimeInterval,
+        isUsingSavedWeather: Bool,
         isRefreshing: Bool,
         level: RecommendationLevel = .caution,
         reason: RecommendationReason = .warmTemperature
     ) -> DailyRecommendationPresentation {
-        DailyRecommendationPresentation(
+        let fetchedAt = Date().addingTimeInterval(-weatherAge)
+        return DailyRecommendationPresentation(
             periods: [
                 period(
                     start: Date(timeIntervalSince1970: 1_791_180_000),
@@ -81,8 +87,11 @@ enum UITestScenario {
                     reason: reason
                 )
             ],
-            cachedAge: cachedAge,
-            isRefreshing: isRefreshing
+            weatherFetchedAt: fetchedAt,
+            isUsingSavedWeather: isUsingSavedWeather,
+            isRefreshing: isRefreshing,
+            refreshFailed: false,
+            refreshAvailableAt: fetchedAt.addingTimeInterval(15 * 60)
         )
     }
 

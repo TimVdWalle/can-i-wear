@@ -63,15 +63,59 @@ nonisolated struct DiagnosticWeatherSummary: Equatable, Sendable {
     let trigger: String
     let outcome: String
     let fetchedAt: Date
+    let ageSeconds: TimeInterval
     let durationSeconds: TimeInterval?
     let cacheStatus: String
     let timezoneIdentifier: String
     let hourCount: Int
 }
 
+nonisolated enum DiagnosticSeverity: Equatable, Sendable {
+    case neutral
+    case caution
+    case avoid
+}
+
+nonisolated struct DiagnosticPeriodDetail: Equatable, Identifiable, Sendable {
+    var id: Date { interval.start }
+
+    let interval: DateInterval
+    let timezoneIdentifier: String
+    let level: RecommendationLevel
+    let reason: RecommendationReason
+}
+
+nonisolated struct DiagnosticHourlyDetail: Equatable, Identifiable, Sendable {
+    var id: Date { timestamp }
+
+    let timestamp: Date
+    let timezoneIdentifier: String
+    let actualTemperatureCelsius: Double?
+    let apparentTemperatureCelsius: Double?
+    let selectedTemperatureCelsius: Double?
+    let selectedTemperatureSeverity: DiagnosticSeverity
+    let precipitationAmountMillimeters: Double?
+    let precipitationAmountSeverity: DiagnosticSeverity
+    let precipitationType: PrecipitationType?
+    let precipitationTypeSeverity: DiagnosticSeverity
+    let precipitationChanceFraction: Double?
+    let precipitationChanceSeverity: DiagnosticSeverity
+    let fogOrMistCondition: FogOrMistCondition?
+    let fogOrMistSeverity: DiagnosticSeverity
+    let windSpeedKilometersPerHour: Double?
+    let windGustKilometersPerHour: Double?
+    let level: RecommendationLevel
+    let reason: RecommendationReason
+}
+
 @MainActor
 protocol PlaceResolving {
     func place(for location: LocationIdentity) async -> String?
+}
+
+@MainActor
+protocol LocalityResolving {
+    func locality(for location: LocationIdentity) async -> String?
 }
 
 @MainActor
@@ -95,6 +139,25 @@ struct SystemPlaceResolver: PlaceResolving {
         }
         if let address = item.address {
             return address.shortAddress ?? address.fullAddress
+        }
+        return nil
+    }
+}
+
+@MainActor
+struct SystemLocalityResolver: LocalityResolving {
+    func locality(for location: LocationIdentity) async -> String? {
+        let coreLocation = CLLocation(latitude: location.latitude, longitude: location.longitude)
+        guard let request = MKReverseGeocodingRequest(location: coreLocation) else { return nil }
+        guard let item = try? await request.mapItems.first else { return nil }
+
+        if let representations = item.addressRepresentations {
+            if let city = representations.cityWithContext, !city.isEmpty {
+                return city
+            }
+            if let region = representations.regionName, !region.isEmpty {
+                return region
+            }
         }
         return nil
     }
@@ -159,8 +222,8 @@ final class DebugDiagnostics {
     private(set) var place = "Not available"
     private(set) var locationSummary: DiagnosticLocationSummary?
     private(set) var weatherSummary: DiagnosticWeatherSummary?
-    private(set) var hourlyDetails: [String] = []
-    private(set) var periodDetails: [String] = []
+    private(set) var hourlyDetails: [DiagnosticHourlyDetail] = []
+    private(set) var periodDetails: [DiagnosticPeriodDetail] = []
     private(set) var events: [DiagnosticEvent]
 
     private let settings: DebugSettings
@@ -272,6 +335,7 @@ final class DebugDiagnostics {
             trigger: trigger,
             outcome: outcome,
             fetchedAt: forecast.metadata.fetchedAt,
+            ageSeconds: max(0, now().timeIntervalSince(forecast.metadata.fetchedAt)),
             durationSeconds: durationSeconds,
             cacheStatus: cacheStatus,
             timezoneIdentifier: forecast.hours.compactMap(\.timezoneIdentifier).first ?? "Unavailable",
@@ -295,26 +359,61 @@ final class DebugDiagnostics {
                 .compactMap { $0 }
                 .filter(\.isFinite)
                 .max()
-            return "\(Self.timestamp(evaluated.timestamp)): actual \(Self.number(hour?.actualTemperatureCelsius, unit: "°C")), apparent \(Self.number(hour?.apparentTemperatureCelsius, unit: "°C")), selected \(Self.number(selected, unit: "°C")); precipitation \(Self.number(hour?.precipitationAmountMillimeters, unit: " mm")), type \(hour?.precipitationType?.rawValue ?? "unavailable"), chance \(Self.percent(hour?.precipitationChanceFraction)); fog/mist \(hour?.fogOrMistCondition?.rawValue ?? "unavailable"); wind \(Self.number(hour?.windSpeedKilometersPerHour, unit: " km/h")), gust \(Self.number(hour?.windGustKilometersPerHour, unit: " km/h")); decision \(evaluated.recommendation.level.diagnosticText) (\(evaluated.recommendation.reason.diagnosticText))"
+            let amount = hour?.precipitationAmountMillimeters
+            let chance = hour?.precipitationChanceFraction
+            return DiagnosticHourlyDetail(
+                timestamp: evaluated.timestamp,
+                timezoneIdentifier: hour?.timezoneIdentifier ?? evaluation.timezoneIdentifier,
+                actualTemperatureCelsius: hour?.actualTemperatureCelsius,
+                apparentTemperatureCelsius: hour?.apparentTemperatureCelsius,
+                selectedTemperatureCelsius: selected,
+                selectedTemperatureSeverity: Self.temperatureSeverity(selected),
+                precipitationAmountMillimeters: amount,
+                precipitationAmountSeverity: amount.map {
+                    $0 > AppConfiguration.jacketRules.maximumDryPrecipitationAmountMillimeters
+                        ? .avoid : .neutral
+                } ?? .neutral,
+                precipitationType: hour?.precipitationType,
+                precipitationTypeSeverity: Self.precipitationTypeSeverity(hour?.precipitationType),
+                precipitationChanceFraction: chance,
+                precipitationChanceSeverity: Self.precipitationChanceSeverity(chance),
+                fogOrMistCondition: hour?.fogOrMistCondition,
+                fogOrMistSeverity: hour?.fogOrMistCondition?.isLeatherMoistureHazard == true
+                    ? .avoid : .neutral,
+                windSpeedKilometersPerHour: hour?.windSpeedKilometersPerHour,
+                windGustKilometersPerHour: hour?.windGustKilometersPerHour,
+                level: evaluated.recommendation.level,
+                reason: evaluated.recommendation.reason
+            )
         }
         periodDetails = periods.map {
-            "\(Self.timestamp($0.interval.start))–\(Self.timestamp($0.interval.end)): \($0.recommendation.level.diagnosticText) (\($0.recommendation.reason.diagnosticText))"
+            DiagnosticPeriodDetail(
+                interval: $0.interval,
+                timezoneIdentifier: $0.timezoneIdentifier,
+                level: $0.recommendation.level,
+                reason: $0.recommendation.reason
+            )
         }
     }
 
     var readableReport: String {
+        let generatedAt = now()
         var lines = [
             "Can I Wear — Local Diagnostics",
-            "Generated: \(Self.timestamp(now()))",
+            "Generated: \(Self.timestamp(generatedAt, relativeTo: generatedAt))",
             "Local only: this report is not uploaded.",
-            "Place (included in copied report): \(place)",
+            "Place: \(place)",
             ""
         ]
 
         lines.append("LOCATION")
         if let locationSummary {
             lines.append("Source: \(locationSummary.source)")
-            lines.append("Reading: \(Self.timestamp(locationSummary.readingTime)); age \(Self.duration(locationSummary.ageSeconds)); accuracy \(Self.number(locationSummary.accuracyMeters, unit: " m"))")
+            let currentAge = max(
+                locationSummary.ageSeconds,
+                generatedAt.timeIntervalSince(locationSummary.readingTime)
+            )
+            lines.append("Reading: \(Self.timestamp(locationSummary.readingTime, relativeTo: generatedAt)); age \(Self.age(currentAge)); accuracy \(Self.number(locationSummary.accuracyMeters, unit: " m"))")
             lines.append("Cache: \(locationSummary.cacheStatus)")
         } else {
             lines.append("No location diagnostics yet.")
@@ -324,7 +423,11 @@ final class DebugDiagnostics {
         if let weatherSummary {
             lines.append("Provider: \(weatherSummary.provider)")
             lines.append("Trigger/outcome: \(weatherSummary.trigger) / \(weatherSummary.outcome)")
-            lines.append("Fetched: \(Self.timestamp(weatherSummary.fetchedAt)); duration \(Self.optionalDuration(weatherSummary.durationSeconds)); hours \(weatherSummary.hourCount)")
+            let currentAge = max(
+                weatherSummary.ageSeconds,
+                generatedAt.timeIntervalSince(weatherSummary.fetchedAt)
+            )
+            lines.append("Fetched: \(Self.timestamp(weatherSummary.fetchedAt, relativeTo: generatedAt)); age \(Self.age(currentAge)); duration \(Self.optionalDuration(weatherSummary.durationSeconds)); hours \(weatherSummary.hourCount)")
             lines.append("Timezone: \(weatherSummary.timezoneIdentifier)")
             lines.append("Cache: \(weatherSummary.cacheStatus)")
         } else {
@@ -332,11 +435,17 @@ final class DebugDiagnostics {
         }
 
         lines.append("\nFINAL PERIODS")
-        lines.append(contentsOf: periodDetails.isEmpty ? ["No periods yet."] : periodDetails)
+        lines.append(contentsOf: periodDetails.isEmpty ? ["No periods yet."] : periodDetails.map {
+            "\(Self.timeRange($0.interval, timezoneIdentifier: $0.timezoneIdentifier)): \($0.level.diagnosticText.uppercased()) — \($0.reason.diagnosticText)"
+        })
         lines.append("\nREMAINING HOURLY INPUTS")
-        lines.append(contentsOf: hourlyDetails.isEmpty ? ["No evaluated hours yet."] : hourlyDetails)
-        lines.append("\nLATEST EVENTS (maximum \(maximumEvents))")
-        lines.append(contentsOf: events.map(Self.eventLine))
+        lines.append(contentsOf: hourlyDetails.isEmpty ? ["No evaluated hours yet."] : hourlyDetails.map {
+            "\(Self.timestamp($0.timestamp, relativeTo: generatedAt, timezoneIdentifier: $0.timezoneIdentifier)): actual \(Self.number($0.actualTemperatureCelsius, unit: "°C")), feels like \(Self.number($0.apparentTemperatureCelsius, unit: "°C")), used \(Self.number($0.selectedTemperatureCelsius, unit: "°C")); precipitation \(Self.number($0.precipitationAmountMillimeters, unit: " mm")), type \($0.precipitationType?.rawValue ?? "unavailable"), chance \(Self.percent($0.precipitationChanceFraction)); fog/mist \($0.fogOrMistCondition?.rawValue ?? "unavailable"); wind \(Self.number($0.windSpeedKilometersPerHour, unit: " km/h")), gust \(Self.number($0.windGustKilometersPerHour, unit: " km/h")); decision \($0.level.diagnosticText) (\($0.reason.diagnosticText))"
+        })
+        lines.append("\nACTIVITY HISTORY — NEWEST FIRST (maximum \(maximumEvents))")
+        lines.append(contentsOf: events.reversed().map {
+            Self.eventLine($0, relativeTo: generatedAt)
+        })
         return lines.joined(separator: "\n")
     }
 
@@ -363,13 +472,32 @@ final class DebugDiagnostics {
         eventStore.clear()
     }
 
-    private static func eventLine(_ event: DiagnosticEvent) -> String {
+    private static func eventLine(_ event: DiagnosticEvent, relativeTo reference: Date) -> String {
         let timing = event.durationSeconds.map { "; \(duration($0))" } ?? ""
-        return "\(timestamp(event.timestamp)) [\(event.category.rawValue)/\(event.outcome.rawValue)] \(event.title): \(event.detail)\(timing)"
+        return "\(timestamp(event.timestamp, relativeTo: reference)) [\(event.category.rawValue)/\(event.outcome.rawValue)] \(event.title): \(event.detail)\(timing)"
     }
 
-    private static func timestamp(_ date: Date) -> String {
-        date.formatted(.iso8601.year().month().day().time(includingFractionalSeconds: false))
+    private static func timestamp(
+        _ date: Date,
+        relativeTo reference: Date,
+        timezoneIdentifier: String? = nil
+    ) -> String {
+        let timezone = timezoneIdentifier.flatMap(TimeZone.init(identifier:)) ?? .current
+        var calendar = Calendar(identifier: .gregorian)
+        calendar.timeZone = timezone
+        let formatter = DateFormatter()
+        formatter.timeZone = timezone
+        formatter.dateFormat = calendar.isDate(date, inSameDayAs: reference)
+            ? "HH:mm:ss"
+            : "EEE d MMM, HH:mm:ss"
+        return formatter.string(from: date)
+    }
+
+    private static func timeRange(_ interval: DateInterval, timezoneIdentifier: String) -> String {
+        let formatter = DateFormatter()
+        formatter.timeZone = TimeZone(identifier: timezoneIdentifier)
+        formatter.dateFormat = "HH:mm"
+        return "\(formatter.string(from: interval.start))–\(formatter.string(from: interval.end))"
     }
 
     private static func number(_ value: Double?, unit: String) -> String {
@@ -386,8 +514,48 @@ final class DebugDiagnostics {
         "\(max(0, seconds).formatted(.number.precision(.fractionLength(2)))) s"
     }
 
+    private static func age(_ seconds: TimeInterval) -> String {
+        let seconds = max(0, seconds)
+        guard seconds >= 60 else {
+            return "\(Int(seconds.rounded(.down))) s"
+        }
+        let minutes = Int((seconds / 60).rounded(.down))
+        return minutes == 1 ? "1 min" : "\(minutes) min"
+    }
+
     private static func optionalDuration(_ seconds: TimeInterval?) -> String {
         seconds.map(duration) ?? "unavailable"
+    }
+
+    private static func temperatureSeverity(_ temperature: Double?) -> DiagnosticSeverity {
+        guard let temperature, temperature.isFinite else { return .neutral }
+        if temperature > AppConfiguration.jacketRules.maximumCautionTemperatureCelsius {
+            return .avoid
+        }
+        if temperature > AppConfiguration.jacketRules.maximumOkayTemperatureCelsius {
+            return .caution
+        }
+        return .neutral
+    }
+
+    private static func precipitationChanceSeverity(_ chance: Double?) -> DiagnosticSeverity {
+        guard let chance, chance.isFinite else { return .neutral }
+        if chance >= AppConfiguration.jacketRules.avoidPrecipitationChanceFraction {
+            return .avoid
+        }
+        if chance >= AppConfiguration.jacketRules.cautionPrecipitationChanceFraction {
+            return .caution
+        }
+        return .neutral
+    }
+
+    private static func precipitationTypeSeverity(_ type: PrecipitationType?) -> DiagnosticSeverity {
+        switch type {
+        case .some(.drizzle), .some(.rain), .some(.hail), .some(.snow), .some(.sleet), .some(.mixed):
+            .avoid
+        case .some(.none), .some(.unknown), nil:
+            .neutral
+        }
     }
 }
 

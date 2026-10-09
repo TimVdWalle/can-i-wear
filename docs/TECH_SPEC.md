@@ -1,7 +1,7 @@
 # Can I Wear — Technical Specification
 
 > Status: ACTIVE
-> Last updated: 2026-10-08
+> Last updated: 2026-10-09
 > Source of truth: YES
 
 ## Technical goal
@@ -116,6 +116,8 @@ Use cache to make startup resilient and reduce unnecessary requests.
 
 Cache freshness is configurable.
 
+Weather has separate centralized thresholds for refresh desirability (15 minutes) and maximum safe reuse (90 minutes inclusive). Load/foreground/active-boundary checks use these thresholds. Pull-to-refresh uses the same 15-minute gate, permits no concurrent request, and applies a centralized 30-second cooldown after failure. Saved weather remains visible during a permitted refresh and after refresh failure only while it remains within the maximum usable age.
+
 ## Architecture
 
 Keep these components separated:
@@ -154,7 +156,7 @@ Infrastructure constants that are not product behavior may remain close to their
 
 Use a `Settings.bundle` switch backed by app preferences for the sole initial setting, **Debug Enabled**, defaulting to false. Debug state must not alter decision rules, cache validity or normal location/weather request policy.
 
-When enabled, expose a dismissible in-app diagnostics surface and a bounded on-device event store of at most 20 events. Record structured request/cache reasons and outcomes rather than relying on console text. Clear retained diagnostics when the setting is disabled. Reverse geocoding for a readable place runs only for diagnostics and must not block recommendation delivery. A copied report is initiated by the user and visibly includes place information.
+When enabled, expose a dismissible in-app diagnostics surface and a bounded on-device event store of at most 20 events. Record structured request/cache reasons and outcomes rather than relying on console text. Clear retained diagnostics when the setting is disabled. Detailed reverse geocoding for a readable street/place runs only for diagnostics. The normal screen independently resolves only a concise locality. Neither lookup may block recommendation delivery. A copied report is initiated by the user and visibly includes place information.
 
 No diagnostics are uploaded. This feature does not resolve or authorize analytics/telemetry. Exact coordinates do not need to be displayed when street/city/region is sufficient to verify the forecast area.
 

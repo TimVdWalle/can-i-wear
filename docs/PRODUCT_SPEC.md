@@ -1,7 +1,7 @@
 # Can I Wear — Product Specification
 
 > Status: ACTIVE
-> Last updated: 2026-10-08
+> Last updated: 2026-10-09
 > Source of truth: YES
 
 ## V1 user story
@@ -39,6 +39,13 @@ The weather data must support at least:
 - forecast fog/mist condition when the provider supplies it;
 - hourly forecast;
 - timezone/local time.
+
+Weather reuse and refresh policy:
+- under 15 minutes old: use matching valid saved weather without fetching;
+- from 15 minutes through exactly 90 minutes: show saved weather immediately and refresh;
+- over 90 minutes: do not recommend from saved weather; fetch current weather;
+- apply the policy at launch, on foreground activation and when an active screen crosses a boundary;
+- never run concurrent weather requests.
 
 Provider-supplied wind speed/gusts may be retained for diagnostics, but wind is not currently a direct recommendation input. Apparent temperature remains the approved temperature input that can reflect wind effects.
 
@@ -124,7 +131,8 @@ Turning debug off clears retained diagnostics. A deliberate copy action may copy
 If weather cannot be obtained:
 - do not invent a recommendation;
 - a recent cached weather result may be used if it is still considered reliable.
-- if the saved forecast is over 30 minutes old and live weather fails, show **“Weather unavailable”** with **“The saved forecast is too old to use. Connect to the internet and try again.”** and provide retry without showing the expired recommendation.
+- if the saved forecast is over 90 minutes old and live weather fails, show **“Weather unavailable”** with **“The saved forecast is too old to use. Connect to the internet and try again.”** and provide retry without showing the expired recommendation.
+- pull-to-refresh is available from 15 minutes, remains blocked while a request is active, and waits 30 seconds after failure; blocked attempts do not contact the provider and the screen explains the wait.
 
 For the initial daily evaluation, one isolated unusable hour may be inferred conservatively from valid immediate neighbors and never as better than Caution. Multiple missing hours or an unbounded edge gap produce no daily recommendation.
 
@@ -133,6 +141,8 @@ If location cannot be obtained:
 - otherwise do not pretend to know the local weather.
 
 The exact freshness policy is centralized/configurable.
+
+The normal recommendation screen shows concise weather age/update status and a city/locality so the user can verify the forecast context. It does not show an exact street, coordinates, location age, accuracy or cache implementation details.
 
 ## Quality requirements
 
