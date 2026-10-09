@@ -338,7 +338,7 @@ struct RecommendationViewModelTests {
         )
 
         await model.loadIfNeeded()
-        while model.locality == nil { await Task.yield() }
+        while model.locality != "Wenduine" { await Task.yield() }
 
         #expect(model.locality == "Wenduine")
     }

@@ -32,6 +32,10 @@ struct ContentView: View {
 
                     Spacer()
 
+                    if case .result(let presentation) = model.state {
+                        weatherContext(presentation)
+                    }
+
                     if model.diagnostics.isEnabled {
                         Button {
                             isShowingDiagnostics = true
@@ -51,6 +55,7 @@ struct ContentView: View {
                 .padding()
                 .multilineTextAlignment(.center)
             }
+            .scrollBounceBehavior(.always, axes: .vertical)
             .refreshable {
                 await model.manualRefresh()
             }
@@ -121,6 +126,20 @@ struct ContentView: View {
                 }
             }
 
+        }
+        .task(id: scenePhase == .active ? presentation.weatherFetchedAt : nil) {
+            guard scenePhase == .active else { return }
+            await model.monitorAutomaticRefreshes()
+        }
+    }
+
+    private func weatherContext(_ presentation: DailyRecommendationPresentation) -> some View {
+        VStack(spacing: 8) {
+            Text("Forecast details")
+                .font(.caption.weight(.semibold))
+                .foregroundStyle(.tertiary)
+                .textCase(.uppercase)
+
             TimelineView(.periodic(from: .now, by: 1)) { timeline in
                 VStack(spacing: 8) {
                     if presentation.isRefreshing {
@@ -142,10 +161,11 @@ struct ContentView: View {
                 }
             }
         }
-        .task(id: scenePhase == .active ? presentation.weatherFetchedAt : nil) {
-            guard scenePhase == .active else { return }
-            await model.monitorAutomaticRefreshes()
-        }
+        .frame(maxWidth: .infinity)
+        .padding(.horizontal, 16)
+        .padding(.vertical, 12)
+        .background(.secondary.opacity(0.08), in: RoundedRectangle(cornerRadius: 14))
+        .accessibilityElement(children: .contain)
     }
 
     private func recommendation(

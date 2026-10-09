@@ -831,10 +831,11 @@ final class RecommendationViewModel {
     private func resolveLocality(for location: LocationIdentity) {
         guard localityLocation != location else { return }
         localityLocation = location
+        locality = "Finding locality…"
         Task { [weak self, localityResolver] in
             let resolved = await localityResolver.locality(for: location)
             guard let self, self.localityLocation == location else { return }
-            self.locality = resolved
+            self.locality = resolved ?? "Locality unavailable"
         }
     }
 

@@ -152,6 +152,9 @@ struct SystemLocalityResolver: LocalityResolving {
         guard let item = try? await request.mapItems.first else { return nil }
 
         if let representations = item.addressRepresentations {
+            if let city = representations.cityName, !city.isEmpty {
+                return city
+            }
             if let city = representations.cityWithContext, !city.isEmpty {
                 return city
             }
