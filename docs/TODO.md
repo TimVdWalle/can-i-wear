@@ -54,21 +54,26 @@ The numbered review units and their acceptance criteria are in [IMPLEMENTATION_P
 - [ ] 4.1 Approve widget scope and refresh behavior — product/UX decision
 - [ ] 4.2 Implement and validate the iOS widget — implementation/testing/device validation
 
-### Phase 5 — V1 validation
+### Phase 5 — Notifications
 
-- [ ] 5.1 Complete the deterministic regression matrix — testing
-- [ ] 5.2 Validate weather behavior across real conditions — provider/device validation
-- [ ] 5.3 Validate degraded operation and recovery — integration/device validation
-- [ ] 5.4 Validate supported devices and close the V1 quality gate — device/release-quality validation
+- [ ] 5.1 Approve notification scope, timing and permission behavior — product/UX decision
+- [ ] 5.2 Implement and validate notifications — implementation/testing/device validation
 
-### Phase 6 — Store readiness
+### Phase 6 — V1 validation
 
-- [ ] 6.1 Finalize release identity and telemetry policy — decisions/Store readiness
-- [ ] 6.2 Prepare the app icon and listing metadata — assets/Store readiness
-- [ ] 6.3 Prepare privacy and provider-compliance material — Store readiness
-- [ ] 6.4 Capture App Store screenshots — Store readiness/visual validation
-- [ ] 6.5 Validate a distribution build through TestFlight — testing/device/Store readiness
-- [ ] 6.6 Prepare review, submit and release V1 — Store readiness/release
+- [ ] 6.1 Complete the deterministic regression matrix — testing
+- [ ] 6.2 Validate weather behavior across real conditions — provider/device validation
+- [ ] 6.3 Validate degraded operation and recovery — integration/device validation
+- [ ] 6.4 Validate supported devices and close the V1 quality gate — device/release-quality validation
+
+### Phase 7 — Store readiness
+
+- [ ] 7.1 Finalize release identity and telemetry policy — decisions/Store readiness
+- [ ] 7.2 Prepare the app icon and listing metadata — assets/Store readiness
+- [ ] 7.3 Prepare privacy and provider-compliance material — Store readiness
+- [ ] 7.4 Capture App Store screenshots — Store readiness/visual validation
+- [ ] 7.5 Validate a distribution build through TestFlight — testing/device/Store readiness
+- [ ] 7.6 Prepare review, submit and release V1 — Store readiness/release
 
 No Swift implementation, build, real-device run, live service validation or release action was performed when creating this plan. Current iOS 26.2, bundle identifier and signing settings are configuration observations, not completed approvals or device evidence.
 
@@ -82,14 +87,14 @@ No Swift implementation, build, real-device run, live service validation or rele
 - [x] Define cache freshness and weather/location matching — approved in D-027 — T-05, 0.9
 - [x] Define location accuracy, freshness, safe reuse and behavior-affecting timeouts — acquisition policy approved in D-021 and reuse/weather timeout policy in D-027 — T-06, 0.5/0.9
 - [x] Define minimum supported OS versions — iOS 26.2 and newer — T-07, 0.2
-- [~] Approve development identity and final bundle identifiers — development identifier approved as `mobi.vandewalle.caniwear`; final bundle identity remains TBD — T-08, 0.2/5.1
+- [~] Approve development identity and final bundle identifiers — development identifier approved as `mobi.vandewalle.caniwear`; final bundle identity remains TBD — T-08, 0.2/7.1
 - [ ] Decide analytics/telemetry policy — T-09, 6.1; before any collection
 - [ ] Approve exact result/caution labels, reasons, palette and layout — T-10, basic proposal 1.3; final 3.1
 - [~] Approve loading/failure/stale/permission UX and accessibility details — basic loading/failure copy and expired-forecast wording are approved through D-025/D-028; final broader details remain for 3.1
 - [x] Define fog/mist protection — explicit provider fog/mist produces Avoid; Open-Meteo WMO codes 45/48 are used, missing fog data alone has no effect, and no humidity/dew-point/visibility inference is allowed — D-029, T-13, 2.8
 - [x] Define local debug direction — one Apple Settings switch defaulting off, local-only diagnostics, last 20 events cleared on disable, place fallback, informational wind and user-initiated copy approved in D-030 — 2.9
 
-All unchecked decisions remain **TBD**. T-12 covers the widget decision in Phase 4; notifications remain follow-up scope. Icon, listing, screenshots, required support/privacy material and release timing/method require review during Phase 6; no final release details are chosen by the plan.
+All unchecked decisions remain **TBD**. T-12 covers the widget decision in Phase 4 and notifications in Phase 5. Icon, listing, screenshots, required support/privacy material and release timing/method require review during Phase 7; no final release details are chosen by the plan.
 
 ## Technical foundation
 
@@ -127,9 +132,9 @@ All unchecked decisions remain **TBD**. T-12 covers the widget decision in Phase
 ## Early follow-up features
 
 - [ ] Decide exact V1 timing/scope for iOS widget — T-12; Phase 4.1
-- [ ] Decide exact V1 timing/scope for notifications — T-12; follow-up after Phase 4, not a core-plan prerequisite
+- [ ] Decide exact V1 timing/scope for notifications — T-12; Phase 5.1
 - [ ] Implement widget when approved — Phase 4.2
-- [ ] Implement notifications when approved for the active phase — outside numbered execution scope pending approval
+- [ ] Implement notifications when approved — Phase 5.2
 
 ## Tests
 
@@ -169,18 +174,18 @@ Additional required checks: exact temperature/rain/freshness/grouping boundaries
 - [~] Test app relaunch — Phase 1 live relaunch and Phase 2 signed install/launch/relaunch passed; visible cached-state walkthrough and 4.3/4.4 remain
 - [~] Test forecast changes — Phase 2 live replacement flow is covered; real changing-forecast validation remains in 4.2/4.3
 - [x] Test debug off/on equivalence and diagnostics — deterministic output equality, hidden/visible UI, packaged Settings default, active-state changes, cache rejection reasons, live/timeout/fallback sequences, 20-event bound/clearing, wind neutrality, place success/fallback, report privacy/copy and real-iPhone Settings walkthrough pass in 2.9
-- [ ] Test App Store/TestFlight build — 5.5
+- [ ] Test App Store/TestFlight build — 7.5
 
 ## Store delivery details
 
-- [ ] Final release identity and telemetry/privacy policy — 5.1
-- [ ] App icon and listing metadata — 5.2
-- [ ] Privacy information and required support material — 5.3
-- [ ] Verify current provider attribution/submission requirements against actual app behavior — 0.6/5.3
-- [ ] App Store screenshots — 5.4
-- [ ] Signed archive and TestFlight testing — 5.5
-- [ ] App Store review preparation and submission — 5.6
-- [ ] Accepted build and V1 release — 5.6; do not mark complete at upload/submission
+- [ ] Final release identity and telemetry/privacy policy — 7.1
+- [ ] App icon and listing metadata — 7.2
+- [ ] Privacy information and required support material — 7.3
+- [ ] Verify current provider attribution/submission requirements against actual app behavior — 0.6/7.3
+- [ ] App Store screenshots — 7.4
+- [ ] Signed archive and TestFlight testing — 7.5
+- [ ] App Store review preparation and submission — 7.6
+- [ ] Accepted build and V1 release — 7.6; do not mark complete at upload/submission
 
 ## Explicit rule
 

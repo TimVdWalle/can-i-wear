@@ -95,7 +95,19 @@ Tasks:
 
 Still V1; exact scope requires approval before implementation.
 
-## Phase 5 — V1 validation
+## Phase 5 — Notifications
+
+Goal:
+Provide optional timely reminders without adding background location tracking or changing recommendation logic.
+
+Tasks:
+- approve notification scope, timing, permission and stale-data behavior;
+- implement notifications from approved recommendation data;
+- validate opt-in, denial, delivery and accessibility behavior.
+
+Still V1; exact scope requires approval before implementation.
+
+## Phase 6 — V1 validation
 
 Goal:
 Prove the app works in real conditions.
@@ -115,7 +127,7 @@ Test:
 - stale cache;
 - multiple real devices.
 
-## Phase 6 — Store readiness
+## Phase 7 — Store readiness
 
 Goal:
 Ship V1.

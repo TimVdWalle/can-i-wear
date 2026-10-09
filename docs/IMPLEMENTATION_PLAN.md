@@ -35,12 +35,12 @@ These identifiers originated as implementation-blocking TBDs. Their current reso
 | T-04 | Minimum meaningful period duration, material-change/grouping rules, and conservative noise-consolidation parameters | 0.8, 2.2–2.3 |
 | T-05 | Weather cache freshness/reliability, expiry behavior, and matching cached forecasts to location | 0.9, 2.5–2.6 |
 | T-06 | Location accuracy and freshness, safe reuse, and behavior-affecting acquisition/request timeout values | 0.5, 0.9, 2.4 |
-| T-07 | Minimum supported iOS version; current iOS 26.2 setting is not an approved product decision | 0.2, 0.3, 6.5 |
-| T-08 | Final bundle identifiers; whether the current identifier can be used for development/provider setup before finalization | 0.2, 0.6, 6.1 |
-| T-09 | Analytics/telemetry policy, including whether any collection is allowed | 6.1, 6.3; before any instrumentation that collects data |
+| T-07 | Minimum supported iOS version; current iOS 26.2 setting is not an approved product decision | 0.2, 0.3, 7.5 |
+| T-08 | Final bundle identifiers; whether the current identifier can be used for development/provider setup before finalization | 0.2, 0.6, 7.1 |
+| T-09 | Analytics/telemetry policy, including whether any collection is allowed | 7.1, 7.3; before any instrumentation that collects data |
 | T-10 | Exact recommendation/caution labels, reason copy, semantic palette and final layout | Basic proposal in 1.3; final decisions in 3.1 |
 | T-11 | Loading presentation, no-location/no-weather/stale-data wording, permission-denied UX and accessibility details | Basic proposal in 1.3; final decisions in 3.1–3.4 |
-| T-12 | Exact V1 inclusion/timing/scope for widget and notifications | Widget: 4.1. Notifications remain follow-up scope |
+| T-12 | Exact V1 inclusion/timing/scope for widget and notifications | Widget: 4.1. Notifications: 5.1 |
 | T-13 | **Resolved in D-029:** use only an explicit provider fog/mist forecast condition; Open-Meteo WMO codes 45/48 produce Avoid. Do not infer from humidity, dew point or visibility. | 2.8 |
 
 No row is resolved by creating this plan. Record approved material choices in `DECISIONS.md` and affected specifications before implementing them. When a blocker covers only part of a subphase, independent evidence gathering or contract work may proceed, but the subphase cannot be marked complete with invented defaults.
@@ -67,7 +67,7 @@ Goal and exit remain those in the roadmap: establish the native/device/provider 
 - **Objective:** Make device/provider setup intentional.
 - **Exact scope:** Obtain approval for minimum iOS support and the identifier to use for development, including whether final identity is deferred; reconcile existing project settings only during later implementation.
 - **Likely files/components:** `DECISIONS.md`, `TECH_SPEC.md`, `TODO.md`; eventual project build/signing settings.
-- **Acceptance criteria:** T-07 is approved; T-08 either finalized or explicitly permits a development identifier with finalization still tracked in 5.1.
+- **Acceptance criteria:** T-07 is approved; T-08 either finalized or explicitly permits a development identifier with finalization still tracked in 7.1.
 - **Tests/validation:** Check installed Xcode/SDK and target-phone compatibility; inspect account/signing prerequisites without claiming a device run.
 - **Dependencies:** 0.1.
 - **Non-goals:** Provider migration, Android, adding iPad-specific features, changing framework.
@@ -411,11 +411,33 @@ Goal: add an approved, glanceable widget without duplicating recommendation logi
 - **Dependencies:** 4.1, 3.5.
 - **Non-goals:** Notifications, new clothing types, personal settings or separate recommendation logic.
 
-## Phase 5 — V1 validation
+## Phase 5 — Notifications
+
+Goal: provide optional reminders without background location tracking or separate recommendation logic.
+
+### 5.1 — Approve notification scope, timing and permission behavior
+
+- **Type:** Product/UX decision.
+- **Objective:** Define when notifications may appear and how stale or unavailable recommendations are handled.
+- **Exact scope:** Approve notification triggers, timing, permission request behavior, opt-in/opt-out semantics and stale-data rules; notifications must use the existing recommendation and cache contracts.
+- **Acceptance criteria:** Scope is recorded in the truth files; notifications do not add background location tracking, personal settings or new recommendation rules.
+- **Dependencies:** 4.2.
+- **Blocking TBDs:** T-12.
+
+### 5.2 — Implement and validate notifications
+
+- **Type:** Notification implementation, testing and device validation.
+- **Objective:** Deliver approved reminders safely and predictably.
+- **Exact scope:** Implement authorized local notifications, scheduling/cancellation, permission denial handling and accessibility/notification-content checks.
+- **Acceptance criteria:** Notifications are opt-in, use only trustworthy recommendation data, do not duplicate or loop, and behave correctly after relaunch and forecast changes.
+- **Dependencies:** 5.1, 4.2.
+- **Non-goals:** Remote push infrastructure, background location tracking, automatic user profiling or new recommendation logic.
+
+## Phase 6 — V1 validation
 
 Goal: prove existing V1 behavior under real conditions. Record actual results; tests are not complete merely because a checklist exists. Correct failures in focused changes to the responsible component, then rerun affected checks. Changes to approved policies go through the truth-file decision process.
 
-### 5.1 — Complete the deterministic regression matrix
+### 6.1 — Complete the deterministic regression matrix
 
 - **Type:** Testing.
 - **Objective:** Close gaps in core rules, periods and failure/fallback coverage.
@@ -427,7 +449,7 @@ Goal: prove existing V1 behavior under real conditions. Record actual results; t
 - **Non-goals:** Arbitrary coverage target, giant generated suite, duplicate tests without added behavioral value.
 - **Blocking TBDs:** None after prerequisite decisions; uncovered ambiguity is surfaced for approval.
 
-### 5.2 — Validate weather behavior across real conditions
+### 6.2 — Validate weather behavior across real conditions
 
 - **Type:** Real-device/provider validation.
 - **Objective:** Assess whether live forecasts support trustworthy jacket protection.
@@ -439,7 +461,7 @@ Goal: prove existing V1 behavior under real conditions. Record actual results; t
 - **Non-goals:** Guaranteeing forecasts, automatic rule tuning, additional providers without approval, location-history collection.
 - **Blocking TBDs:** None after prerequisites; field weather/location availability may limit completion evidence.
 
-### 5.3 — Validate degraded operation and recovery
+### 6.3 — Validate degraded operation and recovery
 
 - **Type:** Integration testing and real-device validation.
 - **Objective:** Prove failures do not produce unsafe confidence or frustrating loops.
@@ -447,11 +469,11 @@ Goal: prove existing V1 behavior under real conditions. Record actual results; t
 - **Likely files/components:** Providers, caches, presentation, integration/UI tests, `TODO.md` evidence.
 - **Acceptance criteria:** Approved fallback/expiry behavior holds on device; useful recent data remains clearly represented; unusable data never yields a confident answer; recovery updates the visible result without repeated prompts/request loops.
 - **Tests/validation:** Device offline/slow-network and permission checks; deterministic failure injection for cases live services cannot reliably reproduce; regression tests for fixes.
-- **Dependencies:** 3.5, 5.1.
+- **Dependencies:** 3.5, 6.1.
 - **Non-goals:** Background delivery, manual cities, adding offline forecast products.
 - **Blocking TBDs:** None after prerequisites.
 
-### 5.4 — Validate supported devices and close the V1 quality gate
+### 6.4 — Validate supported devices and close the V1 quality gate
 
 - **Type:** Real-device validation and release-quality review.
 - **Objective:** Confirm reliable operation beyond one successful demo.
@@ -459,15 +481,15 @@ Goal: prove existing V1 behavior under real conditions. Record actual results; t
 - **Likely files/components:** Existing app/tests, project deployment settings, `TODO.md` quality evidence.
 - **Acceptance criteria:** Core scenarios pass on the recorded device/OS matrix; no unresolved defect undermines trustworthy recommendations, required accessibility or reliable operation; performance claims have measurements; no continuous/background location tracking.
 - **Tests/validation:** Real-device matrix, local profiling where needed, full automated suite after necessary fixes; document unavailable matrix coverage explicitly.
-- **Dependencies:** 5.1–5.3, 3.3–3.5, approved T-07.
+- **Dependencies:** 6.1–6.3, 3.3–3.5, approved T-07.
 - **Non-goals:** Declaring App Store submission complete, expanding platform support, invented performance numbers.
 - **Blocking TBDs:** None after prerequisites; access to multiple devices is an external prerequisite.
 
-## Phase 6 — Store readiness
+## Phase 7 — Store readiness
 
 Goal: deliver the validated V1 through TestFlight and the App Store. Verify current Apple/provider requirements when executing these subphases; this plan does not assume a frozen submission checklist. Store/account artifacts are likely involved, but this documentation task does not authorize uploads, submissions or release actions now.
 
-### 6.1 — Finalize release identity and telemetry policy
+### 7.1 — Finalize release identity and telemetry policy
 
 - **Type:** Product/technical decision and App Store readiness.
 - **Objective:** Lock the remaining identity/privacy choices before distribution setup.
@@ -475,11 +497,11 @@ Goal: deliver the validated V1 through TestFlight and the App Store. Verify curr
 - **Likely files/components:** `DECISIONS.md`, `TECH_SPEC.md`, `TODO.md`; eventual project identifiers and App Store Connect identity.
 - **Acceptance criteria:** T-08/T-09 are resolved; configured release identity/support matches approved decisions; telemetry approval does not implicitly approve a new SDK/integration.
 - **Tests/validation:** Review identity/signing/service implications and actual data flows; build recheck after any approved identifier change.
-- **Dependencies:** 0.2, 5.4. Final identity may be decided earlier when necessary for provisioning.
+- **Dependencies:** 0.2, 6.4. Final identity may be decided earlier when necessary for provisioning.
 - **Non-goals:** Accounts, sync, adding analytics merely because it is common, changing the locked app name.
 - **Blocking TBDs:** Remaining T-08, T-09.
 
-### 6.2 — Prepare the app icon and listing metadata
+### 7.2 — Prepare the app icon and listing metadata
 
 - **Type:** App Store readiness and asset implementation.
 - **Objective:** Replace release placeholders and accurately describe V1.
@@ -487,11 +509,11 @@ Goal: deliver the validated V1 through TestFlight and the App Store. Verify curr
 - **Likely files/components:** `Assets.xcassets/AppIcon.appiconset`, listing text/assets, App Store Connect draft fields.
 - **Acceptance criteria:** Approved icon meets requirements verified at execution; listing accurately describes rain-first daily recommendations without unsupported guarantees/features; no icon placeholder remains.
 - **Tests/validation:** Icon inspection on device/appearance variants as required; metadata review against actual shipped scope.
-- **Dependencies:** 3.5, 5.1.
+- **Dependencies:** 3.5, 6.1.
 - **Non-goals:** Renaming, broad branding project, advertising new features.
 - **Blocking TBDs:** Icon/metadata designs require review; exact release asset details are not specified by truth files and are not selected here.
 
-### 6.3 — Prepare privacy and provider-compliance material
+### 7.3 — Prepare privacy and provider-compliance material
 
 - **Type:** App Store readiness and verification.
 - **Objective:** Make release declarations match actual app behavior.
@@ -499,11 +521,11 @@ Goal: deliver the validated V1 through TestFlight and the App Store. Verify curr
 - **Likely files/components:** App permission configuration, attribution UI, privacy/support artifacts and listing fields; `TECH_SPEC.md`/`TODO.md` evidence.
 - **Acceptance criteria:** Required disclosures and attribution are accurate and complete; no unexpected location history or undeclared collection exists; release materials match approved policy and tested implementation.
 - **Tests/validation:** Inspect real data flows/configuration and installed attribution/purpose text; check current authoritative requirements at execution rather than inventing obligations now.
-- **Dependencies:** 5.1, 0.6, 3.5.
+- **Dependencies:** 7.1, 0.6, 3.5.
 - **Non-goals:** Adding collection, legal boilerplate unrelated to actual behavior, account infrastructure.
 - **Blocking TBDs:** None after T-09 approval; required release contact/support/privacy artifact details need completion/review when preparing materials.
 
-### 6.4 — Capture App Store screenshots
+### 7.4 — Capture App Store screenshots
 
 - **Type:** App Store readiness and visual validation.
 - **Objective:** Show the final V1 experience accurately.
@@ -511,11 +533,11 @@ Goal: deliver the validated V1 through TestFlight and the App Store. Verify curr
 - **Likely files/components:** Final app, deterministic preview/UI fixtures, screenshot artifacts, App Store Connect draft assets.
 - **Acceptance criteria:** Screenshots match shipped UI, show recommendation/period meaning clearly, and meet currently required sizes; no unfinished states or out-of-scope claims.
 - **Tests/validation:** Inspect every screenshot for truncation/layout errors and consistency with current build/scope.
-- **Dependencies:** 3.5, 5.2.
+- **Dependencies:** 3.5, 7.2.
 - **Non-goals:** Product redesign, new marketing features, changing recommendation logic for screenshots.
 - **Blocking TBDs:** Screenshot/caption selections require review; no final UI details are chosen here.
 
-### 6.5 — Validate a distribution build through TestFlight
+### 7.5 — Validate a distribution build through TestFlight
 
 - **Type:** App Store readiness, testing and real-device validation.
 - **Objective:** Prove the packaged app works with production distribution settings.
@@ -523,11 +545,11 @@ Goal: deliver the validated V1 through TestFlight and the App Store. Verify curr
 - **Likely files/components:** Xcode signing/release settings, existing targets/assets, App Store Connect/TestFlight, `TODO.md` evidence.
 - **Acceptance criteria:** Distribution archive validates and TestFlight installs; live location/weather/recommendation works on a real iPhone; required privacy/assets are present; release-only issues are resolved with appropriate regressions.
 - **Tests/validation:** Automated suite, archive validation, TestFlight cold launch/live flow/denial/offline/relaunch/accessibility smoke tests on approved support.
-- **Dependencies:** 5.4, 6.1–6.3; 6.4 is required before the later submission gate, not to start TestFlight.
+- **Dependencies:** 6.4, 7.1–7.3; 7.4 is required before the later submission gate, not to start TestFlight.
 - **Non-goals:** Public release, inviting others or uploading without the applicable task authorization, adding beta-only product features.
 - **Blocking TBDs:** None after prerequisites; account/distribution access and release-action authorization are external prerequisites.
 
-### 6.6 — Prepare review, submit and release V1
+### 7.6 — Prepare review, submit and release V1
 
 - **Type:** App Store readiness and release validation.
 - **Objective:** Complete the roadmap's shipping requirement.
@@ -535,7 +557,7 @@ Goal: deliver the validated V1 through TestFlight and the App Store. Verify curr
 - **Likely files/components:** App Store Connect listing/review/release fields, distribution build, `TODO.md` final evidence; narrow source/docs fixes only if required and approved by scope.
 - **Acceptance criteria:** Review materials are complete, validated build is accepted and V1 is released; status distinguishes prepared/submitted/accepted/released rather than marking all complete at upload.
 - **Tests/validation:** Final release-candidate smoke check; targeted regressions and renewed distribution check after review-driven changes; verify published listing/build after release.
-- **Dependencies:** 6.4, 6.5 and all Phase 6 material complete.
+- **Dependencies:** 7.4, 7.5 and all Phase 7 material complete.
 - **Non-goals:** V2 scope, feature additions to appease hypothetical review concerns, submission/release without applicable authorization.
 - **Blocking TBDs:** Release timing/method and review material must be confirmed when executing the release task; Store review outcome is external, not a locally completed test.
 
