@@ -126,6 +126,25 @@ struct HomePresentationTests {
         }
     }
 
+    @Test func fixedDayPartsAlwaysProvideFourPlanningBlocksAndMarkPastParts() throws {
+        let forecast = fixture()
+        let evaluation = try #require(engine.evaluateHours(
+            forecast,
+            now: forecast.hours[13].timestamp.addingTimeInterval(1_800)
+        ))
+        let dayParts = FixedDayPartPresentation.make(
+            from: try #require(engine.evaluateDisplayHours(forecast, now: forecast.hours[13].timestamp)),
+            at: forecast.hours[13].timestamp.addingTimeInterval(1_800)
+        )
+
+        #expect(evaluation.hours.first?.timestamp == forecast.hours[13].timestamp)
+        #expect(dayParts.map(\.dayPart) == [.morning, .afternoon, .evening, .night])
+        #expect(dayParts[0].isPast)
+        #expect(dayParts[1].isPast)
+        #expect(!dayParts[2].isPast)
+        #expect(!dayParts[3].isPast)
+    }
+
     private func presentation(_ forecast: NormalizedForecast) throws -> DailyRecommendationPresentation {
         makePresentation(try #require(engine.evaluateHours(forecast, now: forecast.hours[0].timestamp)))
     }

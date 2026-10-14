@@ -226,7 +226,9 @@ final class RecommendationViewModel {
                 isUsingSavedWeather: true,
                 isRefreshing: true,
                 refreshFailed: false,
-                refreshAvailableAt: current.refreshAvailableAt
+                refreshAvailableAt: current.refreshAvailableAt,
+                dayParts: current.dayParts,
+                displayHours: current.displayHours
             ))
         } else {
             state = .loading
@@ -657,6 +659,16 @@ final class RecommendationViewModel {
             detail: "Evaluated \(evaluation.hours.count) remaining hours into \(periods.count) period(s)."
         )
 
+        let displayEvaluation = dailyEngine.evaluateDisplayHours(forecast, now: currentTime)
+            ?? evaluation
+        let displayHours = displayEvaluation.hours.map {
+            HourlySuitabilityPresentation(
+                hour: $0,
+                timezoneIdentifier: displayEvaluation.timezoneIdentifier,
+                isPast: $0.timestamp.addingTimeInterval(3_600) <= currentTime
+            )
+        }
+
         return DailyRecommendationPresentation(
             periods: periods.map {
                 PeriodPresentation(
@@ -675,7 +687,9 @@ final class RecommendationViewModel {
             refreshAvailableAt: max(
                 forecast.metadata.fetchedAt.addingTimeInterval(reuseConfig.weatherRefreshInterval),
                 refreshFailureCooldownUntil ?? .distantPast
-            )
+            ),
+            dayParts: FixedDayPartPresentation.make(from: displayEvaluation, at: currentTime),
+            displayHours: displayHours
         )
     }
 
@@ -757,7 +771,9 @@ final class RecommendationViewModel {
             isUsingSavedWeather: true,
             isRefreshing: false,
             refreshFailed: true,
-            refreshAvailableAt: refreshFailureCooldownUntil ?? current.refreshAvailableAt
+            refreshAvailableAt: refreshFailureCooldownUntil ?? current.refreshAvailableAt,
+            dayParts: current.dayParts,
+            displayHours: current.displayHours
         ))
     }
 

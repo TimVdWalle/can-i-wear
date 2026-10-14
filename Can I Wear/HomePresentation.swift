@@ -73,6 +73,17 @@ nonisolated struct PeriodPresentation: Equatable, Sendable {
 nonisolated struct HourlySuitabilityPresentation: Equatable, Sendable, Identifiable {
     let hour: EvaluatedHour
     let timezoneIdentifier: String
+    let isPast: Bool
+
+    init(
+        hour: EvaluatedHour,
+        timezoneIdentifier: String,
+        isPast: Bool = false
+    ) {
+        self.hour = hour
+        self.timezoneIdentifier = timezoneIdentifier
+        self.isPast = isPast
+    }
 
     var id: Date { hour.timestamp }
     var recommendation: RecommendationPresentation {
@@ -89,15 +100,139 @@ nonisolated struct HourlySuitabilityPresentation: Equatable, Sendable, Identifia
     }
 }
 
+nonisolated enum FixedDayPart: String, CaseIterable, Sendable {
+    case morning
+    case afternoon
+    case evening
+    case night
+
+    var label: String { rawValue.capitalized }
+
+    var symbolName: String {
+        switch self {
+        case .morning: "sun.max"
+        case .afternoon: "sun.max.fill"
+        case .evening: "sun.horizon"
+        case .night: "moon"
+        }
+    }
+
+    var startHour: Int {
+        switch self {
+        case .morning: 6
+        case .afternoon: 12
+        case .evening: 18
+        case .night: 22
+        }
+    }
+
+    var endHour: Int {
+        switch self {
+        case .morning: 12
+        case .afternoon: 18
+        case .evening: 22
+        case .night: 24
+        }
+    }
+}
+
+nonisolated struct FixedDayPartPresentation: Equatable, Sendable, Identifiable {
+    let dayPart: FixedDayPart
+    let interval: DateInterval
+    let recommendation: RecommendationPresentation?
+    let isPast: Bool
+
+    var id: FixedDayPart { dayPart }
+    var label: String { dayPart.label }
+    var symbolName: String { dayPart.symbolName }
+
+    var accessibilityLabel: String {
+        let result = recommendation?.title ?? "Unavailable"
+        return isPast
+            ? "\(label), \(result), finished for today"
+            : "\(label), \(result)"
+    }
+
+    static func make(
+        from evaluation: DailyEvaluation,
+        at currentTime: Date
+    ) -> [FixedDayPartPresentation] {
+        guard let timezone = TimeZone(identifier: evaluation.timezoneIdentifier) else { return [] }
+        var calendar = Calendar(identifier: .gregorian)
+        calendar.timeZone = timezone
+        guard let day = calendar.dateInterval(of: .day, for: currentTime) else { return [] }
+
+        return FixedDayPart.allCases.compactMap { dayPart in
+            guard let start = calendar.date(
+                bySettingHour: dayPart.startHour,
+                minute: 0,
+                second: 0,
+                of: day.start
+            ) else { return nil }
+            let end: Date
+            if dayPart.endHour == 24 {
+                end = day.end
+            } else if let boundary = calendar.date(
+                bySettingHour: dayPart.endHour,
+                minute: 0,
+                second: 0,
+                of: day.start
+            ) {
+                end = boundary
+            } else {
+                return nil
+            }
+
+            let interval = DateInterval(start: start, end: end)
+            let recommendation = HourlyRecommendation.mostProtective(
+                in: evaluation.hours
+                    .filter { $0.timestamp >= start && $0.timestamp < end }
+                    .map(\.recommendation)
+            ).map { RecommendationPresentation(recommendation: $0) }
+
+            return FixedDayPartPresentation(
+                dayPart: dayPart,
+                interval: interval,
+                recommendation: recommendation,
+                isPast: end <= currentTime
+            )
+        }
+    }
+}
+
 nonisolated struct DailyRecommendationPresentation: Equatable, Sendable {
     let periods: [PeriodPresentation]
     /// Raw daily evaluations, before D-026 consolidation. Never expanded from periods.
     let hours: [HourlySuitabilityPresentation]
+    let dayParts: [FixedDayPartPresentation]
+    let displayHours: [HourlySuitabilityPresentation]
     let weatherFetchedAt: Date
     let isUsingSavedWeather: Bool
     let isRefreshing: Bool
     let refreshFailed: Bool
     let refreshAvailableAt: Date
+
+    init(
+        periods: [PeriodPresentation],
+        hours: [HourlySuitabilityPresentation],
+        weatherFetchedAt: Date,
+        isUsingSavedWeather: Bool,
+        isRefreshing: Bool,
+        refreshFailed: Bool,
+        refreshAvailableAt: Date,
+        dayParts: [FixedDayPartPresentation] = [],
+        displayHours: [HourlySuitabilityPresentation]? = nil
+    ) {
+        self.periods = periods
+        self.hours = hours
+        self.dayParts = dayParts
+        self.displayHours = displayHours ?? hours
+        self.weatherFetchedAt = weatherFetchedAt
+        self.isUsingSavedWeather = isUsingSavedWeather
+        self.isRefreshing = isRefreshing
+        self.refreshFailed = refreshFailed
+        self.refreshAvailableAt = refreshAvailableAt
+    }
 
     var summary: RecommendationPresentation? {
         HourlyRecommendation.mostProtective(in: hours.map(\.hour.recommendation))
@@ -113,10 +248,10 @@ nonisolated struct DailyRecommendationPresentation: Equatable, Sendable {
         }
     }
 
-    var hasInferredHour: Bool { hours.contains(where: \.isInferred) }
+    var hasInferredHour: Bool { displayHours.contains(where: \.isInferred) }
 
     var hasRepeatedLocalHour: Bool {
-        Set(hours.map(\.timeLabel)).count != hours.count
+        Set(displayHours.map(\.timeLabel)).count != displayHours.count
     }
 }
 

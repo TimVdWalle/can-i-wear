@@ -15,9 +15,9 @@ final class Can_I_WearUITests: XCTestCase {
         XCTAssertTrue(avoid.waitForExistence(timeout: 3))
         XCTAssertTrue(wear.exists)
         XCTAssertTrue(caution.exists)
-        XCTAssertTrue(avoid.label.contains("–"))
-        XCTAssertTrue(wear.label.contains("–"))
-        XCTAssertTrue(caution.label.contains("–"))
+        XCTAssertTrue(avoid.label.contains("Night"))
+        XCTAssertTrue(wear.label.contains("Morning"))
+        XCTAssertTrue(caution.label.contains("Afternoon"))
         XCTAssertTrue(avoid.label.contains("AVOID"))
         XCTAssertFalse(avoid.label.contains("Precipitation"))
         XCTAssertTrue(wear.label.contains("OK"))
@@ -31,27 +31,20 @@ final class Can_I_WearUITests: XCTestCase {
     }
 
     @MainActor
-    func testDisplaysCachedAgeAfterFailedRefresh() throws {
+    func testUsesConciseWeatherAttribution() throws {
         let app = launch(scenario: "cached")
 
-        let weatherStatus = app.descendants(matching: .any)["weather-status"]
-        XCTAssertTrue(weatherStatus.waitForExistence(timeout: 3))
-        XCTAssertEqual(weatherStatus.label, "Weather updated 10 min ago • Refresh available in 5 min")
-        XCTAssertFalse(app.descendants(matching: .any)["refresh-status"].exists)
+        XCTAssertTrue(app.staticTexts["Weather provided by Open-Meteo"].waitForExistence(timeout: 3))
+        XCTAssertFalse(app.descendants(matching: .any)["weather-status"].exists)
     }
 
     @MainActor
-    func testDisplaysCachedResultWhileRefreshing() throws {
+    func testDoesNotAddVerboseRefreshingStatus() throws {
         let app = launch(scenario: "refreshing")
 
-        XCTAssertTrue(
-            app.descendants(matching: .any)["weather-status"].waitForExistence(timeout: 3)
-        )
-        XCTAssertEqual(
-            app.descendants(matching: .any)["weather-status"].label,
-            "Showing saved weather • Updating…"
-        )
-        XCTAssertTrue(app.descendants(matching: .any)["refresh-status"].exists)
+        XCTAssertTrue(app.descendants(matching: .any)["recommendation-hero"].waitForExistence(timeout: 3))
+        XCTAssertFalse(app.descendants(matching: .any)["weather-status"].exists)
+        XCTAssertFalse(app.descendants(matching: .any)["refresh-status"].exists)
     }
 
     @MainActor
@@ -193,17 +186,17 @@ final class Can_I_WearUITests: XCTestCase {
     }
 
     @MainActor
-    func testSinglePeriodAndHourlyStatusesHaveNonColorMeaning() {
+    func testFourDayPartsAndHourlyStatusesHaveNonColorMeaning() {
         let app = launch(scenario: "okay")
         XCTAssertTrue(app.descendants(matching: .any)["recommendation-hero"].label.contains("today: OK"))
         XCTAssertTrue(app.descendants(matching: .any)["period-0"].label.contains("OK"))
-        XCTAssertFalse(app.descendants(matching: .any)["period-1"].exists)
+        XCTAssertTrue(app.descendants(matching: .any)["period-3"].label.contains("OK"))
         XCTAssertTrue(app.descendants(matching: .any)["hour-0"].label.contains("OK. Dry and cool enough."))
         capture(app, name: "Home — OK")
     }
 
     @MainActor
-    func testLargestDynamicTypeSupportsVerticalAndHorizontalScrolling() {
+    func testLargestDynamicTypeUsesAReadableTwoColumnDayPartGrid() {
         let app = XCUIApplication()
         app.launchArguments = ["-ui-test-scenario", "many-periods", "-UIPreferredContentSizeCategoryName", "UICTContentSizeCategoryAccessibilityXXXL"]
         app.launch()
@@ -211,16 +204,13 @@ final class Can_I_WearUITests: XCTestCase {
         XCTAssertTrue(hero.waitForExistence(timeout: 3))
         XCTAssertLessThanOrEqual(hero.frame.width, app.frame.width)
         capture(app, name: "Home — accessibility text")
-        let row = app.scrollViews["day-parts"]
-        for _ in 0..<8 where !row.isHittable { app.swipeUp() }
-        XCTAssertTrue(row.isHittable)
-        let last = app.descendants(matching: .any)["period-5"]
-        for _ in 0..<10 where !last.isHittable { row.swipeLeft() }
+        let last = app.descendants(matching: .any)["period-3"]
+        for _ in 0..<8 where !last.isHittable { app.swipeUp() }
         XCTAssertTrue(last.isHittable)
         XCTAssertTrue(last.label.contains("AVOID"))
-        let status = app.descendants(matching: .any)["weather-status"]
-        for _ in 0..<8 where !status.isHittable { app.swipeUp() }
-        XCTAssertTrue(status.isHittable)
+        let attribution = app.staticTexts["Weather provided by Open-Meteo"]
+        for _ in 0..<8 where !attribution.isHittable { app.swipeUp() }
+        XCTAssertTrue(attribution.isHittable)
     }
 
     @MainActor

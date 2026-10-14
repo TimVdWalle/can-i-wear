@@ -115,71 +115,79 @@ struct RecommendationHeroView: View {
 }
 
 struct DayPartCardView: View {
-    let period: PeriodPresentation
-    let visibleCardCount: Int
-    @ScaledMetric(relativeTo: .caption) private var minimumCardWidth = 80
+    let dayPart: FixedDayPartPresentation
 
     var body: some View {
-        VStack(spacing: 12) {
-            Image(systemName: period.symbolName)
+        VStack(spacing: 10) {
+            Image(systemName: dayPart.symbolName)
                 .font(.title2.weight(.light))
                 .foregroundStyle(.secondary)
                 .accessibilityHidden(true)
-            Text(period.compactLabel)
-                .font(.subheadline.weight(.medium).monospacedDigit())
+            Text(dayPart.label)
+                .font(.subheadline.weight(.medium))
                 .fixedSize(horizontal: false, vertical: true)
-            Text(period.recommendation.title)
+            Text(dayPart.recommendation?.title ?? "—")
                 .font(.caption.bold())
-                .fixedSize(horizontal: true, vertical: false)
-                .foregroundStyle(HomeStyle.ink(period.recommendation.level))
+                .lineLimit(1)
+                .minimumScaleFactor(0.72)
+                .foregroundStyle(dayPart.recommendation.map { HomeStyle.ink($0.level) } ?? .secondary)
                 .padding(.horizontal, 4)
                 .padding(.vertical, 7)
-                .background(HomeStyle.color(period.recommendation.level).opacity(0.16), in: Capsule())
+                .frame(maxWidth: .infinity)
+                .background(statusColor.opacity(0.16), in: Capsule())
         }
         .padding(.horizontal, 6)
-        .padding(.vertical, 18)
-        .containerRelativeFrame(.horizontal, count: visibleCardCount, spacing: 8)
-        .frame(minWidth: minimumCardWidth, maxHeight: .infinity)
+        .padding(.vertical, 16)
+        .frame(maxWidth: .infinity, maxHeight: .infinity)
         .background {
             RoundedRectangle(cornerRadius: 16)
                 .fill(HomeStyle.card)
                 .overlay {
                     RoundedRectangle(cornerRadius: 16)
-                        .fill(HomeStyle.color(period.recommendation.level).opacity(0.07))
+                        .fill(statusColor.opacity(0.09))
                 }
         }
+        .saturation(dayPart.isPast ? 0 : 1)
+        .opacity(dayPart.isPast ? 0.48 : 1)
         .accessibilityElement(children: .ignore)
-        .accessibilityLabel("\(period.label), \(period.recommendation.title)")
+        .accessibilityLabel(dayPart.accessibilityLabel)
+    }
+
+    private var statusColor: Color {
+        dayPart.recommendation.map { HomeStyle.color($0.level) } ?? .secondary
     }
 }
 
 struct DayPartsView: View {
-    let periods: [PeriodPresentation]
+    let dayParts: [FixedDayPartPresentation]
     @Environment(\.dynamicTypeSize) private var typeSize
 
-    private var visibleCardCount: Int {
-        if typeSize.isAccessibilitySize { return 1 }
-        return min(max(2, periods.count), typeSize > .large ? 2 : 4)
-    }
-
+    @ViewBuilder
     var body: some View {
-        ScrollView(.horizontal) {
-            HStack(spacing: 8) {
-                ForEach(Array(periods.enumerated()), id: \.element.interval.start) { index, period in
-                    DayPartCardView(period: period, visibleCardCount: visibleCardCount)
-                        .accessibilityIdentifier("period-\(index)")
+        Group {
+            if typeSize.isAccessibilitySize {
+                LazyVGrid(columns: [GridItem(.flexible()), GridItem(.flexible())], spacing: 8) {
+                    cards
+                }
+            } else {
+                HStack(spacing: 8) {
+                    cards
                 }
             }
-            .fixedSize(horizontal: false, vertical: true)
         }
-        .scrollIndicators(.hidden)
         .accessibilityIdentifier("day-parts")
+    }
+
+    private var cards: some View {
+        ForEach(Array(dayParts.enumerated()), id: \.element.id) { index, dayPart in
+            DayPartCardView(dayPart: dayPart)
+                .accessibilityIdentifier("period-\(index)")
+        }
     }
 }
 
 struct HourlySuitabilityView: View {
     let presentation: DailyRecommendationPresentation
-    @ScaledMetric(relativeTo: .caption) private var minimumSegmentWidth = 16
     @ScaledMetric(relativeTo: .caption) private var axisHeight = 24
     @ScaledMetric(relativeTo: .caption) private var segmentHeight = 30
 
@@ -190,20 +198,16 @@ struct HourlySuitabilityView: View {
                 .accessibilityAddTraits(.isHeader)
 
             GeometryReader { geometry in
-                let count = presentation.hours.count
-                let width = max(
-                    presentation.hasRepeatedLocalHour ? minimumSegmentWidth * 7 : minimumSegmentWidth,
-                    (geometry.size.width - CGFloat(max(0, count - 1)) * 3) / CGFloat(max(1, count))
-                )
-                ScrollView(.horizontal) {
-                    HStack(alignment: .top, spacing: 3) {
-                        ForEach(Array(presentation.hours.enumerated()), id: \.element.id) { index, hour in
-                            segment(hour, index: index, width: width)
-                        }
+                let count = presentation.displayHours.count
+                let spacing: CGFloat = 2
+                let width = (geometry.size.width - CGFloat(max(0, count - 1)) * spacing)
+                    / CGFloat(max(1, count))
+                HStack(alignment: .top, spacing: spacing) {
+                    ForEach(Array(presentation.displayHours.enumerated()), id: \.element.id) { index, hour in
+                        segment(hour, index: index, width: width)
                     }
-                    .padding(.bottom, 4)
                 }
-                .scrollIndicators(.hidden)
+                .padding(.bottom, 4)
             }
             .frame(height: segmentHeight + axisHeight + 12)
             .accessibilityIdentifier("hourly-timeline")
@@ -225,16 +229,18 @@ struct HourlySuitabilityView: View {
     private func segment(_ hour: HourlySuitabilityPresentation, index: Int, width: CGFloat) -> some View {
         VStack(alignment: .leading, spacing: 8) {
             RoundedRectangle(cornerRadius: 4)
-                .fill(hour.isInferred ? Color.secondary.opacity(0.15) : HomeStyle.color(hour.recommendation.level).opacity(0.55))
+                .fill(segmentColor(hour))
                 .overlay {
-                    Image(systemName: hour.isInferred ? "questionmark" : hour.recommendation.segmentSymbol)
-                        .font(.system(size: 9, weight: .bold))
-                        .foregroundStyle(.primary)
+                    if hour.isInferred {
+                        Image(systemName: "questionmark")
+                            .font(.system(size: 8, weight: .bold))
+                            .foregroundStyle(.primary)
+                    }
                 }
                 .frame(height: segmentHeight)
 
             Color.clear.frame(height: axisHeight)
-                .overlay(alignment: index >= presentation.hours.count - 2 ? .topTrailing : .topLeading) {
+                .overlay(alignment: index >= presentation.displayHours.count - 2 ? .topTrailing : .topLeading) {
                     if presentation.hasRepeatedLocalHour || index % 3 == 0 {
                         Text(presentation.hasRepeatedLocalHour ? hour.unambiguousTimeLabel : hour.timeLabel)
                             .font(.caption.monospacedDigit())
@@ -247,5 +253,11 @@ struct HourlySuitabilityView: View {
         .accessibilityElement(children: .ignore)
         .accessibilityLabel(hour.accessibilityLabel)
         .accessibilityIdentifier("hour-\(index)")
+    }
+
+    private func segmentColor(_ hour: HourlySuitabilityPresentation) -> Color {
+        if hour.isPast { return Color.secondary.opacity(0.24) }
+        if hour.isInferred { return Color.secondary.opacity(0.15) }
+        return HomeStyle.color(hour.recommendation.level).opacity(0.62)
     }
 }

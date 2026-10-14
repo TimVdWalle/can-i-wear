@@ -178,6 +178,19 @@ struct DailyRecommendationEngineTests {
         }
     }
 
+    @Test func displayTimelineKeepsTheWholePlanningDayAfterEarlierHoursPass() throws {
+        let start = currentHour.addingTimeInterval(-8 * 3_600) // 06:00 local
+        let fullDay = (0..<18).map { offset in
+            hour(at: start.addingTimeInterval(TimeInterval(offset * 3_600)))
+        }
+
+        let evaluation = try #require(engine.evaluateDisplayHours(forecast(fullDay), now: now))
+
+        #expect(evaluation.hours.count == 18)
+        #expect(evaluation.hours.first?.timestamp == start)
+        #expect(evaluation.hours.last?.timestamp == start.addingTimeInterval(17 * 3_600))
+    }
+
     private func completeRemainingDay() -> [HourlyWeather] {
         (0..<10).map { offset in
             hour(at: currentHour.addingTimeInterval(TimeInterval(offset * 3_600)))

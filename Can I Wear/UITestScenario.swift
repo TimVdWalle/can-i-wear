@@ -91,7 +91,15 @@ enum UITestScenario {
             isUsingSavedWeather: isUsingSavedWeather,
             isRefreshing: isRefreshing,
             refreshFailed: false,
-            refreshAvailableAt: fetchedAt.addingTimeInterval(15 * 60)
+            refreshAvailableAt: fetchedAt.addingTimeInterval(15 * 60),
+            dayParts: FixedDayPartPresentation.make(from: evaluation, at: start),
+            displayHours: evaluation.hours.map {
+                HourlySuitabilityPresentation(
+                    hour: $0,
+                    timezoneIdentifier: evaluation.timezoneIdentifier,
+                    isPast: false
+                )
+            }
         )
     }
 }

@@ -21,33 +21,18 @@ struct ContentView: View {
                     header
                     content
 
-                    if case .result(let presentation) = model.state {
-                        weatherContext(presentation)
-                    }
-
-                    if model.diagnostics.isEnabled {
-                        Button {
-                            isShowingDiagnostics = true
-                        } label: {
-                            Label("Diagnostics", systemImage: "ladybug")
-                        }
-                        .buttonStyle(.bordered)
-                        .controlSize(.large)
-                        .frame(minHeight: 44)
-                        .contentShape(Rectangle())
-                        .accessibilityIdentifier("diagnostics-button")
-                    }
-
                     Link(destination: URL(string: "https://open-meteo.com/")!) {
-                        Text("Weather data by Open-Meteo")
+                        Text("Weather provided by Open-Meteo")
                             .font(.footnote)
-                            .foregroundStyle(.secondary)
-                            .frame(minHeight: 44)
+                            .frame(maxWidth: .infinity, minHeight: 44)
+                            .multilineTextAlignment(.center)
                             .contentShape(Rectangle())
                     }
+                    .tint(.secondary)
                 }
                 .padding(.horizontal, 20)
-                .padding(.vertical, 24)
+                .padding(.top, 40)
+                .padding(.bottom, 24)
                 .frame(maxWidth: 640, minHeight: geometry.size.height, alignment: .topLeading)
                 .frame(maxWidth: .infinity)
             }
@@ -74,11 +59,32 @@ struct ContentView: View {
 
     private var header: some View {
         VStack(alignment: .leading, spacing: 12) {
-            Text("Can I Wear")
-                .font(.largeTitle.bold())
-                .accessibilityAddTraits(.isHeader)
-            Label(model.locality ?? "Current location", systemImage: "mappin.circle.fill")
+            HStack(alignment: .center) {
+                Text("Can I Wear")
+                    .font(.largeTitle.bold())
+                    .accessibilityAddTraits(.isHeader)
+                Spacer()
+                if model.diagnostics.isEnabled {
+                    Button {
+                        isShowingDiagnostics = true
+                    } label: {
+                        Image(systemName: "ladybug")
+                            .font(.title3)
+                            .frame(width: 44, height: 44)
+                            .contentShape(Rectangle())
+                    }
+                    .buttonStyle(.plain)
+                    .accessibilityLabel("Diagnostics")
+                    .accessibilityIdentifier("diagnostics-button")
+                }
+            }
+            HStack(spacing: 8) {
+                LocationPinIcon()
+                    .accessibilityHidden(true)
+                Text(model.locality ?? "Current location")
+            }
                 .font(.headline)
+                .accessibilityElement(children: .combine)
                 .accessibilityIdentifier("weather-locality")
         }
         .padding(.bottom, 8)
@@ -126,7 +132,7 @@ struct ContentView: View {
             if let summary = presentation.summary {
                 RecommendationHeroView(recommendation: summary)
             }
-            DayPartsView(periods: presentation.periods)
+            DayPartsView(dayParts: presentation.dayParts)
             Divider().padding(.vertical, 8)
             HourlySuitabilityView(presentation: presentation)
         }
@@ -134,71 +140,6 @@ struct ContentView: View {
             guard scenePhase == .active else { return }
             await model.monitorAutomaticRefreshes()
         }
-    }
-
-    private func weatherContext(_ presentation: DailyRecommendationPresentation) -> some View {
-        VStack(spacing: 8) {
-            TimelineView(.periodic(from: .now, by: 1)) { timeline in
-                VStack(spacing: 8) {
-                    if presentation.isRefreshing {
-                        ProgressView()
-                            .controlSize(.small)
-                            .accessibilityIdentifier("refresh-status")
-                    }
-                    Text(weatherStatus(presentation, at: timeline.date))
-                        .font(.footnote)
-                        .foregroundStyle(.secondary)
-                        .accessibilityIdentifier("weather-status")
-
-                }
-            }
-        }
-        .frame(maxWidth: .infinity)
-        .multilineTextAlignment(.leading)
-        .accessibilityElement(children: .contain)
-    }
-
-    private func ageDescription(_ age: TimeInterval) -> String {
-        let minutes = max(0, Int(age / 60))
-        if minutes < 1 { return "just now" }
-        return minutes == 1 ? "1 min ago" : "\(minutes) min ago"
-    }
-
-    private func weatherStatus(
-        _ presentation: DailyRecommendationPresentation,
-        at date: Date
-    ) -> String {
-        let age = max(0, date.timeIntervalSince(presentation.weatherFetchedAt))
-        let ageText = ageDescription(age)
-
-        if presentation.isRefreshing {
-            return presentation.isUsingSavedWeather
-                ? "Showing saved weather • Updating…"
-                : "Updating weather…"
-        }
-
-        if presentation.refreshFailed {
-            let wait = presentation.refreshAvailableAt.timeIntervalSince(date)
-            if wait > 0 {
-                return "Refresh failed • Using weather from \(ageText) • Try again in \(countdown(wait))"
-            }
-            return "Refresh failed • Using weather from \(ageText) • Pull down to refresh"
-        }
-
-        let wait = presentation.refreshAvailableAt.timeIntervalSince(date)
-        if wait > 0 {
-            return "Weather updated \(ageText) • Refresh available in \(countdownMinutes(wait))"
-        }
-        return "Weather updated \(ageText) • Pull down to refresh"
-    }
-
-    private func countdown(_ interval: TimeInterval) -> String {
-        "\(max(1, Int(ceil(interval)))) s"
-    }
-
-    private func countdownMinutes(_ interval: TimeInterval) -> String {
-        let minutes = max(1, Int(ceil(interval / 60)))
-        return minutes == 1 ? "1 min" : "\(minutes) min"
     }
 
     private func failure(title: String, message: String) -> some View {
@@ -231,6 +172,20 @@ struct ContentView: View {
     private func retryTitle(at date: Date) -> String {
         guard let seconds = model.retryCountdown(at: date) else { return "Try Again" }
         return "Try again in \(seconds) s"
+    }
+}
+
+private struct LocationPinIcon: View {
+    var body: some View {
+        ZStack {
+            Image(systemName: "drop.fill")
+                .rotationEffect(.degrees(180))
+            Circle()
+                .fill(HomeStyle.background)
+                .frame(width: 5, height: 5)
+                .offset(y: -3)
+        }
+        .frame(width: 18, height: 24)
     }
 }
 

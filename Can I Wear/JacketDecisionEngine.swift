@@ -176,15 +176,57 @@ nonisolated struct DailyRecommendationEngine: Sendable {
             return nil
         }
 
+        return evaluateHours(
+            forecast,
+            interval: DateInterval(start: currentHour, end: day.end),
+            timezoneIdentifier: timezoneIdentifier
+        )
+    }
+
+    /// Evaluates the complete planning timeline shown on the home screen.
+    /// The visual day starts at 06:00 to match the four day-part cards.
+    func evaluateDisplayHours(_ forecast: NormalizedForecast, now: Date) -> DailyEvaluation? {
+        let timezoneIdentifiers = Set(forecast.hours.compactMap(\.timezoneIdentifier))
+        guard
+            timezoneIdentifiers.count == 1,
+            let timezoneIdentifier = timezoneIdentifiers.first,
+            let timezone = TimeZone(identifier: timezoneIdentifier)
+        else { return nil }
+
+        var calendar = Calendar(identifier: .gregorian)
+        calendar.timeZone = timezone
+        guard
+            let day = calendar.dateInterval(of: .day, for: now),
+            let start = calendar.date(
+                bySettingHour: 6,
+                minute: 0,
+                second: 0,
+                of: day.start
+            ),
+            start < day.end
+        else { return nil }
+
+        return evaluateHours(
+            forecast,
+            interval: DateInterval(start: start, end: day.end),
+            timezoneIdentifier: timezoneIdentifier
+        )
+    }
+
+    private func evaluateHours(
+        _ forecast: NormalizedForecast,
+        interval: DateInterval,
+        timezoneIdentifier: String
+    ) -> DailyEvaluation? {
         var expectedTimestamps: [Date] = []
-        var timestamp = currentHour
-        while timestamp < day.end {
+        var timestamp = interval.start
+        while timestamp < interval.end {
             expectedTimestamps.append(timestamp)
             timestamp = timestamp.addingTimeInterval(3_600)
         }
 
         var hoursByTimestamp: [Date: HourlyWeather] = [:]
-        for hour in forecast.hours where hour.timestamp >= currentHour && hour.timestamp < day.end {
+        for hour in forecast.hours where hour.timestamp >= interval.start && hour.timestamp < interval.end {
             guard hoursByTimestamp.updateValue(hour, forKey: hour.timestamp) == nil else {
                 return nil
             }
@@ -231,7 +273,7 @@ nonisolated struct DailyRecommendationEngine: Sendable {
         }
 
         return DailyEvaluation(
-            interval: DateInterval(start: currentHour, end: day.end),
+            interval: interval,
             timezoneIdentifier: timezoneIdentifier,
             hours: evaluatedHours
         )
