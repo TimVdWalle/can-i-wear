@@ -120,6 +120,19 @@ The view should be readable rather than a raw log dump: summarize location, weat
 
 The implemented diagnostic detail view uses compact same-day times, minute-based ages after the first minute, structured period rows and grouped hourly inputs. Only recommendation status text and weather values that cross Caution/Avoid thresholds receive semantic green/orange/red color; labels and reasons preserve meaning without color. The activity history is newest-first and labels category, outcome, detail and duration so it reads as an explanation of app work rather than a raw log.
 
+## Future Home Screen configurations (design principle; layouts TBD)
+
+The Home Screen must eventually support four item/location configurations:
+
+1. **One item, one location** — the approved D-046 reference-based Home Screen (Phase 3).
+2. **Multiple items, one location** — planned with predefined multi-item support (Phase 4); the presentation needs separate approval in Phase 4.1.
+3. **One item, multiple locations** — part of the future multi-location experience (Phase 10); detailed presentation remains TBD.
+4. **Multiple items, multiple locations** — also part of the future multi-location experience (Phase 10); detailed presentation remains TBD.
+
+In every configuration, the primary goal is to tell the user **at a very fast glance whether each relevant item can/should be worn or brought, and when**. Keep recommendation states and timing information consistent and immediately scannable as complexity grows. Reuse visual components and interaction patterns wherever that improves consistency, but **do not force all four configurations into one layout**: separate views or layouts are explicitly acceptable when they improve clarity.
+
+Only the **one-item/one-location** layout is currently approved. The other three are **design scenarios, not approved mockups, interaction choices, or commitments to display all combinations simultaneously**. Their detailed designs remain open for the existing Phase 4.1 and Phase 10.1 decision gates. This principle does not change phase ordering, initial item/location scope, weather/recommendation logic, or the approved single-item Home Screen.
+
 ## First-release multi-item and widget UX (not yet implemented)
 
 - The current Phase 3 single-jacket screen is the foundation, not a final multiple-item design.
