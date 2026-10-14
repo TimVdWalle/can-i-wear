@@ -1,7 +1,7 @@
 # Can I Wear — Weather Logic
 
 > Status: ACTIVE
-> Last updated: 2026-10-08
+> Last updated: 2026-10-13
 > Source of truth: YES
 
 ## Goal
@@ -120,3 +120,7 @@ At minimum:
 - stale forecast;
 - no location;
 - cached recent location/weather.
+
+## Scope of existing rules and later items
+
+All rain, fog/mist, temperature, grouping and precedence thresholds documented **above** are the approved **leather-jacket** decision policy. They must not be automatically applied to additional item types. Phase 4 adds item-specific predefined rules only after their scope is approved; Phase 8 adds basic custom items; Phase 9 adds editable per-item thresholds. New weather factors may be introduced incrementally for an approved item, with provider normalization and deterministic test coverage, while jacket wind remains diagnostic-only until explicitly changed. Advanced rule combinations are deferred to Phase 15. Forecast lookahead is extended in Phase 11 and then reconsidered in Phase 15.

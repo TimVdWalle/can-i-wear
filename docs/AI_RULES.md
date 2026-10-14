@@ -1,7 +1,7 @@
 # Can I Wear — AI Working Rules
 
 > Status: ACTIVE
-> Last updated: 2026-10-04
+> Last updated: 2026-10-13
 > Source of truth: YES
 
 ## 1. Optimize for the final product
@@ -45,17 +45,13 @@ Every important item is:
 
 Never silently turn PROPOSED/TBD into DECIDED.
 
-## 4. Keep V1 small
+## 4. Keep the milestone small; honor the approved first-release scope
 
-Do not add features because they are common in weather apps or technically easy.
-
-No V2 feature should leak into V1 without explicit approval.
+Do not add features because they are common in weather apps or technically easy. The **already completed initial real-device milestone** is leather-jacket-only; the **approved first public App Store release** additionally requires multiple predefined items (Phase 4) and an iOS widget (Phase 5). Custom items, threshold editing, saved cities, notifications and other future features must not leak into the initial release without explicit approval. See D-032–D-045 and `ROADMAP.md`.
 
 ## 5. Rain protection dominates
 
-This app exists primarily to prevent leather-jacket damage from rain.
-
-Do not let a comfortable temperature override meaningful rain risk.
+For the **leather-jacket recommendation**, rain/fog protection dominates and a comfortable temperature must not override a meaningful moisture risk. Other item types need **their own approved policies** rather than inheriting leather rules by default.
 
 ## 6. No scattered magic values
 
@@ -133,3 +129,7 @@ Do not silently overwrite the decision.
 V1 is not done when code compiles.
 
 V1 is done when the intended behavior works reliably on a real phone, key weather/location edge cases are tested, the UX is smooth, and the app can be submitted to the App Store.
+
+## 16. Work from the assigned future feature gates
+
+Every retained future idea has a phase or a decision/evaluation milestone in `ROADMAP.md`. Do **not** treat an evaluation milestone or tentative widget/visibility design as approved implementation behavior. Phase 12 (location schedules) and Phase 13 (notifications) are planning slots with **unapproved relative ordering**. Social features are explicitly excluded. Preserve finished Phase 0–2 evidence, do not rewrite approved leather rules, and update `DECISIONS.md`, `PRODUCT_SPEC.md`, `ROADMAP.md`, `IMPLEMENTATION_PLAN.md` and `TODO.md` together whenever a phase gate resolves a product decision.

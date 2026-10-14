@@ -1,20 +1,18 @@
 # Can I Wear — Project Truth
 
 > Status: ACTIVE
-> Last updated: 2026-10-08
+> Last updated: 2026-10-13
 > Source of truth: YES
 
 ## Purpose
 
-Can I Wear is a simple mobile app that answers:
+Can I Wear is a simple, recommendation-first mobile app answering weather-based questions about **items**. Its **first real-device milestone** focuses on “Can I wear my leather jacket today?” The broader app supports other predefined items by the first public release, and custom items later. “Can I?” and “Should I wear/bring?” are possible item semantics, not a design distinction we must settle now.
 
-**Should I wear my leather jacket today, given the weather where I am?**
+For the leather jacket specifically, the main concern is avoiding rain/fog damage and excessive heat, not maximizing comfort.
 
-The main user problem is not personal comfort. It is protecting a leather jacket from rain that can damage or ruin it, while also avoiding clearly excessive heat.
+## Original leather-jacket foundation (Phases 0–3)
 
-## V1
-
-V1:
+The initial vertical slice and its already approved rules:
 - supports a leather jacket only;
 - uses the user's current location;
 - retrieves weather for that location;
@@ -29,7 +27,7 @@ V1:
 - must work on a real iPhone;
 - is implemented natively for iOS using Swift + SwiftUI;
 - uses a weather service through a thin replaceable provider abstraction; Open-Meteo is the development provider and the production provider remains to be confirmed before distribution;
-- treats Android as a later nice-to-have, not a V1 requirement;
+- defers Android until the mature-iOS stage;
 - targets App Store delivery.
 
 ## Product philosophy
@@ -73,8 +71,18 @@ The project is judged by the final user experience:
 - strong automated tests;
 - successful App Store delivery.
 
-## Non-goals for V1
+## First public release and deferred features
 
+The first App Store release (Phases 4–7) **adds multiple predefined items and the iOS widget** to the already working leather-jacket foundation. The initial item collection, item-specific rules, multi-item screen and exact widget form are subject to user approval in Phases 4–5.
+
+**Not required for the first public release:**
+- custom/user-created items;
+- multiple saved cities and recurring location schedules;
+- notifications;
+- adjustable per-item thresholds;
+- recommendation history, accounts/sync or Android.
+
+**Original core milestone non-goals (historical context):**
 - multiple clothing items;
 - personal weather preferences;
 - accounts/profiles;
@@ -86,9 +94,9 @@ The project is judged by the final user experience:
 
 The approved technical debug switch is not a personal preference or broad settings surface and does not alter recommendation policy.
 
-## Near-term platform features
+## Future product scope
 
-Notifications and an iOS widget are desired relatively early, after the core real-device weather/recommendation flow is working. Their exact inclusion in V1 is still TBD.
+After release, the approved priority sequence begins **basic custom items → editable thresholds → saved/multiple locations → simple forecast extension**. Recurring location schedules and notifications are later, with their relative ordering still open. Additional item details/photos, advanced rules/flexible horizons, preference evaluation, user-facing history, accounts/sync and Android have explicit later phases. Social features are excluded. See [ROADMAP.md](ROADMAP.md).
 
 ## Product name
 

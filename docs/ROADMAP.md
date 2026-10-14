@@ -1,164 +1,119 @@
 # Can I Wear — Implementation Phases & Roadmap
 
 > Status: ACTIVE
-> Last updated: 2026-10-08
+> Last updated: 2026-10-14
 > Source of truth: YES
 
-## Version rule
+## Version and milestone rule
 
-Until the first working real-phone version exists, the project is V1.
+The first **working real-iPhone milestone** is intentionally leather-jacket-only (Phases 0–2). Do not mistake that small engineering milestone for the **first public App Store release**. The first public release must include a **predefined collection of items** and an **iOS widget**, in addition to the already working current-location, weather and daily-period behavior. The first public release is the V1 release in the existing documentation. Do not artificially label incomplete work V2/V3 or imply later features are already implemented.
 
-Do not call unfinished work V2, V3, etc.
+Decisions about the first release and future sequence are recorded in [DECISIONS.md](DECISIONS.md); concrete subphases, dependencies and gates are in [IMPLEMENTATION_PLAN.md](IMPLEMENTATION_PLAN.md). Execution status and historical evidence remain in [TODO.md](TODO.md).
 
-## Detailed execution plan
+## Scope statuses and sequencing
 
-[IMPLEMENTATION_PLAN.md](IMPLEMENTATION_PLAN.md) breaks the phases below into numbered, independently reviewable subphases with scope, acceptance criteria, tests/device validation, dependencies, non-goals and explicit TBD blockers. Track execution in [TODO.md](TODO.md). The detailed plan does not change this roadmap's strategy or approve unresolved product decisions.
+- **Approved for delivery:** features the user explicitly wants. They have an assigned phase, but detailed interaction/technical decisions may still be TBD until the stated design gate.
+- **Evaluation/decision milestone:** an idea with an assigned phase where the first deliverable is to decide its usefulness/scope. This is **not** permission to build the idea automatically.
+- **Explicitly excluded:** social features; no implementation phase is assigned because the user rejected them. Background/continuous location tracking remains excluded unless separately reconsidered.
+- **Approved early sequence:** custom items (8) → adjustable thresholds (9) → multiple locations (10). **Provisional later slots:** Phase 11 onward is a coherent planning placement, **not** user approval of every relative priority. Specifically, location schedules (12) versus notifications (13) is undecided. Reconfirm the relevant order at each later design gate.
 
-## Phase 0 — Decisions & technical foundation
+## Phase 0 — Decisions & technical foundation (completed; historical)
 
-Goal:
-Lock only the decisions needed to build the first quality version.
+Native Swift/SwiftUI project; real-device development; replaceable normalized weather-provider contracts; current-location acquisition; centralized jacket weather rules; period/noise and cache freshness policy; deterministic test foundation. Open-Meteo is approved for unpaid prototyping; production provider remains to be chosen before distribution.
 
-Tasks:
-- initialize native Swift + SwiftUI Xcode project;
-- establish iOS real-device development;
-- integrate the approved development weather service behind the `WeatherProvider` abstraction and retain a clean path to a production provider;
-- implement current-location acquisition;
-- define centralized configuration;
-- define exact measurable rain tolerance;
-- define dynamic period/noise handling;
-- define cache freshness;
-- establish test strategy.
+## Phase 1 — First real-device vertical slice (completed; historical)
 
-Exit:
-The first vertical slice can be built without major unresolved product decisions.
+Current location → live weather → deterministic leather-jacket recommendation → basic result UI → real iPhone. This is the deliberately small working milestone, **not** the complete first public release.
 
-## Phase 1 — First real-device vertical slice
+## Phase 2 — Daily intelligence and diagnostics (completed; historical)
 
-Goal:
-A real phone can answer the leather-jacket question.
+Daily/hourly evaluation; meaningful periods and conservative noise consolidation; rain/temperature/fog protection for leather; safe caching, failure handling and pull-to-refresh; opt-in local diagnostics. Original thresholds and test evidence remain authoritative and are not rewritten for new items.
 
-Must include:
-- current location;
-- weather fetch;
-- centralized jacket rules;
-- deterministic recommendation;
-- basic result UI;
-- real-device execution.
+## Phase 3 — Core app polish (next execution phase)
 
-Keep it intentionally small.
+Polish the already implemented single-item flow: permissions, errors, speed, accessibility, language, interactions and presentation. Preserve Phase 3 tasks 3.1–3.5 and their quality evidence. Phase 4 will subsequently adapt the approved design for several items.
 
-## Phase 2 — V1 daily intelligence
+D-046 approves the reference-based single-item Home Screen for Phase 3 implementation. Broader recovery, performance and real-device accessibility gates remain pending; detail views and multi-item/multi-location layouts are not decided by this screen.
 
-Goal:
-Make the daily recommendation genuinely useful.
+## Phase 4 — Predefined multi-item support (required before first release)
 
-Add:
-- hourly/day forecast evaluation;
-- meaningful dynamic periods;
-- rain protection behavior;
-- temperature bands;
-- conservative noise consolidation;
-- safe cache/fallback behavior.
-- fog/mist protection for leather;
-- opt-in local debug diagnostics through one Apple system Settings switch.
+- Approve which initial item types are included; the precise list is **TBD**, not automatically chosen by AI.
+- Refactor the item/rules representation enough to support multiple predefined items with their own sensible rules and short explanations. Preserve all approved jacket-protection behavior; do **not** apply leather thresholds blindly to other items.
+- Support the existing current-location, remaining-day/meaningful-period recommendation for supported items.
+- Design and validate a simple multi-item presentation. Overview versus single-item navigation is **TBD**; settle in 4.1.
+- No user-created items, personalized thresholds, accounts, saved cities or notifications yet.
 
-Still V1.
+## Phase 5 — First-release iOS widget
 
-## Phase 3 — V1 polish
+- Include an iOS home-screen widget in the first public release.
+- At the design gate choose between separate item widgets plus a combined overview, or a smart combined item overview (or another explicitly approved solution); exact sizes, information density, refresh and interaction remain **TBD**.
+- Examples such as “A and B are wearable today; C from 18:00–23:00” illustrate desired intelligence, **not** fixed widget copy or item-specific rules.
+- Use shared recommendation and freshness contracts; no independently invented background tracking or weather policy.
 
-Goal:
-Remove user friction.
+## Phase 6 — First-release validation
 
-Focus:
-- startup speed;
-- smooth transitions;
-- no unnecessary spinners;
-- permission UX;
-- clear empty/error states;
-- accessibility;
-- visual polish;
-- edge cases;
-- battery behavior.
+Validate jacket rules **and** every supported additional predefined item, multiple-item UI, widget, accessibility, network/cache/permission failure, weather/provider behavior and real iPhone reliability. “Multiple locations” in old Phase 6 field-testing text means testing forecasts in different places, **not** the post-release saved-city feature.
 
-Still V1.
+## Phase 7 — First public App Store release
 
-## Phase 4 — iOS widget
+Complete identity, production weather-provider/license decision, privacy/telemetry decisions, icon/listing/screenshots, TestFlight, review and release. Shipped listing and tests must reflect predefined multiple items + widget. Saved cities, custom items, threshold editing, schedules and notifications are **not** first-release blockers.
 
-Goal:
-Extend the core recommendation to a glanceable iOS widget without changing recommendation rules.
+## Phase 8 — Basic custom items (early post-release)
 
-Tasks:
-- approve widget scope and refresh behavior;
-- implement the widget using the shared recommendation/cache contracts;
-- validate loading, stale-data, location and accessibility states.
+Let users create/manage basic custom items alongside the predefined collection, working locally. Keep information minimal. Rule/template mechanism, default choices and any mandatory properties are decided in 8.1; do not silently implement a full rule builder, detailed wardrobe catalog or photo management. “Can I?” versus “Should I?” may be an item property, but is **not** yet a required distinction.
 
-Still V1; exact scope requires approval before implementation.
+## Phase 9 — Adjustable per-item weather thresholds
 
-## Phase 5 — Notifications
+After basic custom items work, enable editing appropriate item thresholds such as temperature and precipitation. Items begin with sensible defaults; whether editing applies to predefined and/or custom items and exact editing UX are decided at the phase gate. Complex rule-building is **later**, not part of this phase.
 
-Goal:
-Provide optional timely reminders without adding background location tracking or changing recommendation logic.
+## Phase 10 — Multiple locations and a clean overview
 
-Tasks:
-- approve notification scope, timing, permission and stale-data behavior;
-- implement notifications from approved recommendation data;
-- validate opt-in, denial, delivery and accessibility behavior.
+Search for cities, save favorites, use current location automatically, switch location, and see recommendations for multiple selected/relevant locations in a **very clean, easily differentiated, scan-friendly overview**. The initial location-inclusion model is decided here. An active/inactive setting for saved cities is a **candidate, not an approved behavior**. Recurring location schedules are not required in this phase.
 
-Still V1; exact scope requires approval before implementation.
+## Phase 11 — Simple forward-looking forecast extension
 
-## Phase 6 — V1 validation
+Keep today's overview as the starting point; introduce a modest, approved extension of forecast lookahead. Exact number of hours/days, interface and whether the extension applies by location or globally are **TBD**. Full configurable horizons are later in Phase 15.
 
-Goal:
-Prove the app works in real conditions.
+## Phase 12 — Recurring location schedules (later; relative order provisional)
 
-Test:
-- multiple locations;
-- dry days;
-- drizzle;
-- normal/heavy rain;
-- warm days;
-- cool days;
-- morning-only rain;
-- later-day rain;
-- rapidly changing/noisy forecasts;
-- weak/no network;
-- location failures;
-- stale cache;
-- multiple real devices.
+Allow schedules attached to saved locations, including selected weekdays each week, every nth weekday of the month (e.g. second Monday), and every two weeks/other repeating intervals. A scheduled location appears in the overview **only on relevant scheduled days**, alongside current location and any other relevant locations; on a nonmatching day, do not automatically display it. Manual access/override and active/inactive semantics remain **TBD**. Exact order relative to Phase 13 notifications must be reconfirmed before executing either phase.
 
-## Phase 7 — Store readiness
+## Phase 13 — Optional notifications (late; relative order provisional)
 
-Goal:
-Ship V1.
+After the first release, design and implement notifications only with user-approved triggers, timing, opt-in and safe-staleness behavior. The user explicitly permits this feature to be **late**. No background location tracking or push/backend assumption. Relative position against Phase 12 is **TBD**; phase numbers are planning slots, not a settled priority decision.
 
-Tasks:
-- app icon and metadata;
-- privacy information;
-- App Store screenshots;
-- TestFlight testing;
-- App Store review preparation;
-- release.
+## Phase 14 — Later item details, photos and lightweight settings review
 
-## Early follow-up candidates
+Keep custom items minimal for a long time. At this later phase, decide whether/how to add useful item details and photos; neither their exact schema nor photo support is pre-approved as an implementation requirement. Revisit a settings surface only if existing capabilities actually require one; avoid inventing a broad settings screen.
 
-Desired relatively early after the core app works, with exact V1 inclusion still TBD:
-- iOS widget;
-- notifications.
+## Phase 15 — Advanced recommendation logic and configurable horizons
 
-## Later candidates
+Provide a separately gated later phase for more complex configurable rule combinations, item-specific factors and more flexible forecast horizons. Additional weather inputs may already be added **incrementally in whichever earlier item phase requires them**, with explicit approval and tests. Wind remains diagnostic-only for leather until a later approved rule change. Exact advanced builder and horizon UI are TBD, not preselected.
 
-Not commitments:
-- more clothing types;
-- personal preferences;
-- configurable thresholds;
-- wardrobe;
-- richer context;
-- accounts/sync;
-- Android.
+## Phase 16 — Evaluate broader personal preferences
 
-These must not leak into the core V1 vertical slice without explicit approval.
+Evaluate whether cross-item personal preferences add value beyond Phase 9 per-item thresholds. This is a **decision/evaluation milestone**, not automatic authorization to build preferences. If approved, specify implementable follow-up work inside this phase or an expressly approved successor.
+
+## Phase 17 — Recommendation history (late)
+
+Add a user-facing view of previous recommendations, with privacy/retention/presentation defined first. Distinct from the already implemented bounded **local debug-event history**; do not confuse or reuse it as product history without approval.
+
+## Phase 18 — Accounts and cross-device synchronization (very late)
+
+Maintain local-first operation through the earlier phases. Later decide account model, what to sync, privacy, conflict behavior and whether accounts are optional. Accounts/sync must **not** block custom items, saved locations or personal thresholds.
+
+## Phase 19 — Android (much later)
+
+Consider/implement Android only once the iOS experience is mature. Determine architecture, scope parity and release plan at this later phase; do not compromise the native Swift/SwiftUI iOS delivery path now.
+
+## Explicitly excluded or not yet approved
+
+- **Social functionality:** explicitly excluded from the roadmap; no implementation phase.
+- **Continuous background location tracking:** not approved, not an implicit prerequisite for widget, notifications or schedules.
+- **One-off trip/date planning, exact arrival times, automatic trip detection:** discussed only as examples/possibilities; no approved feature commitment. Re-evaluate, if useful, in Phase 11/15 forecast-scope gates.
+- **General settings screen:** undecided; relevant decisions occur with their actual feature in Phases 9–15, not as a mandatory standalone workstream.
+- **Separate user-facing history vs diagnostics:** real recommendation history belongs to Phase 17; existing diagnostics must remain local, opt-in and bounded.
 
 ## App naming
 
-The official app/product name is **Can I Wear**. It is locked unless explicitly reopened by the user.
+The official app/product name is **Can I Wear**. It remains locked unless the user reopens the decision.

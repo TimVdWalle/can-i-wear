@@ -1,58 +1,6 @@
 import Foundation
 import Observation
 
-nonisolated struct RecommendationPresentation: Equatable, Sendable {
-    let title: String
-    let reason: String
-    let symbolName: String
-
-    init(recommendation: HourlyRecommendation) {
-        switch recommendation.level {
-        case .okay:
-            title = "Wear"
-            symbolName = "checkmark.circle.fill"
-        case .caution:
-            title = "Maybe"
-            symbolName = "exclamationmark.triangle.fill"
-        case .avoid:
-            title = "Don’t wear"
-            symbolName = "xmark.circle.fill"
-        }
-
-        reason = switch recommendation.reason {
-        case .suitableTemperature:
-            "No precipitation is expected, and it should not feel too warm."
-        case .warmTemperature:
-            "It may feel warm for a leather jacket."
-        case .excessiveHeat:
-            "It is expected to feel too warm for a leather jacket."
-        case .precipitationRisk:
-            "There is a small chance of precipitation."
-        case .precipitation:
-            "Precipitation is expected and could damage leather."
-        case .fogOrMist:
-            "Fog is expected."
-        case .incompleteForecast:
-            "Part of the forecast is uncertain."
-        }
-    }
-}
-
-nonisolated struct PeriodPresentation: Equatable, Sendable {
-    let interval: DateInterval
-    let timezoneIdentifier: String
-    let recommendation: RecommendationPresentation
-}
-
-nonisolated struct DailyRecommendationPresentation: Equatable, Sendable {
-    let periods: [PeriodPresentation]
-    let weatherFetchedAt: Date
-    let isUsingSavedWeather: Bool
-    let isRefreshing: Bool
-    let refreshFailed: Bool
-    let refreshAvailableAt: Date
-}
-
 @MainActor
 @Observable
 final class RecommendationViewModel {
@@ -273,6 +221,7 @@ final class RecommendationViewModel {
            now().timeIntervalSince(current.weatherFetchedAt) <= reuseConfig.weatherFreshness {
             state = .result(DailyRecommendationPresentation(
                 periods: current.periods,
+                hours: current.hours,
                 weatherFetchedAt: current.weatherFetchedAt,
                 isUsingSavedWeather: true,
                 isRefreshing: true,
@@ -716,6 +665,9 @@ final class RecommendationViewModel {
                     recommendation: RecommendationPresentation(recommendation: $0.recommendation)
                 )
             },
+            hours: evaluation.hours.map {
+                HourlySuitabilityPresentation(hour: $0, timezoneIdentifier: evaluation.timezoneIdentifier)
+            },
             weatherFetchedAt: forecast.metadata.fetchedAt,
             isUsingSavedWeather: isUsingSavedWeather,
             isRefreshing: isRefreshing,
@@ -800,6 +752,7 @@ final class RecommendationViewModel {
         refreshFailureCooldownUntil = now().addingTimeInterval(reuseConfig.failedRequestCooldown)
         state = .result(DailyRecommendationPresentation(
             periods: current.periods,
+            hours: current.hours,
             weatherFetchedAt: current.weatherFetchedAt,
             isUsingSavedWeather: true,
             isRefreshing: false,

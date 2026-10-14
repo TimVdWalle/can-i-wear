@@ -1,20 +1,20 @@
 # Can I Wear — Product Specification
 
 > Status: ACTIVE
-> Last updated: 2026-10-09
+> Last updated: 2026-10-14
 > Source of truth: YES
 
-## V1 user story
+## Initial real-device user story (historical foundation)
 
 When I open the app, I want to know quickly whether I should wear my leather jacket today, based on the weather where I am, primarily to avoid exposing the jacket to rain and damaging it.
 
 ## Product objective
 
-The app is not trying to tell the user whether they will personally feel comfortable in a jacket.
-
-Its primary job is:
+The app recommends whether weather suits particular **items**, without turning into a weather dashboard. The original leather-jacket decision remains protective rather than primarily about personal comfort:
 
 **Protect the leather jacket from weather that can ruin it, while avoiding clearly excessive heat.**
+
+The jacket rules below are specific to leather, **not** defaults for every future clothing/accessory item.
 
 ## Required inputs
 
@@ -57,6 +57,8 @@ The app should communicate:
 - the primary reason.
 
 The primary visual result should be understandable almost immediately.
+
+The Phase 3 single-item Home Screen follows D-046 and `UX.md`: Leather Jacket hero, existing most-protective remaining-day summary, actual consolidated period cards, and raw hourly suitability with explicit uncertainty/grouping context. This presentation approval does not change weather rules or decide the later multi-item screen.
 
 ## Initial temperature interpretation
 
@@ -110,7 +112,7 @@ Initial V1 grouping uses 3 hours for a normal meaningful change. A one-hour Don'
 
 ## Personalization
 
-No personal settings in V1.
+No personal recommendation settings in the original first-release core. Adjustable item thresholds come **after release**, once basic custom items work (Phase 9).
 
 The Apple system Settings app contains one off-by-default **Debug Enabled** technical switch. It only reveals local diagnostics and does not personalize or alter recommendations.
 
@@ -159,3 +161,30 @@ Success is primarily judged by:
 - successful App Store delivery.
 
 Implementation details are secondary to these outcomes.
+
+## First public release: multiple predefined items and widget (Phases 4–7)
+
+- Support a user-approved predefined collection of items in addition to the original leather jacket; exact set **TBD in Phase 4.1**.
+- Each item must have its own appropriate, testable weather recommendation rules; preserve all original leather-protection policy and provenance/cache guardrails.
+- Present multiple item recommendations clearly; **overview versus item switching TBD** in Phase 4.1.
+- Include an iOS home-screen widget. Candidate directions: per-item widgets + combined widget, or a smart combined overview with meaningful time windows; exact scope **TBD in Phase 5.1**.
+- Use current device location and today's relevant hours for first release. No user-created items, saved cities, notification feature or editable rules required for release.
+
+## Approved post-release capabilities and reserved decisions
+
+| Phase | Capability | Scope constraints / still undecided |
+| --- | --- | --- |
+| 8 | Create/manage basic custom items | Predefined items remain available; minimal item details, local-first; template and validation TBD |
+| 9 | Adjust per-item weather thresholds | Sensible defaults; temperature/rain etc.; exact editor/items TBD |
+| 10 | Search/save/select multiple cities, automatic current location, multi-city overview | The overview must be very clean and scannable; active/inactive and default visibility TBD |
+| 11 | Simple forecast lookahead extension | Start with today; exact horizon TBD |
+| 12 | Recurring location schedules | Weekly weekdays, nth weekday monthly, repeating intervals; only scheduled cities appear automatically on matching days; manual override TBD |
+| 13 | Notifications | Optional, after release, may be late; exact timing and order versus Phase 12 TBD |
+| 14 | Evaluate later item details/photos and minimal settings needs | Do not assume photos/schema or general settings screen |
+| 15 | Flexible horizon/advanced configurable rules | Dedicated later scope; add item-specific weather inputs earlier only as actually needed |
+| 16 | Evaluate general personal preferences | Evaluation first, not approved implementation |
+| 17 | User-facing recommendation history | Much later, separate from debug log |
+| 18 | Accounts and sync | Much later; everything works locally until then |
+| 19 | Android | Much later once iOS is mature |
+
+Social features are explicitly excluded. A generic “Should I?”/“Can I?” item classification is optional for later design, not mandated. Exact trip planning, arrivals and date picking are not yet approved.

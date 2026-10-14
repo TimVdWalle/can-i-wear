@@ -1,0 +1,47 @@
+<svg xmlns="http://www.w3.org/2000/svg" width="260" height="320" viewBox="0 0 260 320">
+  <!-- Original bundled artwork for Can I Wear. No external images or fonts. -->
+  <defs>
+    <linearGradient id="body" x1="0" y1="0" x2="1" y2="0">
+      <stop stop-color="#201d1c"/><stop offset=".28" stop-color="#514942"/>
+      <stop offset=".55" stop-color="#292522"/><stop offset=".82" stop-color="#463e37"/><stop offset="1" stop-color="#221f1c"/>
+    </linearGradient>
+    <linearGradient id="sleeve" x1="0" y1="0" x2="1" y2=".2">
+      <stop stop-color="#1c1a19"/><stop offset=".45" stop-color="#49413a"/>
+      <stop offset=".65" stop-color="#302a26"/><stop offset="1" stop-color="#171615"/>
+    </linearGradient>
+    <linearGradient id="lapel" x1="0" y1="0" x2="1" y2="1">
+      <stop stop-color="#65594c"/><stop offset=".4" stop-color="#38312c"/><stop offset="1" stop-color="#201d1b"/>
+    </linearGradient>
+  </defs>
+  <g stroke="#171514" stroke-width="2" stroke-linejoin="round">
+    <path d="M93 31 Q104 19 130 22 Q157 19 168 32 L185 49 219 65 Q232 97 235 133 L249 296 219 300 197 164 192 278 Q133 295 68 278 L64 164 42 300 11 296 25 133 Q28 98 41 65 L76 48Z" fill="url(#body)"/>
+    <path d="M42 65 Q60 68 71 88 L62 164 42 300 11 296 25 133 Q29 91 42 65Z" fill="url(#sleeve)"/>
+    <path d="M218 65 Q199 66 190 87 L197 164 219 300 249 296 235 133 Q232 90 218 65Z" fill="url(#sleeve)"/>
+    <path d="M105 26 Q130 35 155 26 L160 64 130 128 101 64Z" fill="#171615"/>
+    <path d="M108 28 Q130 37 151 28 L150 47 Q130 53 111 46Z" fill="#2c2824"/>
+    <path d="M95 29 L78 55 72 85 113 114 137 141 102 65 109 25Z" fill="url(#lapel)"/>
+    <path d="M158 26 L172 45 187 86 154 112 136 143 151 70 149 27Z" fill="url(#lapel)"/>
+    <path d="M77 52 L47 65 48 74 82 62Z" fill="#39322c"/>
+    <path d="M175 50 L214 65 211 73 179 63Z" fill="#39322c"/>
+    <path d="M69 269 Q129 283 192 268 L192 279 Q130 295 68 278Z" fill="#292420"/>
+    <path d="M12 283 L44 287 42 300 11 296Z M216 287 L247 283 249 296 219 300Z" fill="#292420"/>
+  </g>
+  <g fill="none" stroke-linecap="round">
+    <path d="M75 91 L112 118 137 143 134 278" stroke="#8b8074" stroke-width="2.5"/>
+    <path d="M78 95 L115 123 133 146 130 276" stroke="#171514" stroke-width="2"/>
+    <path d="M86 169 L78 235 M176 170 L181 235" stroke="#121211" stroke-width="7"/>
+    <path d="M86 169 L78 235 M176 170 L181 235" stroke="#928779" stroke-width="2"/>
+    <path d="M150 133 L178 124" stroke="#a49a8a" stroke-width="2"/>
+    <path d="M66 105 Q58 166 45 251 M195 104 Q205 175 215 254" stroke="#766a5d" opacity=".5"/>
+    <path d="M33 132 L44 144 M28 173 L39 184 M224 137 L215 147 M230 187 L218 193" stroke="#766a5d" opacity=".35"/>
+    <path d="M72 265 Q98 269 125 269 M140 269 L186 263 M18 291 L37 294 M223 294 L242 291" stroke="#766a5d" opacity=".65"/>
+    <path d="M92 39 L82 57 78 82 111 105 M162 37 L174 57 181 83 155 104" stroke="#8f8170" opacity=".6"/>
+  </g>
+  <g fill="#b5ada1" stroke="#37312b" stroke-width="1">
+    <circle cx="83" cy="80" r="3"/><circle cx="178" cy="81" r="3"/>
+    <circle cx="53" cy="68" r="2.5"/><circle cx="206" cy="67" r="2.5"/>
+    <rect x="133" y="148" width="4" height="10" rx="1"/>
+    <rect x="82" y="168" width="4" height="9" rx="1"/>
+    <rect x="175" y="169" width="4" height="9" rx="1"/>
+  </g>
+</svg>

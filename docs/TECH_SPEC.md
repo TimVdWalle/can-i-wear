@@ -1,7 +1,7 @@
 # Can I Wear — Technical Specification
 
 > Status: ACTIVE
-> Last updated: 2026-10-09
+> Last updated: 2026-10-14
 > Source of truth: YES
 
 ## Technical goal
@@ -24,7 +24,7 @@ Implementation elegance is secondary to these outcomes.
 
 ## Framework
 
-**DECIDED: native Swift + SwiftUI for V1.**
+**DECIDED: native Swift + SwiftUI for the iOS app and first public release.**
 
 Why:
 - iOS is the product priority;
@@ -65,7 +65,7 @@ A production or future provider can implement the same interface:
 WeatherKitProvider
 ```
 
-The jacket decision engine, period engine and UI must never consume provider-specific response objects.
+The jacket decision engine, period engine and UI must never consume provider-specific response objects. The same boundary must hold when adding other item engines and multi-city screens.
 
 Both evaluated providers supply the required hourly inputs:
 - hourly forecasts;
@@ -134,6 +134,8 @@ Keep these components separated:
 The decision engine must not depend on UI.
 
 The weather provider must be replaceable.
+
+The Home Screen presentation carries the existing `DailyEvaluation` hourly results alongside `DayPeriodEngine` output from the same evaluation/request. The hero reuses `HourlyRecommendation.mostProtective`; SwiftUI does not aggregate weather or apply thresholds. Raw hours retain timestamps/timezone and inferred-gap identity, distinct from consolidated periods. Bundled item artwork has no remote dependency.
 
 ## Central configuration
 
@@ -209,3 +211,17 @@ V1 has no account requirement and no need for a personal profile.
 - analytics/telemetry policy;
 - final bundle identifiers;
 - production weather provider and terms for distribution.
+
+## Planned extensibility by phase (not yet implemented)
+
+- **Phase 4:** Refactor the existing single-jacket rules/output path only as needed for **multiple predefined items**; each item uses appropriate centrally defined rules. Do not alter jacket thresholds or create a large general-purpose rules engine without approval. Confirm item catalog and domain model first.
+- **Phase 5:** Provide the approved widget using app-owned recommendation/cache contracts. Decide safe data sharing, staleness and refresh before implementation; do not add background location tracking.
+- **Phase 8:** Persist basic user-created items locally. Keep models minimal and data migratable without committing to accounts/sync.
+- **Phase 9:** Keep editable item thresholds centralized and testable, with clearly defined defaults and validation; scope TBD at design gate.
+- **Phase 10:** Make weather/cache identity **location-aware**. Distinct saved cities must not cross-contaminate caches or recommendation outputs; ensure a deterministic active/current-location selection and clean multi-city presentation. Exact storage/UI TBD.
+- **Phase 11/15:** Extend forecast horizon incrementally. Define provider limits, temporal boundaries, incomplete forecast safety and per-location timezones when scope is approved.
+- **Phase 12:** Recurring schedules apply to saved locations; do not silently create background GPS tracking, server processing or push requirements. Calendar recurrence details to be designed/tested.
+- **Phase 13:** Notification architecture and permissions are decided at the phase gate; no remote push or background location requirement is implied.
+- **Phase 14–19:** Item details/photos, more complex rules, preferences, history, sync and Android are later gated work, not permission to add those systems now.
+
+Treat `ROADMAP.md` as the phase ledger, `IMPLEMENTATION_PLAN.md` as the implementation gate breakdown, and `TODO.md` as status. Preserve all existing real-device test evidence and approved cache/provider behavior when evolving the app.

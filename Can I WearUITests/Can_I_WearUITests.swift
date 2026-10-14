@@ -9,19 +9,25 @@ final class Can_I_WearUITests: XCTestCase {
     func testDisplaysOrderedRecommendationPeriods() throws {
         let app = launch(scenario: "periods")
 
-        let avoid = app.descendants(matching: .any)["period-0"]
-        let wear = app.descendants(matching: .any)["period-1"]
-        let caution = app.descendants(matching: .any)["period-2"]
+        let wear = app.descendants(matching: .any)["period-0"]
+        let caution = app.descendants(matching: .any)["period-1"]
+        let avoid = app.descendants(matching: .any)["period-3"]
         XCTAssertTrue(avoid.waitForExistence(timeout: 3))
         XCTAssertTrue(wear.exists)
         XCTAssertTrue(caution.exists)
         XCTAssertTrue(avoid.label.contains("–"))
         XCTAssertTrue(wear.label.contains("–"))
         XCTAssertTrue(caution.label.contains("–"))
-        XCTAssertTrue(avoid.label.contains("Don’t wear"))
-        XCTAssertTrue(avoid.label.contains("Precipitation is expected"))
-        XCTAssertTrue(wear.label.contains("Wear"))
-        XCTAssertTrue(caution.label.contains("Maybe"))
+        XCTAssertTrue(avoid.label.contains("AVOID"))
+        XCTAssertFalse(avoid.label.contains("Precipitation"))
+        XCTAssertTrue(wear.label.contains("OK"))
+        XCTAssertTrue(caution.label.contains("CAUTION"))
+        let hero = app.descendants(matching: .any)["recommendation-hero"]
+        XCTAssertTrue(hero.label.contains("Leather Jacket, today: AVOID"))
+        XCTAssertTrue(hero.label.contains("Precipitation could damage leather."))
+        XCTAssertTrue(app.descendants(matching: .any)["hour-0"].label.contains("06:00"))
+        XCTAssertTrue(app.descendants(matching: .any)["hour-17"].label.contains("AVOID"))
+        capture(app, name: "Home — mixed periods")
     }
 
     @MainActor
@@ -67,8 +73,10 @@ final class Can_I_WearUITests: XCTestCase {
     func testDisplaysExplicitFogReason() throws {
         let app = launch(scenario: "fog")
 
-        XCTAssertTrue(app.staticTexts["Don’t wear"].waitForExistence(timeout: 3))
-        XCTAssertTrue(app.staticTexts["Fog is expected."].exists)
+        let hero = app.descendants(matching: .any)["recommendation-hero"]
+        XCTAssertTrue(hero.waitForExistence(timeout: 3))
+        XCTAssertTrue(hero.label.contains("AVOID"))
+        XCTAssertTrue(hero.label.contains("Fog is expected."))
     }
 
     @MainActor
@@ -83,6 +91,7 @@ final class Can_I_WearUITests: XCTestCase {
         let app = launch(scenario: "diagnostics")
         let diagnostics = app.buttons["diagnostics-button"]
         XCTAssertTrue(diagnostics.waitForExistence(timeout: 3))
+        for _ in 0..<4 where !diagnostics.isHittable { app.swipeUp() }
 
         diagnostics.tap()
         XCTAssertTrue(app.descendants(matching: .any)["diagnostics-sheet"].waitForExistence(timeout: 3))
@@ -120,10 +129,13 @@ final class Can_I_WearUITests: XCTestCase {
         XCTAssertTrue(apps.isHittable)
         apps.tap()
 
-        let appRow = settings.staticTexts["Can I Wear"]
-        for _ in 0..<12 where !appRow.isHittable {
-            settings.swipeUp()
-        }
+        // Search rather than swiping past the C section while Settings loads its app list.
+        let appSearch = settings.searchFields.firstMatch
+        XCTAssertTrue(appSearch.waitForExistence(timeout: 10))
+        appSearch.tap()
+        appSearch.typeText("Can I Wear")
+        let appRow = settings.cells.containing(.staticText, identifier: "Can I Wear").firstMatch
+        XCTAssertTrue(appRow.waitForExistence(timeout: 10))
         XCTAssertTrue(appRow.isHittable)
         appRow.tap()
 
@@ -163,6 +175,60 @@ final class Can_I_WearUITests: XCTestCase {
 
     private func toggle(_ element: XCUIElement) {
         element.coordinate(withNormalizedOffset: CGVector(dx: 0.9, dy: 0.5)).tap()
+    }
+
+    @MainActor
+    func testFailureAndLoadingStatesNeverShowSuitability() {
+        for scenario in ["loading", "denied", "unavailable", "incomplete"] {
+            let app = launch(scenario: scenario)
+            XCTAssertFalse(app.descendants(matching: .any)["recommendation-hero"].exists)
+            XCTAssertFalse(app.descendants(matching: .any)["hourly-timeline"].exists)
+            if scenario == "loading" {
+                XCTAssertTrue(app.descendants(matching: .any)["loading-status"].waitForExistence(timeout: 3))
+            } else {
+                XCTAssertTrue(app.staticTexts["failure-title"].exists)
+                XCTAssertTrue(app.buttons["Try Again"].exists)
+            }
+        }
+    }
+
+    @MainActor
+    func testSinglePeriodAndHourlyStatusesHaveNonColorMeaning() {
+        let app = launch(scenario: "okay")
+        XCTAssertTrue(app.descendants(matching: .any)["recommendation-hero"].label.contains("today: OK"))
+        XCTAssertTrue(app.descendants(matching: .any)["period-0"].label.contains("OK"))
+        XCTAssertFalse(app.descendants(matching: .any)["period-1"].exists)
+        XCTAssertTrue(app.descendants(matching: .any)["hour-0"].label.contains("OK. Dry and cool enough."))
+        capture(app, name: "Home — OK")
+    }
+
+    @MainActor
+    func testLargestDynamicTypeSupportsVerticalAndHorizontalScrolling() {
+        let app = XCUIApplication()
+        app.launchArguments = ["-ui-test-scenario", "many-periods", "-UIPreferredContentSizeCategoryName", "UICTContentSizeCategoryAccessibilityXXXL"]
+        app.launch()
+        let hero = app.descendants(matching: .any)["recommendation-hero"]
+        XCTAssertTrue(hero.waitForExistence(timeout: 3))
+        XCTAssertLessThanOrEqual(hero.frame.width, app.frame.width)
+        capture(app, name: "Home — accessibility text")
+        let row = app.scrollViews["day-parts"]
+        for _ in 0..<8 where !row.isHittable { app.swipeUp() }
+        XCTAssertTrue(row.isHittable)
+        let last = app.descendants(matching: .any)["period-5"]
+        for _ in 0..<10 where !last.isHittable { row.swipeLeft() }
+        XCTAssertTrue(last.isHittable)
+        XCTAssertTrue(last.label.contains("AVOID"))
+        let status = app.descendants(matching: .any)["weather-status"]
+        for _ in 0..<8 where !status.isHittable { app.swipeUp() }
+        XCTAssertTrue(status.isHittable)
+    }
+
+    @MainActor
+    private func capture(_ app: XCUIApplication, name: String) {
+        let attachment = XCTAttachment(screenshot: app.screenshot())
+        attachment.name = name
+        attachment.lifetime = .keepAlways
+        add(attachment)
     }
 
     @MainActor

@@ -6,6 +6,8 @@
 
 These charts describe the rules currently implemented in the app. They do not approve any remaining TBD product or UX decisions. Values shown below come from `AppConfiguration.swift`.
 
+**Presentation update (2026-10-13, D-046):** Weather/cache/period algorithms below are unchanged. Historical UI annotations “Wear / Maybe / Don’t wear” now render as “OK / CAUTION / AVOID”. The Home Screen shows the existing most-protective raw-hour summary in a hero, every consolidated period as a horizontal card, and raw hourly suitability beneath. Inferred hours are visibly uncertain; a note explains raw/consolidated differences. See `UX.md` for the approved visual contract.
+
 ## 1. Location, weather, and cache flow
 
 ```mermaid
@@ -278,4 +280,4 @@ The charts cover the implemented behavior in:
 - `DebugDiagnostics.swift`
 - `Settings.bundle/Root.plist`
 
-Phase 2.9 local diagnostics and the Phase 2 fog/mist protection are implemented. Phase 3’s final wording, palette, layout, permission recovery, and accessibility details remain TBD. The temporary implemented labels and states shown here must not be mistaken for those future approvals.
+Phase 2.9 local diagnostics and the Phase 2 fog/mist protection are implemented. D-046 now approves the single-item Home Screen presentation; broader Phase 3 recovery and real-device accessibility validation remain pending. Historical UI annotations in these charts are superseded by the presentation update above.

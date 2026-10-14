@@ -1,15 +1,15 @@
 # Can I Wear — Decisions
 
 > Status: ACTIVE
-> Last updated: 2026-10-09
+> Last updated: 2026-10-14
 > Source of truth: YES
 
 This file records decisions that AI and developers must not casually reopen.
 
 ## Approved decisions
 
-### D-001 — V1 clothing scope
-**Decision:** V1 supports only a leather jacket.
+### D-001 — Original real-device milestone clothing scope (historical clarification)
+**Decision:** The initial real-phone vertical slice supports only a leather jacket. This remains true for completed Phases 0–2. **Superseded for first public release scope by D-032/D-033:** that release includes multiple predefined items.
 
 ### D-002 — Location
 **Decision:** V1 uses the user's current location.
@@ -26,8 +26,8 @@ This file records decisions that AI and developers must not casually reopen.
 ### D-006 — Easy future tuning
 **Decision:** V1 uses fixed initial rules, but they must be easy to tune later without hunting through the codebase.
 
-### D-007 — Personalization
-**Decision:** No personal settings in V1.
+### D-007 — Personalization in the original core milestone
+**Decision:** No personal recommendation settings in the first-release core implementation. Later per-item thresholds are scheduled after release in Phase 9 by D-035; do not infer they are part of the initial release.
 
 ### D-008 — Explanation
 **Decision:** The result must communicate more than a bare Yes/No, but must remain extremely quick to understand.
@@ -153,13 +153,74 @@ The recommendation screen is pull-to-refresh rather than adding a refresh button
 
 Show concise weather age/update status and a reverse-geocoded locality on the normal screen. Do not show exact street, coordinates, location age, accuracy or cache source there; those details remain in diagnostics. Locality lookup must not block the recommendation. Universal Clipboard from the existing copy action is sufficient for moving a diagnostic report to a Mac for now.
 
+## Approved roadmap/product decisions (2026-10-13)
+
+These decisions supersede earlier *scope/timing* language where it conflicts; all earlier approved leather-jacket weather logic, cache behavior, device evidence and privacy limits remain in force for the jacket.
+
+### D-032 — First real-phone milestone is not the first public release
+**Decision:** Keep the current completed leather-jacket-only real-device milestone. The first public App Store release (Phase 7) must additionally support multiple predefined items and an iOS home-screen widget. Notifications and multiple saved cities are **after** that release.
+
+### D-033 — Predefined items before public release
+**Decision:** The first public release includes a predefined collection of supported items, beyond leather jackets. The exact list, per-item rule values, whether the main screen is a combined item overview or single-item switcher, and the exact UX are **TBD in Phase 4**. Do not invent them. Leather-specific rain/fog/temperature policies stay unchanged unless separately approved for leather.
+
+### D-034 — Basic user-created items soon after release
+**Decision:** Allow users to add and manage their own **items**, not necessarily a conventional wardrobe. Start simple with predefined items plus basic custom items, with minimal details and local storage. Custom items are Phase 8; item details/photos are deliberately much later and need further approval. A “Can I?” versus “Should I?” item property is a possibility, **not** yet an approved requirement.
+
+### D-035 — Default rules followed by editable thresholds
+**Decision:** Each item begins with sensible predefined weather rules. After basic custom items work, let users adjust weather thresholds such as temperature or rain in Phase 9; decide exact editing scope/UX at that phase. More complex rules/rulesets are deferred to Phase 15.
+
+### D-036 — Multiple cities, after custom items/thresholds
+**Decision:** After release and after the early custom-items/threshold milestones, support searching cities, saving favorites, automatically using the current location, switching location and viewing several locations in a particularly clean, easily distinguishable and scannable overview. Exact selection and display controls are TBD in Phase 10.
+
+### D-037 — Recurring schedules for saved locations
+**Decision:** Later than basic multi-location support, allow selected weekdays each week, nth weekday in a month (e.g. second Monday), and every-two-week/other repeat intervals. A location with a schedule should appear automatically on the days it matches alongside the current location; on days it doesn't match, do **not** automatically show it in the recommendation overview. Whether cities have active/inactive flags and whether manually showing an unscheduled city is allowed are **TBD**. Phase 12 is the provisional scheduled slot for schedules; its order relative to notifications is **not approved**.
+
+### D-038 — Forecast horizon expands in stages
+**Decision:** Today's overview remains the initial presentation; first add a simple lookahead extension in Phase 11, then explore more configurable horizons in Phase 15. Exact hours, dates, views and behavior remain TBD. The earlier mention of visiting Ghent was an example of why multiple cities are needed, **not** a commitment to a trip/date planner.
+
+### D-039 — Widget in first release, exact multi-item form unresolved
+**Decision:** Deliver the widget in Phase 5 before public release. The desired possibilities include per-item widgets plus an overall widget or a smart combined overview showing recommendations and relevant times for several items. Which option, sizes and rendering behavior are **TBD in 5.1**, not silently decided by AI.
+
+### D-040 — Notifications after release, timing can be late
+**Decision:** Notifications are no longer part of the first release. They can be implemented late; assigned to Phase 13 as a planning slot. Their order relative to recurring location schedules is **TBD**, not an approved dependency.
+
+### D-041 — Long-term items and platform priorities
+**Decision:** User-facing recommendation history is wanted much later (Phase 17). Accounts and syncing are much later (Phase 18); until then the app must work locally. Android belongs much later once iOS is mature (Phase 19). Social functionality is **excluded**, not an implementation candidate.
+
+### D-042 — Incremental factors and later complex logic
+**Decision:** Add extra weather factors incrementally only when supported items need them; do not introduce them without appropriate policy approval and tests. A more advanced recommendation/rule capability belongs in a dedicated later phase (Phase 15). Previously approved jacket behavior remains unchanged.
+
+### D-043 — Other personal preferences are evaluation-only
+**Decision:** Other personal preferences beyond per-item thresholds should be investigated in a later evaluation milestone (Phase 16), not assumed to be useful or automatically implemented.
+
+### D-044 — Item details/photos are deliberately late
+**Decision:** Keep item information minimal for a long time. Review additional details/photos in Phase 14; exact scope is not yet decided.
+
+### D-045 — General settings remain undecided
+**Decision:** Do not create an assumed broad settings feature. Revisit only as needed for approved item, location, notification and forecast features; no dedicated settings phase has been requested. This does not change the approved off-by-default technical Debug Enabled switch.
+
+### D-046 — Approved single-item Home Screen (Phase 3)
+**Decision:** `design/home-screen-reference.png` is the approved visual direction for one leather jacket and current location. It supersedes D-025's temporary result labels/layout: use **OK / CAUTION / AVOID**, a jacket-image hero with one short data-derived reason, one horizontal row of actual consolidated periods, then a segmented **Hourly suitability** timeline. Header: **Can I Wear** and locality, without weather values or unsupported controls. Preserve diagnostics, attribution, freshness, refresh/retry and all failure states.
+
+Reuse D-024's existing most-protective remaining-day summary and reason precedence for the hero; do not introduce majority-of-day optimism. Periods still follow D-026, with accurate local time ranges when fixed day-part names would misrepresent their boundaries. The timeline shows raw evaluated hours, explicitly explains differences from consolidated advice, and marks the approved inferred gap as uncertain rather than fabricating a forecast status. Timezone/DST and coverage rules remain unchanged. Accessible labels, non-color cues, adaptive colors, scalable text and scrolling are required.
+
+This approval is limited to the single-item Home Screen. Detail screens, multi-item/multi-location design and broader recovery-state refinements remain open at their existing gates.
+
 ## Not yet decided
 
 The following are intentionally NOT decisions:
-- exact UI labels;
-- exact UI color palette;
+- UI labels/palette beyond the approved single-item Home Screen;
 - analytics/telemetry;
 - final bundle identifiers;
+- which predefined items launch in Phase 4 and their non-leather rules;
+- multiple-item main UI and exact first widget design;
+- specific creation/template mechanism for basic custom items;
+- threshold editing UX and affected item types;
+- saved-location visibility controls, including possible active/inactive state and manual overrides;
+- precise lookahead/horizon behavior and later trip/date ideas;
+- exact location-schedule UX and notification timing/relative order;
+- later item details/photos, other personal preferences, advanced rules and accounts/sync design;
+- general settings placement beyond feature-specific configuration;
 
 ## Rule for AI
 

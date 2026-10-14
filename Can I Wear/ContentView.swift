@@ -17,20 +17,9 @@ struct ContentView: View {
     var body: some View {
         GeometryReader { geometry in
             ScrollView {
-                VStack(spacing: 24) {
-                    Text("Can I Wear?")
-                        .font(.largeTitle)
-                        .fontWeight(.bold)
-
-                    Text("Leather jacket")
-                        .font(.title2)
-                        .foregroundStyle(.secondary)
-
-                    Spacer()
-
+                VStack(alignment: .leading, spacing: HomeStyle.spacing) {
+                    header
                     content
-
-                    Spacer()
 
                     if case .result(let presentation) = model.state {
                         weatherContext(presentation)
@@ -43,17 +32,24 @@ struct ContentView: View {
                             Label("Diagnostics", systemImage: "ladybug")
                         }
                         .buttonStyle(.bordered)
-                        .controlSize(.small)
+                        .controlSize(.large)
+                        .frame(minHeight: 44)
+                        .contentShape(Rectangle())
                         .accessibilityIdentifier("diagnostics-button")
                     }
 
-                    Link("Weather data by Open-Meteo", destination: URL(string: "https://open-meteo.com/")!)
-                        .font(.footnote)
-                        .foregroundStyle(.secondary)
+                    Link(destination: URL(string: "https://open-meteo.com/")!) {
+                        Text("Weather data by Open-Meteo")
+                            .font(.footnote)
+                            .foregroundStyle(.secondary)
+                            .frame(minHeight: 44)
+                            .contentShape(Rectangle())
+                    }
                 }
-                .frame(maxWidth: .infinity, minHeight: geometry.size.height)
-                .padding()
-                .multilineTextAlignment(.center)
+                .padding(.horizontal, 20)
+                .padding(.vertical, 24)
+                .frame(maxWidth: 640, minHeight: geometry.size.height, alignment: .topLeading)
+                .frame(maxWidth: .infinity)
             }
             .scrollBounceBehavior(.always, axes: .vertical)
             .refreshable {
@@ -63,6 +59,7 @@ struct ContentView: View {
                 Task { await model.manualRefresh() }
             }
         }
+        .background(HomeStyle.background)
         .task(id: scenePhase) {
             guard scenePhase == .active else { return }
             await model.appBecameActive()
@@ -75,11 +72,25 @@ struct ContentView: View {
         }
     }
 
+    private var header: some View {
+        VStack(alignment: .leading, spacing: 12) {
+            Text("Can I Wear")
+                .font(.largeTitle.bold())
+                .accessibilityAddTraits(.isHeader)
+            Label(model.locality ?? "Current location", systemImage: "mappin.circle.fill")
+                .font(.headline)
+                .accessibilityIdentifier("weather-locality")
+        }
+        .padding(.bottom, 8)
+    }
+
     @ViewBuilder
     private var content: some View {
         switch model.state {
         case .idle, .loading:
             ProgressView("Checking today’s weather…")
+                .frame(maxWidth: .infinity, minHeight: 220)
+                .accessibilityIdentifier("loading-status")
         case .result(let presentation):
             result(presentation)
         case .locationPermissionDenied:
@@ -111,21 +122,13 @@ struct ContentView: View {
     }
 
     private func result(_ presentation: DailyRecommendationPresentation) -> some View {
-        VStack(spacing: 20) {
-            if presentation.periods.count == 1, let period = presentation.periods.first {
-                recommendation(period.recommendation, prominent: true)
-            } else {
-                ForEach(Array(presentation.periods.enumerated()), id: \.offset) { index, period in
-                    VStack(spacing: 8) {
-                        Text(timeRange(for: period))
-                            .font(.headline)
-                        recommendation(period.recommendation, prominent: false)
-                    }
-                    .accessibilityElement(children: .combine)
-                    .accessibilityIdentifier("period-\(index)")
-                }
+        VStack(alignment: .leading, spacing: HomeStyle.spacing) {
+            if let summary = presentation.summary {
+                RecommendationHeroView(recommendation: summary)
             }
-
+            DayPartsView(periods: presentation.periods)
+            Divider().padding(.vertical, 8)
+            HourlySuitabilityView(presentation: presentation)
         }
         .task(id: scenePhase == .active ? presentation.weatherFetchedAt : nil) {
             guard scenePhase == .active else { return }
@@ -135,11 +138,6 @@ struct ContentView: View {
 
     private func weatherContext(_ presentation: DailyRecommendationPresentation) -> some View {
         VStack(spacing: 8) {
-            Text("Forecast details")
-                .font(.caption.weight(.semibold))
-                .foregroundStyle(.tertiary)
-                .textCase(.uppercase)
-
             TimelineView(.periodic(from: .now, by: 1)) { timeline in
                 VStack(spacing: 8) {
                     if presentation.isRefreshing {
@@ -152,47 +150,12 @@ struct ContentView: View {
                         .foregroundStyle(.secondary)
                         .accessibilityIdentifier("weather-status")
 
-                    if let locality = model.locality {
-                        Label(locality, systemImage: "location")
-                            .font(.footnote)
-                            .foregroundStyle(.secondary)
-                            .accessibilityIdentifier("weather-locality")
-                    }
                 }
             }
         }
         .frame(maxWidth: .infinity)
-        .padding(.horizontal, 16)
-        .padding(.vertical, 12)
-        .background(.secondary.opacity(0.08), in: RoundedRectangle(cornerRadius: 14))
+        .multilineTextAlignment(.leading)
         .accessibilityElement(children: .contain)
-    }
-
-    private func recommendation(
-        _ presentation: RecommendationPresentation,
-        prominent: Bool
-    ) -> some View {
-        VStack(spacing: prominent ? 16 : 8) {
-            Image(systemName: presentation.symbolName)
-                .font(.system(size: prominent ? 64 : 36))
-                .accessibilityHidden(true)
-            Text(presentation.title)
-                .font(prominent
-                    ? .system(.largeTitle, design: .rounded, weight: .bold)
-                    : .system(.title2, design: .rounded, weight: .bold))
-            Text(presentation.reason)
-                .font(.body)
-                .foregroundStyle(.secondary)
-        }
-        .accessibilityElement(children: .combine)
-    }
-
-    private func timeRange(for period: PeriodPresentation) -> String {
-        let formatter = DateFormatter()
-        formatter.dateStyle = .none
-        formatter.timeStyle = .short
-        formatter.timeZone = TimeZone(identifier: period.timezoneIdentifier)
-        return "\(formatter.string(from: period.interval.start))–\(formatter.string(from: period.interval.end))"
     }
 
     private func ageDescription(_ age: TimeInterval) -> String {
@@ -254,9 +217,15 @@ struct ContentView: View {
                     Task { await model.retry() }
                 }
                 .buttonStyle(.borderedProminent)
+                .controlSize(.large)
+                .frame(minHeight: 44)
                 .disabled(!model.canRetry(at: timeline.date))
             }
         }
+        .frame(maxWidth: .infinity)
+        .padding(24)
+        .background(HomeStyle.card, in: RoundedRectangle(cornerRadius: HomeStyle.cardRadius))
+        .multilineTextAlignment(.center)
     }
 
     private func retryTitle(at date: Date) -> String {
@@ -662,6 +631,12 @@ private struct DiagnosticsView: View {
                     )
                 )
             ],
+            hours: [HourlySuitabilityPresentation(
+                hour: EvaluatedHour(timestamp: .now, recommendation: HourlyRecommendation(
+                    level: .okay, reason: .suitableTemperature
+                )),
+                timezoneIdentifier: TimeZone.current.identifier
+            )],
             weatherFetchedAt: .now,
             isUsingSavedWeather: false,
             isRefreshing: false,

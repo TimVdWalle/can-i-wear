@@ -19,11 +19,11 @@ struct RecommendationViewModelTests {
         await avoid.loadIfNeeded()
         await fog.loadIfNeeded()
 
-        #expect(wear.state.result?.periods.first?.recommendation.title == "Wear")
-        #expect(caution.state.result?.periods.first?.recommendation.title == "Maybe")
-        #expect(avoid.state.result?.periods.first?.recommendation.title == "Don’t wear")
+        #expect(wear.state.result?.periods.first?.recommendation.title == "OK")
+        #expect(caution.state.result?.periods.first?.recommendation.title == "CAUTION")
+        #expect(avoid.state.result?.periods.first?.recommendation.title == "AVOID")
         #expect(avoid.state.result?.periods.first?.recommendation.reason.contains("damage leather") == true)
-        #expect(fog.state.result?.periods.first?.recommendation.title == "Don’t wear")
+        #expect(fog.state.result?.periods.first?.recommendation.title == "AVOID")
         #expect(fog.state.result?.periods.first?.recommendation.reason == "Fog is expected.")
     }
 
@@ -65,7 +65,7 @@ struct RecommendationViewModelTests {
 
         await model.loadIfNeeded()
 
-        #expect(model.state.result?.periods.map(\.recommendation.title) == ["Don’t wear", "Wear"])
+        #expect(model.state.result?.periods.map(\.recommendation.title) == ["AVOID", "OK"])
         #expect(model.state.result?.periods[0].interval.end == model.state.result?.periods[1].interval.start)
     }
 
@@ -78,7 +78,7 @@ struct RecommendationViewModelTests {
 
         await model.loadIfNeeded()
 
-        #expect(model.state.result?.periods.map(\.recommendation.title) == ["Don’t wear", "Wear"])
+        #expect(model.state.result?.periods.map(\.recommendation.title) == ["AVOID", "OK"])
         #expect(model.state.result?.periods.first?.recommendation.reason == "Fog is expected.")
     }
 
@@ -99,6 +99,9 @@ struct RecommendationViewModelTests {
 
         #expect(locationProvider.requestCount == 1)
         #expect(await weatherProvider.requestCount == 1)
+        #expect(model.state.result?.hours.count == 10)
+        #expect(model.state.result?.hours.first?.id == currentHour)
+        #expect(model.state.result?.summary?.title == "OK")
     }
 
     @Test func reusesRecentLocationWithoutRequestingAnotherFix() async {
@@ -140,7 +143,7 @@ struct RecommendationViewModelTests {
         #expect(await provider.requestCount == 0)
         #expect(model.state.result?.isUsingSavedWeather == true)
         #expect(model.state.result?.isRefreshing == false)
-        #expect(model.state.result?.periods.first?.recommendation.title == "Wear")
+        #expect(model.state.result?.periods.first?.recommendation.title == "OK")
     }
 
     @Test func weatherAtFifteenMinutesIsShownAndRefreshed() async throws {
@@ -233,6 +236,7 @@ struct RecommendationViewModelTests {
         )
         await model.loadIfNeeded()
 
+        let savedHours = model.state.result?.hours
         await model.manualRefresh()
         #expect(await provider.requestCount == 0)
 
@@ -242,10 +246,13 @@ struct RecommendationViewModelTests {
         await model.manualRefresh()
         #expect(await provider.requestCount == 1)
         #expect(model.state.result?.isRefreshing == true)
+        #expect(model.state.result?.hours == savedHours)
+        #expect(model.state.result?.summary?.level == .okay)
 
         await provider.complete(with: .success(forecast(fetchedAt: clock.value)))
         await refresh.value
         #expect(model.state.result?.isRefreshing == false)
+        #expect(model.state.result?.hours == savedHours)
     }
 
     @Test func foregroundActivationRefreshesWeatherAtFifteenMinutes() async {
@@ -364,13 +371,15 @@ struct RecommendationViewModelTests {
         #expect(model.state.result?.weatherFetchedAt == now.addingTimeInterval(-20 * 60))
         #expect(model.state.result?.isUsingSavedWeather == true)
         #expect(model.state.result?.isRefreshing == true)
-        #expect(model.state.result?.periods.first?.recommendation.title == "Wear")
+        #expect(model.state.result?.periods.first?.recommendation.title == "OK")
 
         await provider.complete(with: .success(forecast(temperature: 24)))
         await load.value
         #expect(model.state.result?.isUsingSavedWeather == false)
         #expect(model.state.result?.isRefreshing == false)
-        #expect(model.state.result?.periods.first?.recommendation.title == "Don’t wear")
+        #expect(model.state.result?.periods.first?.recommendation.title == "AVOID")
+        #expect(model.state.result?.hours.allSatisfy { $0.recommendation.level == .avoid } == true)
+        #expect(model.state.result?.summary?.level == .avoid)
     }
 
     @Test func keepsStillValidCacheVisibleWhenRefreshFails() async throws {
@@ -393,7 +402,7 @@ struct RecommendationViewModelTests {
         #expect(model.state.result?.isUsingSavedWeather == true)
         #expect(model.state.result?.refreshFailed == true)
         #expect(model.state.result?.isRefreshing == false)
-        #expect(model.state.result?.periods.first?.recommendation.title == "Wear")
+        #expect(model.state.result?.periods.first?.recommendation.title == "OK")
     }
 
     @Test func staleWeatherNeverProducesFallbackResult() async {

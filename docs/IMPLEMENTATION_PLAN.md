@@ -1,27 +1,26 @@
-# Can I Wear — V1 Implementation Plan
+# Can I Wear — Complete Implementation Plan
 
-> Status: ACTIVE — proposed execution breakdown; not new product decisions
-> Last updated: 2026-10-09
+> Status: ACTIVE — agreed scope plus gated, sometimes provisional future execution
+> Last updated: 2026-10-14
 > Source of truth: execution detail subordinate to the existing truth files
 
 ## Authority and execution rules
 
-This plan expands [ROADMAP.md](ROADMAP.md) without changing its phases or strategy. Resolve conflicts using the hierarchy in [PROJECT.md](PROJECT.md): approved decisions, product specification, technical specification, weather logic, UX, then roadmap/execution detail. [DECISIONS.md](DECISIONS.md) remains authoritative for approved decisions. Follow [AI_RULES.md](AI_RULES.md).
+This plan implements the updated scope/sequence in [ROADMAP.md](ROADMAP.md). Resolve conflicts using the hierarchy in [PROJECT.md](PROJECT.md): approved decisions, product specification, technical specification, weather logic, UX, then roadmap/execution detail. [DECISIONS.md](DECISIONS.md) remains authoritative for approved decisions. Follow [AI_RULES.md](AI_RULES.md).
 
 Each numbered subphase is a separate implementation/review unit. Complete its acceptance criteria and required validation before marking it done in [TODO.md](TODO.md). Dependencies mean completed subphases unless explicitly described as evidence-gathering that may run earlier. A decision subphase is complete only when the user has approved the material choices and the affected truth files have been updated; this plan does not approve them.
 
-Work stays within the leather-jacket V1. No personal settings, accounts, other clothing, wardrobe, history, Android, background tracking, opaque ML, widgets or notifications are included in implementation scope here. Widgets/notifications remain follow-up scope decisions, not prerequisites for shipping the current core V1.
+The already completed **first real-device milestone (Phases 0–2)** was leather-jacket-only. The **first public release** additionally requires several predefined items (Phase 4) and an iOS widget (Phase 5). Custom items, editable thresholds, saved/multiple cities, schedules, notifications, recommendation history, accounts and Android are planned **after release** in assigned future phases. A future phase gate may resolve scope, not imply its undecided details are already approved. Social features are excluded. Continuous background location tracking remains unapproved.
 
-Keep a single app target and the existing test targets unless an approved requirement needs more. Component separation does not require packages, a dependency-injection framework, a generic rules framework, or a backend. Names and paths below are likely implementation locations, not a mandated file layout. New Swift files would live under `Can I Wear/`, unit tests under `Can I WearTests/`, and UI tests under `Can I WearUITests/`.
+Keep the existing app and test targets unless a newly approved requirement (such as the widget extension) needs more. Component separation does not require packages, a dependency-injection framework, a generic rules framework, or a backend. Names and paths below are likely implementation locations, not a mandated file layout. New Swift files would live under `Can I Wear/`, unit tests under `Can I WearTests/`, and UI tests under `Can I WearUITests/`.
 
-All product thresholds, freshness windows, grouping parameters, location accuracy requirements and behavior-affecting timeouts belong in a concentrated configuration area. Only the approved temperature boundaries (15°C and 20°C) are fixed today. Explicit test inputs may exercise candidate values without making those values production defaults.
+All product thresholds, freshness windows, grouping parameters, location accuracy requirements and behavior-affecting timeouts belong in a concentrated configuration area. The approved 15°C/20°C boundaries are **leather-jacket rules**, not defaults for new items. Explicit test inputs may exercise candidate values without making those values production defaults.
 
-## Current baseline
+## Current baseline (source-of-truth handoff as of 2026-10-13)
 
-- **Verified complete:** native Swift/SwiftUI project scaffold, app entry point, placeholder `ContentView`, unit/UI test targets, asset catalog placeholders.
-- **Configured, not approved release decisions:** deployment target iOS 26.2, bundle ID `mobi.vandewalle.Can-I-Wear`, automatic signing/team, iPhone and iPad targeting. Do not infer approval from generated project settings.
-- **Not verified:** successful build/test run, signing on a real iPhone, live location/weather, meaningful automated tests, or performance.
-- **Not implemented:** provider interfaces, normalized weather model, WeatherKit adapter/capability, location permission description/provider, centralized rules, decision/period engines, cache, and recommendation UI.
+`TODO.md` is the authoritative completion record, not the historical scaffold snapshot previously embedded here. Phases 0–2 / subphases 0.1–2.9 are recorded complete with real-iPhone evidence, deterministic test coverage, weather/location/provider and cache work, fog/mist protection, daily periods and opt-in diagnostics. Phase 3 is the **next execution stage**. This documentation refresh does not claim a new build, regression pass, release or new Swift implementation. Consult `TODO.md` for precise per-task evidence, limitations and pending rechecks.
+
+**Original historical baseline:** the project initially had a SwiftUI scaffold, placeholder UI, unit/UI test targets, and configured-but-unverified signing/device settings. Those observations were superseded by later implementation and device testing; preserve that sequence in `TODO.md` rather than treating the scaffold as the present state.
 
 ## Decision tracking
 
@@ -40,10 +39,10 @@ These identifiers originated as implementation-blocking TBDs. Their current reso
 | T-09 | Analytics/telemetry policy, including whether any collection is allowed | 7.1, 7.3; before any instrumentation that collects data |
 | T-10 | Exact recommendation/caution labels, reason copy, semantic palette and final layout | Basic proposal in 1.3; final decisions in 3.1 |
 | T-11 | Loading presentation, no-location/no-weather/stale-data wording, permission-denied UX and accessibility details | Basic proposal in 1.3; final decisions in 3.1–3.4 |
-| T-12 | Exact V1 inclusion/timing/scope for widget and notifications | Widget: 4.1. Notifications: 5.1 |
+| T-12 | **Timing resolved:** widget before first release (5.1–5.3); notifications after release (13.1–13.2), possibly late. Exact UX/timing TBD. | 5.1, 13.1 |
 | T-13 | **Resolved in D-029:** use only an explicit provider fog/mist forecast condition; Open-Meteo WMO codes 45/48 produce Avoid. Do not infer from humidity, dew point or visibility. | 2.8 |
 
-No row is resolved by creating this plan. Record approved material choices in `DECISIONS.md` and affected specifications before implementing them. When a blocker covers only part of a subphase, independent evidence gathering or contract work may proceed, but the subphase cannot be marked complete with invented defaults.
+D-032–D-045 resolve the phase-level roadmap choices, but do not settle still-open design gates. This plan does not resolve any undecided behavior on its own. Record approved material choices in `DECISIONS.md` and affected specifications before implementing them. When a blocker covers only part of a subphase, independent evidence gathering or contract work may proceed, but the subphase cannot be marked complete with invented defaults.
 
 ## Phase 0 — Decisions & technical foundation
 
@@ -325,11 +324,15 @@ Goal: add meaningful periods and safe reuse/fallback while retaining determinist
 
 **Updated Phase 2 exit:** 2.1–2.9 criteria met. Local debug tooling remains technical and opt-in; fog/mist behavior must be resolved and tested before Phase 3 presentation approval.
 
-## Phase 3 — V1 polish
+## Phase 3 — Core app polish
 
 Goal: remove measured/user-visible friction without adding features.
 
 ### 3.1 — Approve final V1 presentation details
+
+**Partial approval (D-046):** The single-item Home Screen reference, OK/CAUTION/AVOID labels, hero, horizontal dynamic-period cards and segmented hourly timeline are approved for implementation within 3.4/3.5. Existing loading/recovery behavior is preserved. Broader T-11 refinements and real-device accessibility/transition acceptance remain pending; this does not close all of 3.1–3.5.
+
+**Implementation progress (2026-10-14):** The approved Home Screen and presentation models are implemented with bundled artwork, raw-hour uncertainty/grouping context, timezone/DST labels and scalable layouts. Validation evidence and remaining checks are tracked in `TODO.md`. This is partial Phase 3 delivery, not completion of the recovery, performance or manual accessibility gates.
 
 - **Type:** Product/UX decision.
 - **Objective:** Settle the existing screen and state design.
@@ -389,63 +392,91 @@ Goal: remove measured/user-visible friction without adding features.
 - **Non-goals:** New animations/features, marketing screenshots, icon design.
 - **Blocking TBDs:** None after T-10/T-11 approval.
 
-## Phase 4 — iOS widget
+## Phase 4 — Predefined multi-item support (first-release requirement)
 
-Goal: add an approved, glanceable widget without duplicating recommendation logic.
+Goal: expand the already implemented jacket-only experience to a **small user-approved predefined collection** before public release. Preserve the existing jacket engine and its approved rules. Do not introduce custom-item editing or a generic advanced rules builder simply because more items are needed.
 
-### 4.1 — Approve widget scope and refresh behavior
+### 4.1 — Approve initial item collection and multi-item UX
 
-- **Type:** Product/UX decision.
-- **Objective:** Define the widget’s supported content, freshness, stale-data and interaction behavior.
-- **Exact scope:** Approve widget states, refresh policy, privacy treatment and accessibility expectations; reuse the app’s recommendation/cache contracts.
-- **Acceptance criteria:** Widget scope is recorded in the truth files and does not introduce personal settings, background location or new recommendation rules.
-- **Dependencies:** 3.5.
-- **Blocking TBDs:** T-12.
+- **Type:** Product/UX decision gate.
+- **Objective:** Confirm which predefined items the first release supports, what each item's recommendation means and how users view several items.
+- **Exact scope:** Present a concise candidate list with rules/required weather factors, propose a low-friction layout (overview, item switching, or another design), and obtain approval. The optional “Can I?”/“Should I?” item category is not a mandatory data field without approval.
+- **Acceptance criteria:** Explicitly approved initial catalog, item-specific semantics and primary UI interaction; every required weather factor has an identified normalized input and testable behavior; jacket policy remains unchanged.
+- **Tests/validation:** Review sample forecasts, caution/avoid/OK and multi-item/no-data scenarios against proposed UI; approve sensible defaults for each new item.
+- **Dependencies:** Phase 3.1/3.5 presentation foundation and Phase 2 domain outputs.
+- **Non-goals:** Custom items, user-editable thresholds, saved cities, accounts, notifications, adding unapproved item types.
+- **Blocking TBDs:** Specific first-release items, their appropriate rules/thresholds, and main multi-item UX.
 
-### 4.2 — Implement and validate the iOS widget
+### 4.2 — Implement multi-item rule and domain support
 
-- **Type:** Extension implementation, testing and device validation.
-- **Objective:** Show the current approved recommendation and safe fallback state at a glance.
-- **Exact scope:** Implement the approved widget, shared data handoff, refresh behavior, stale/no-data states and accessibility; keep widget refresh independent of continuous location tracking.
-- **Acceptance criteria:** The widget reflects the app’s deterministic result, never fabricates stale confidence, and works on the approved device/OS matrix.
-- **Dependencies:** 4.1, 3.5.
-- **Non-goals:** Notifications, new clothing types, personal settings or separate recommendation logic.
+- **Type:** Domain/application implementation and deterministic tests.
+- **Objective:** Produce trustworthy recommendations for every approved predefined item for the same current-location weather.
+- **Exact scope:** Add only the catalog/model/rule-config abstraction needed; keep item-specific weather factors and default thresholds centralized; reuse normalized provider/time window/periods/cache contracts where appropriate, without cross-applying the jacket policy to other items.
+- **Acceptance criteria:** Each item gets correct independent recommendation/reasons and meaningful periods; missing inputs fail safely per approved item rules; the existing leather engine passes unchanged regression tests.
+- **Tests/validation:** Item-specific boundary/precedence/coverage tests; regression suite covering rain/fog, cache and local-day periods; tests do not require network/GPS.
+- **Dependencies:** 4.1; original providers and Phase 2.
+- **Non-goals:** User-created items or threshold editing, advanced expression/rule engine, per-city caching.
+- **Blocking TBDs:** None once 4.1 decisions are recorded.
 
-## Phase 5 — Notifications
+### 4.3 — Implement multi-item presentation
 
-Goal: provide optional reminders without background location tracking or separate recommendation logic.
+- **Type:** App UX implementation and UI testing.
+- **Objective:** Make additional item recommendations clear without making the app a weather dashboard.
+- **Exact scope:** Implement the 4.1-approved screen behavior, explanations, period display and safe unavailable/stale states for multiple items; keep quick startup and current location.
+- **Acceptance criteria:** Recommendation meaning and item identity are immediately recognizable, including caution/avoid and weather age; accessible and not color-only; switching/overview performs without duplicate network requests.
+- **Tests/validation:** Deterministic multi-item UI scenarios with at least conflicting item recommendations and changing periods; large text/accessibility checks.
+- **Dependencies:** 4.1–4.2, 3.5.
+- **Non-goals:** Widget, saved cities, custom items, broad settings.
 
-### 5.1 — Approve notification scope, timing and permission behavior
+### 4.4 — Verify multi-item experience on real iPhone
 
-- **Type:** Product/UX decision.
-- **Objective:** Define when notifications may appear and how stale or unavailable recommendations are handled.
-- **Exact scope:** Approve notification triggers, timing, permission request behavior, opt-in/opt-out semantics and stale-data rules; notifications must use the existing recommendation and cache contracts.
-- **Acceptance criteria:** Scope is recorded in the truth files; notifications do not add background location tracking, personal settings or new recommendation rules.
-- **Dependencies:** 4.2.
-- **Blocking TBDs:** T-12.
+- **Type:** Device/integration gate.
+- **Objective:** Prove approved items work together with real live weather before building widget/release assets.
+- **Exact scope:** Real-device current-location flow, all approved items, forecast failures/cached states and UX responsiveness; record evidence and targeted fixes.
+- **Acceptance criteria:** Real-device multi-item recommendation is trustworthy, appropriately fast and regression-tested; Phase 5 can safely share its data.
+- **Dependencies:** 4.3.
+- **Non-goals:** First public release itself, post-release features.
 
-### 5.2 — Implement and validate notifications
+## Phase 5 — First-release iOS widget
 
-- **Type:** Notification implementation, testing and device validation.
-- **Objective:** Deliver approved reminders safely and predictably.
-- **Exact scope:** Implement authorized local notifications, scheduling/cancellation, permission denial handling and accessibility/notification-content checks.
-- **Acceptance criteria:** Notifications are opt-in, use only trustworthy recommendation data, do not duplicate or loop, and behave correctly after relaunch and forecast changes.
-- **Dependencies:** 5.1, 4.2.
-- **Non-goals:** Remote push infrastructure, background location tracking, automatic user profiling or new recommendation logic.
+Goal: ship the iOS widget **before** the first public release; content/design must match the approved predefined multi-item app.
 
-## Phase 6 — V1 validation
+### 5.1 — Approve widget content, form and refresh behavior
 
-Goal: prove existing V1 behavior under real conditions. Record actual results; tests are not complete merely because a checklist exists. Correct failures in focused changes to the responsible component, then rerun affected checks. Changes to approved policies go through the truth-file decision process.
+- **Type:** Product/UX/technical decision gate.
+- **Exact scope:** Review candidate directions expressed by the user: (a) separate per-item widgets plus an overall widget, or (b) a smart combined overview with relevant periods. Decide exact widget forms, supported sizes, widget configuration, tapped destination, refresh limits, permissions, safe stale/no-data states and accessible presentation.
+- **Acceptance criteria:** User chooses the actual widget experience; behavior is possible under the currently supported iOS/widget data constraints without inventing background tracking or changing weather rules.
+- **Dependencies:** 4.3–4.4.
+- **Blocking TBDs:** Final widget variant and UX, supported data refresh/storage behavior.
+
+### 5.2 — Implement approved widget(s)
+
+- **Type:** Widget extension implementation and tests.
+- **Exact scope:** Use shared app-owned item recommendations/weather provenance/periods and safe refresh/cache handoff; implement only the user-approved 5.1 widget forms and states.
+- **Acceptance criteria:** Correct item identity, reason/timing and safe staleness; no widget-specific rule engine or continuous location tracking; no repeated excessive weather calls.
+- **Dependencies:** 5.1, 4.4.
+- **Non-goals:** Notifications, custom items, multi-city support.
+
+### 5.3 — Validate widget on device and through failure states
+
+- **Type:** Device/UX/accessibility validation.
+- **Exact scope:** Validate widget display, update/refresh, item presentation, cache expiry, permission/network failure, app/widget consistency and supported device/sizes.
+- **Acceptance criteria:** Tests plus real-device evidence; widget never fabricates a confident recommendation from stale/unavailable data, and Phase 6 can include it in release-quality regression.
+- **Dependencies:** 5.2.
+
+## Phase 6 — First-release validation
+
+Goal: prove the completed **multi-item app and widget**, in addition to the original leather-jacket behavior, under real conditions. Record actual results; tests are not complete merely because a checklist exists. Correct failures in focused changes to the responsible component, then rerun affected checks. Changes to approved policies go through the truth-file decision process.
 
 ### 6.1 — Complete the deterministic regression matrix
 
 - **Type:** Testing.
 - **Objective:** Close gaps in core rules, periods and failure/fallback coverage.
-- **Exact scope:** Audit and supplement existing tests against `WEATHER_LOGIC.md` and `TODO.md`; cover all boundaries, rain/temperature combinations, daily timing, noise, missing inputs and cache validity without live services.
+- **Exact scope:** Audit and supplement existing tests against `WEATHER_LOGIC.md` and `TODO.md`; cover original jacket boundaries, rain/temperature combinations, daily timing, noise, missing inputs and cache validity **plus every approved predefined item and shared-widget state** without live services.
 - **Likely files/components:** Existing unit/integration test targets and fixture helpers; `TODO.md` evidence.
-- **Acceptance criteria:** Every required core scenario maps to a meaningful passing test; expected outcomes reflect approved rules; test runs need no GPS/network/live weather/time.
+- **Acceptance criteria:** Every required jacket, new-item and widget scenario maps to a meaningful passing test; expected outcomes reflect approved rules; test runs need no GPS/network/live weather/time.
 - **Tests/validation:** Full deterministic suite plus focused UI state tests; review assertions for behavior rather than implementation mirroring.
-- **Dependencies:** 3.5, 2.9.
+- **Dependencies:** 3.5, 2.9, 4.4, 5.3.
 - **Non-goals:** Arbitrary coverage target, giant generated suite, duplicate tests without added behavioral value.
 - **Blocking TBDs:** None after prerequisite decisions; uncovered ambiguity is surfaced for approval.
 
@@ -453,11 +484,11 @@ Goal: prove existing V1 behavior under real conditions. Record actual results; t
 
 - **Type:** Real-device/provider validation.
 - **Objective:** Assess whether live forecasts support trustworthy jacket protection.
-- **Exact scope:** Check multiple locations and observed dry, drizzle, normal/heavy rain, warm/cool, morning-only and later-day rain, and changing forecasts; compare live normalized inputs and recommendations with observed conditions. Review the active provider's accuracy, rain resolution, speed, reliability, cost and deployment experience.
+- **Exact scope:** Check live weather in several **test locations** (not the later multi-city user feature) and observed dry, drizzle, normal/heavy rain, warm/cool, morning-only and later-day rain, and changing forecasts; compare live normalized inputs and recommendations with observed conditions. Review the active provider's accuracy, weather-variable coverage for all launch items, rain resolution, speed, reliability, cost and deployment experience.
 - **Likely files/components:** Active weather adapter, rules/config/period engine, `TODO.md` validation evidence; affected truth files only for approved tuning.
 - **Acceptance criteria:** Observed scenarios and discrepancies are recorded honestly; mapping/logic defects are fixed; provider limitations and unresolved safety issues are visible. Unobserved conditions remain pending rather than fabricated; fixtures supplement field evidence.
 - **Tests/validation:** Real-phone observations, deterministic replay where useful, targeted regression tests for discoveries. If provider suitability fails, propose a decision review rather than silently switch providers.
-- **Dependencies:** 1.4, 2.9, 3.5; provider observation can begin in 0.6 and accumulate earlier.
+- **Dependencies:** 1.4, 2.9, 3.5, 4.4, 5.3; provider observation can begin in 0.6 and accumulate earlier.
 - **Non-goals:** Guaranteeing forecasts, automatic rule tuning, additional providers without approval, location-history collection.
 - **Blocking TBDs:** None after prerequisites; field weather/location availability may limit completion evidence.
 
@@ -469,7 +500,7 @@ Goal: prove existing V1 behavior under real conditions. Record actual results; t
 - **Likely files/components:** Providers, caches, presentation, integration/UI tests, `TODO.md` evidence.
 - **Acceptance criteria:** Approved fallback/expiry behavior holds on device; useful recent data remains clearly represented; unusable data never yields a confident answer; recovery updates the visible result without repeated prompts/request loops.
 - **Tests/validation:** Device offline/slow-network and permission checks; deterministic failure injection for cases live services cannot reliably reproduce; regression tests for fixes.
-- **Dependencies:** 3.5, 6.1.
+- **Dependencies:** 3.5, 4.4, 5.3, 6.1.
 - **Non-goals:** Background delivery, manual cities, adding offline forecast products.
 - **Blocking TBDs:** None after prerequisites.
 
@@ -477,17 +508,17 @@ Goal: prove existing V1 behavior under real conditions. Record actual results; t
 
 - **Type:** Real-device validation and release-quality review.
 - **Objective:** Confirm reliable operation beyond one successful demo.
-- **Exact scope:** Test multiple real iPhones across approved OS/device support; recheck launch, permissions, relaunch, UI/accessibility, network performance and battery/location lifecycle; consolidate evidence and remaining defects.
+- **Exact scope:** Test multiple real iPhones across approved OS/device support; recheck launch, permissions, relaunch, **all predefined items and the widget**, UI/accessibility, network performance and battery/location lifecycle; consolidate evidence and remaining defects.
 - **Likely files/components:** Existing app/tests, project deployment settings, `TODO.md` quality evidence.
 - **Acceptance criteria:** Core scenarios pass on the recorded device/OS matrix; no unresolved defect undermines trustworthy recommendations, required accessibility or reliable operation; performance claims have measurements; no continuous/background location tracking.
 - **Tests/validation:** Real-device matrix, local profiling where needed, full automated suite after necessary fixes; document unavailable matrix coverage explicitly.
-- **Dependencies:** 6.1–6.3, 3.3–3.5, approved T-07.
+- **Dependencies:** 6.1–6.3, 3.3–3.5, 4.4, 5.3, approved T-07.
 - **Non-goals:** Declaring App Store submission complete, expanding platform support, invented performance numbers.
 - **Blocking TBDs:** None after prerequisites; access to multiple devices is an external prerequisite.
 
-## Phase 7 — Store readiness
+## Phase 7 — First public release / Store readiness
 
-Goal: deliver the validated V1 through TestFlight and the App Store. Verify current Apple/provider requirements when executing these subphases; this plan does not assume a frozen submission checklist. Store/account artifacts are likely involved, but this documentation task does not authorize uploads, submissions or release actions now.
+Goal: deliver the validated **multi-item + widget** first public release through TestFlight and the App Store. Verify current Apple/provider requirements when executing these subphases; this plan does not assume a frozen submission checklist. Store/account artifacts are likely involved, but this documentation task does not authorize uploads, submissions or release actions now.
 
 ### 7.1 — Finalize release identity and telemetry policy
 
@@ -505,11 +536,11 @@ Goal: deliver the validated V1 through TestFlight and the App Store. Verify curr
 
 - **Type:** App Store readiness and asset implementation.
 - **Objective:** Replace release placeholders and accurately describe V1.
-- **Exact scope:** Produce/review an icon for Can I Wear, populate the asset catalog, and prepare required listing text/metadata for the existing leather-jacket product.
+- **Exact scope:** Produce/review an icon for Can I Wear, populate the asset catalog, and prepare required listing text/metadata for the approved predefined multi-item product with widget.
 - **Likely files/components:** `Assets.xcassets/AppIcon.appiconset`, listing text/assets, App Store Connect draft fields.
-- **Acceptance criteria:** Approved icon meets requirements verified at execution; listing accurately describes rain-first daily recommendations without unsupported guarantees/features; no icon placeholder remains.
+- **Acceptance criteria:** Approved icon meets requirements verified at execution; listing accurately describes the **actual approved launch-item recommendations and widget** without unsupported guarantees/features; no icon placeholder remains.
 - **Tests/validation:** Icon inspection on device/appearance variants as required; metadata review against actual shipped scope.
-- **Dependencies:** 3.5, 6.1.
+- **Dependencies:** 3.5, 4.4, 5.3, 6.1.
 - **Non-goals:** Renaming, broad branding project, advertising new features.
 - **Blocking TBDs:** Icon/metadata designs require review; exact release asset details are not specified by truth files and are not selected here.
 
@@ -531,9 +562,9 @@ Goal: deliver the validated V1 through TestFlight and the App Store. Verify curr
 - **Objective:** Show the final V1 experience accurately.
 - **Exact scope:** Capture required supported screenshot sizes from final UI using reviewable weather scenarios; prepare approved captions/assets if needed. Fixtures may stage screenshots but do not replace live validation.
 - **Likely files/components:** Final app, deterministic preview/UI fixtures, screenshot artifacts, App Store Connect draft assets.
-- **Acceptance criteria:** Screenshots match shipped UI, show recommendation/period meaning clearly, and meet currently required sizes; no unfinished states or out-of-scope claims.
+- **Acceptance criteria:** Screenshots match shipped UI, show item identity, recommendation/period meaning and actual widget capability clearly, and meet currently required sizes; no unfinished states or out-of-scope claims.
 - **Tests/validation:** Inspect every screenshot for truncation/layout errors and consistency with current build/scope.
-- **Dependencies:** 3.5, 7.2.
+- **Dependencies:** 4.3, 5.3, 7.2.
 - **Non-goals:** Product redesign, new marketing features, changing recommendation logic for screenshots.
 - **Blocking TBDs:** Screenshot/caption selections require review; no final UI details are chosen here.
 
@@ -541,11 +572,11 @@ Goal: deliver the validated V1 through TestFlight and the App Store. Verify curr
 
 - **Type:** App Store readiness, testing and real-device validation.
 - **Objective:** Prove the packaged app works with production distribution settings.
-- **Exact scope:** Prepare signed archive/versioning, run distribution checks, upload through the authorized release workflow, install through TestFlight, and test the core flow plus permissions/fallback. Address release-only defects with focused fixes.
+- **Exact scope:** Prepare signed archive/versioning, run distribution checks, upload through the authorized release workflow, install through TestFlight, and test all release-item recommendations, the widget, permissions/fallback. Address release-only defects with focused fixes.
 - **Likely files/components:** Xcode signing/release settings, existing targets/assets, App Store Connect/TestFlight, `TODO.md` evidence.
-- **Acceptance criteria:** Distribution archive validates and TestFlight installs; live location/weather/recommendation works on a real iPhone; required privacy/assets are present; release-only issues are resolved with appropriate regressions.
+- **Acceptance criteria:** Distribution archive validates and TestFlight installs; live location/weather/multiple-item recommendations and the widget work on a real iPhone; required privacy/assets are present; release-only issues are resolved with appropriate regressions.
 - **Tests/validation:** Automated suite, archive validation, TestFlight cold launch/live flow/denial/offline/relaunch/accessibility smoke tests on approved support.
-- **Dependencies:** 6.4, 7.1–7.3; 7.4 is required before the later submission gate, not to start TestFlight.
+- **Dependencies:** 6.4, 5.3, 7.1–7.3; 7.4 is required before the later submission gate, not to start TestFlight.
 - **Non-goals:** Public release, inviting others or uploading without the applicable task authorization, adding beta-only product features.
 - **Blocking TBDs:** None after prerequisites; account/distribution access and release-action authorization are external prerequisites.
 
@@ -561,14 +592,145 @@ Goal: deliver the validated V1 through TestFlight and the App Store. Verify curr
 - **Non-goals:** V2 scope, feature additions to appease hypothetical review concerns, submission/release without applicable authorization.
 - **Blocking TBDs:** Release timing/method and review material must be confirmed when executing the release task; Store review outcome is external, not a locally completed test.
 
+## Phase 8 — Basic custom items (early post-release)
+
+### 8.1 — Approve minimal custom-item model and defaults
+- **Decision gate:** Decide minimum fields, how a user-created item gets a valid initial weather policy, edit/delete and persistence UX; do not assume arbitrary rule building, photos, item categorization or an owned-wardrobe inventory.
+- **Acceptance:** The user approves the simple local-first experience and error handling; custom items remain distinct from predefined defaults.
+- **Dependencies:** First public release / Phase 7, multi-item architecture from Phase 4.
+
+### 8.2 — Implement and test basic custom-item management
+- **Delivery:** Locally create/display/edit/delete supported custom items using the approved initial rule mechanism, without accounts or sync.
+- **Tests:** persistence/migration, invalid input, restart, loss prevention and deterministic recommendations; real-iPhone usability.
+- **Dependencies:** 8.1.
+
+## Phase 9 — Editable per-item weather thresholds
+
+### 9.1 — Approve rule-threshold editing scope
+- **Decision gate:** Decide which item types and which weather thresholds are editable, value bounds/units/default-reset semantics and the smallest usable interface. Basic items must already work.
+- **Acceptance:** The edit scope is recorded; preserve a reliable default policy and do not build a complex visual rule composer by assumption.
+- **Dependencies:** 8.2.
+
+### 9.2 — Implement tested local per-item overrides
+- **Delivery:** Persist approved threshold changes locally and recompute recommendation/periods; keep normalization, versioning and configuration explicit.
+- **Tests:** boundary values, migration/reset, default parity, incomplete data, precedence and real-device UI.
+- **Dependencies:** 9.1.
+
+## Phase 10 — Multiple locations and a clean overview
+
+### 10.1 — Approve location selection and overview design
+- **Decision gate:** Decide city search/selection, favorites, current-location priority, multi-city inclusion, whether active/inactive flags help, and what happens to saved but unselected cities. Confirm unmistakably scannable city differentiation.
+- **Acceptance:** Explicitly approved location overview and manual visibility model. **Recurring schedules are a later phase**; a saved favorite does not automatically imply display forever.
+- **Dependencies:** 9.2 (preferred sequencing as explicitly stated by the user).
+
+### 10.2 — Implement city search, favorites and current-location coexistence
+- **Delivery:** Add approved city lookup, saved places and safe forecast/cache identity per city, while preserving automatic current-location behavior and the existing one-time location/battery policy.
+- **Tests:** duplicate city names, timezone differences, wrong-city cache, no location permission, refresh limits, persistence, location switching.
+- **Dependencies:** 10.1.
+
+### 10.3 — Implement and device-validate multi-location overview
+- **Delivery:** Display approved location selection with crisp differentiation and per-location item recommendations; measure visual scan and performance with several cities.
+- **Tests:** multiple cities/items, absent/stale data, content-size/accessibility and device UX.
+- **Dependencies:** 10.2.
+
+## Phase 11 — First simple forecast-horizon extension
+
+### 11.1 — Decide minimal extension beyond today's overview
+- **Decision gate:** Choose one small understandable future-looking behavior; exact hours/days are TBD. The Bruges/Ghent example does not require trip/date planning or arrival-time scheduling.
+- **Dependencies:** 10.3.
+
+### 11.2 — Implement and test the approved extension
+- **Delivery:** Safely extend normalized forecast selection and display for approved locations, respecting per-city timezones and unknown-data behavior.
+- **Tests:** day boundaries, missing future hours, provider forecast limits, cross-location timezone differences and cached freshness.
+- **Dependencies:** 11.1.
+
+## Phase 12 — Recurring location schedules (late; slot order with Phase 13 TBD)
+
+### 12.1 — Approve recurrence, visibility and override UX
+- **Decision gate:** Schedule saved cities by selected weekdays each week, nth weekday in month (e.g., second Monday), and every two weeks/other approved repeating intervals. On a matching day the city appears in overview; when it does **not** match, it is not shown automatically. Decide current-location coexistence, optional active/inactive state, manual override, timezone, and schedule editing before implementation.
+- **Dependencies:** Phase 10; Phase 11 is the currently assigned intervening milestone.
+- **Blocking TBD:** Exact precedence against notification Phase 13 has **not** been approved; review sequencing before starting.
+
+### 12.2 — Implement and test local recurrence scheduling
+- **Delivery:** Local schedule persistence and location inclusion evaluation only; background location tracking is not implied.
+- **Tests:** second-Monday patterns, week boundaries, fortnight cadence, DST/timezones, inactive/nonmatching visibility, edits/restarts, multi-city overview.
+- **Dependencies:** 12.1.
+
+## Phase 13 — Notifications (late; slot order with Phase 12 TBD)
+
+### 13.1 — Approve notification value, timing, data and consent
+- **Decision gate:** Notifications are post-release and may be late. Decide specific triggers, opt-in, what to show when data is stale/missing, whether they apply to item/location/day and handling of scheduled cities. Never assume background GPS, automatic push, server or hidden refresh capability.
+- **Dependencies:** Core released recommendation/caching system; revisit whether Phase 12 schedules must precede notifications.
+
+### 13.2 — Implement and test approved notifications
+- **Delivery:** Implement only approved notification behavior and permission/cancellation flow; reuse app recommendation safety contract.
+- **Tests:** denial, opt-out, duplicate prevention, no-data/stale forecast, timezone changes, app relaunch and real device.
+- **Dependencies:** 13.1 and any specifically approved schedule integration.
+
+## Phase 14 — Later item properties, photos and settings check
+
+### 14.1 — Review useful details and photos
+- **Decision/evaluation gate:** Revisit whether a user-created item needs details (e.g., material) or photos, and whether a settings screen is now warranted by actual approved features. The user prefers to keep items minimal for a long time; there is **no approval to implement a photo library or broad settings screen automatically**.
+- **Dependencies:** Phases 8–10 are mature.
+
+### 14.2 — Implement only features approved in 14.1
+- **Conditional delivery:** Small, local-first item-properties and/or photo support or coherent feature-specific settings as approved; otherwise close the evaluation without implementing unnecessary controls.
+- **Tests:** migration/storage/permissions/privacy/accessibility as applicable.
+
+## Phase 15 — Advanced recommendation rules and flexible forecast horizons
+
+### 15.1 — Approve advanced scope
+- **Decision gate:** Choose whether/how to implement more complex user rules/rulesets, additional item-specific weather factors, and flexible forecast periods. Forecast-horizon improvements may have separate subdeliveries within this phase. Do not change jacket wind/fog/rain behavior without approval.
+- **Dependencies:** Phases 9 and 11; later refinements to engine only as warranted.
+
+### 15.2 — Implement and validate approved advanced capabilities
+- **Conditional delivery:** Build only chosen rule/horizon capabilities, preserving deterministic core tests, data-provider independence, safe incomplete weather and item-specific semantics.
+- **Tests:** complex rule precedence/validation, horizons/timezones/provenance and user-controlled overrides, plus regression for all previously supported items.
+
+## Phase 16 — Evaluate wider personal preferences
+
+### 16.1 — Decide whether personal preferences beyond per-item thresholds are useful
+- **Decision/evaluation gate:** Identify actual need for cross-item preferences, using Phase 9 behavior as a baseline. If no added value, document the evaluated decision; **do not build features by assumption**.
+- **Dependencies:** Phase 9 and real usage of item customization.
+
+### 16.2 — Deliver only approved preference functionality, if any
+- **Conditional delivery:** Define UX, local persistence, interaction with per-item overrides and tests only after approval; otherwise phase closes with explicit no-build outcome.
+
+## Phase 17 — User-facing recommendation history (late)
+
+### 17.1 — Approve history scope, privacy and retention
+- **Decision gate:** Define which past recommendations are useful to users, per item/location, and appropriate time/retention. Distinguish this from the current last-20-event **diagnostic** log.
+
+### 17.2 — Implement, test and validate approved history
+- **Delivery:** Local-first user-facing history with accurate provenance, deletion/privacy and persistence behavior; no account requirement.
+
+## Phase 18 — Accounts and synchronization (very late)
+
+### 18.1 — Approve sync/account model
+- **Decision gate:** Consider optionality, synced entities, privacy/auth/data storage and conflicts only after locally functioning items, thresholds and saved-city features are mature.
+
+### 18.2 — Implement and validate if approved
+- **Delivery:** Account/sync infrastructure meeting the agreed requirements without breaking existing offline/local behavior; migration and multi-device reconciliation tested.
+
+## Phase 19 — Android (much later, after iOS matures)
+
+### 19.1 — Agree Android product and technical approach
+- **Decision gate:** Determine parity priorities and implementation strategy while preserving high-quality native iOS code; Android is explicitly a later goal, not a first-release workstream.
+
+### 19.2 — Implement and validate approved Android scope
+- **Delivery:** Android product matching approved scope and accuracy/privacy/UX expectations, with suitable device tests and a separate release gate.
+
 ## Milestones and smallest next action
 
-1. **Foundation gate:** 0.1–0.9. Scaffold exists; device/provider/decision readiness still needs evidence and approvals.
-2. **First major product milestone:** 1.4, the full live real-iPhone vertical slice.
-3. **Daily-intelligence and diagnostics gate:** 2.9, meaningful periods, trustworthy fallback, fog/mist protection and opt-in local diagnostics.
-4. **Polish gate:** 3.5, approved presentation, accessible states and measured friction fixes.
-5. **Widget gate:** 4.2, approved and validated widget.
-6. **Validation gate:** 5.4, regression coverage and real-condition/device evidence.
-7. **Shipping gate:** 6.6, accepted and released V1.
+1. **Foundation gate (historical):** 0.1–0.9 complete according to `TODO.md`.
+2. **Live real-iPhone first slice (historical):** 1.4 complete according to `TODO.md`.
+3. **Daily intelligence, fog and diagnostics (historical):** 2.9 complete according to `TODO.md`.
+4. **Current next work:** 3.1 — review final core presentation details, then close the remaining Phase 3 polish subphases.
+5. **Pre-release multi-item gate:** 4.4 — approved predefined items built, tested and run on device.
+6. **Pre-release widget gate:** 5.3 — approved widget(s) tested with honest stale/no-data states.
+7. **First-release validation gate:** 6.4 — regressions, weather scenarios and devices including new items and widget.
+8. **First public release gate:** 7.6 — TestFlight, submission, accepted build and actual release.
+9. **Approved early post-release sequence:** Phase 8 custom items → Phase 9 thresholds → Phase 10 multi-city overview. Phase 11 modest forecast lookahead is the **assigned provisional next slot**, not an additional approved priority decision.
+10. **Later slots (relative placement provisional):** Phases 12–19 cover scheduling, notifications, item details/photos evaluation, advanced rules/horizons, preference evaluation, history, accounts and Android. **Phase 12 vs 13 priority is not user-approved.**
 
-The next review unit is **3.1**, the explicit approval review for final V1 presentation details. Subphase 2.9 is complete with the packaged Apple Settings switch, local bounded diagnostics, cache/fetch/evaluation explanations, place and copy behavior, diagnostic-only wind, deterministic coverage and a connected-iPhone Settings-to-app walkthrough. Unresolved product choices must remain explicit.
+**Handoff to OpenCode:** First read `docs/PROJECT.md`, `docs/DECISIONS.md`, `docs/ROADMAP.md`, `docs/IMPLEMENTATION_PLAN.md`, `docs/TODO.md`, `docs/PRODUCT_SPEC.md`, `docs/WEATHER_LOGIC.md`, `docs/TECH_SPEC.md`, `docs/UX.md`, `docs/AI_RULES.md` and `docs/IMPLEMENTED_RULES_FLOWCHARTS.md`. Treat phase gates marked TBD as decisions to ask the user about at execution time. Do not mark current subphases complete without code/tests/device evidence. No source code has been modified as part of this documentation update.
