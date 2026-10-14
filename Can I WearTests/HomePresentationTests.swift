@@ -138,11 +138,39 @@ struct HomePresentationTests {
         )
 
         #expect(evaluation.hours.first?.timestamp == forecast.hours[13].timestamp)
-        #expect(dayParts.map(\.dayPart) == [.morning, .afternoon, .evening, .night])
+        #expect(dayParts.map(\.dayPart) == [.morning, .afternoon, .evening])
+        #expect(dayParts.map(\.dayPart.hourCount) == [6, 6, 6])
+        #expect(dayParts.map(\.timeRangeLabel) == ["06–12", "12–18", "18–24"])
         #expect(dayParts[0].isPast)
         #expect(dayParts[1].isPast)
         #expect(!dayParts[2].isPast)
-        #expect(!dayParts[3].isPast)
+    }
+
+    @Test func currentDayPartRetainsItsWholePeriodRecommendation() throws {
+        let forecast = fixture(
+            levels: Array(repeating: .okay, count: 12)
+                + Array(repeating: .caution, count: 3)
+                + Array(repeating: .okay, count: 3)
+        )
+        let now = forecast.hours[15].timestamp.addingTimeInterval(1_800) // 21:30
+        let evaluation = try #require(engine.evaluateDisplayHours(forecast, now: now))
+        let dayParts = FixedDayPartPresentation.make(from: evaluation, at: now)
+
+        #expect(dayParts[2].dayPart == .evening)
+        #expect(dayParts[2].recommendation?.level == .caution)
+    }
+
+    @Test func hourlyAxisLabelsOmitMinutes() throws {
+        let forecast = fixture()
+        let evaluation = try #require(engine.evaluateDisplayHours(forecast, now: forecast.hours[0].timestamp))
+        let evaluatedHour = try #require(evaluation.hours.first)
+        let hour = HourlySuitabilityPresentation(
+            hour: evaluatedHour,
+            timezoneIdentifier: evaluation.timezoneIdentifier
+        )
+
+        #expect(hour.timeLabel == "06:00")
+        #expect(hour.axisTimeLabel == "06")
     }
 
     private func presentation(_ forecast: NormalizedForecast) throws -> DailyRecommendationPresentation {

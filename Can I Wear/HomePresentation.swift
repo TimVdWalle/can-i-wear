@@ -92,6 +92,10 @@ nonisolated struct HourlySuitabilityPresentation: Equatable, Sendable, Identifia
     var isInferred: Bool { hour.recommendation.reason == .incompleteForecast }
     var timeLabel: String { HomeTime.label(id, timezone: timezoneIdentifier) }
     var unambiguousTimeLabel: String { HomeTime.label(id, timezone: timezoneIdentifier, offset: true) }
+    var axisTimeLabel: String { HomeTime.hourLabel(id, timezone: timezoneIdentifier) }
+    var unambiguousAxisTimeLabel: String {
+        HomeTime.hourLabel(id, timezone: timezoneIdentifier, offset: true)
+    }
     var accessibilityLabel: String {
         if isInferred {
             return "\(unambiguousTimeLabel), forecast uncertain; conservatively inferred \(recommendation.title)"
@@ -104,7 +108,6 @@ nonisolated enum FixedDayPart: String, CaseIterable, Sendable {
     case morning
     case afternoon
     case evening
-    case night
 
     var label: String { rawValue.capitalized }
 
@@ -113,7 +116,6 @@ nonisolated enum FixedDayPart: String, CaseIterable, Sendable {
         case .morning: "sun.max"
         case .afternoon: "sun.max.fill"
         case .evening: "sun.horizon"
-        case .night: "moon"
         }
     }
 
@@ -122,7 +124,6 @@ nonisolated enum FixedDayPart: String, CaseIterable, Sendable {
         case .morning: 6
         case .afternoon: 12
         case .evening: 18
-        case .night: 22
         }
     }
 
@@ -130,9 +131,13 @@ nonisolated enum FixedDayPart: String, CaseIterable, Sendable {
         switch self {
         case .morning: 12
         case .afternoon: 18
-        case .evening: 22
-        case .night: 24
+        case .evening: 24
         }
+    }
+
+    var hourCount: Int { endHour - startHour }
+    var timeRangeLabel: String {
+        String(format: "%02d–%02d", startHour, endHour)
     }
 }
 
@@ -145,12 +150,13 @@ nonisolated struct FixedDayPartPresentation: Equatable, Sendable, Identifiable {
     var id: FixedDayPart { dayPart }
     var label: String { dayPart.label }
     var symbolName: String { dayPart.symbolName }
+    var timeRangeLabel: String { dayPart.timeRangeLabel }
 
     var accessibilityLabel: String {
         let result = recommendation?.title ?? "Unavailable"
         return isPast
-            ? "\(label), \(result), finished for today"
-            : "\(label), \(result)"
+            ? "\(label), \(timeRangeLabel), \(result), finished for today"
+            : "\(label), \(timeRangeLabel), \(result)"
     }
 
     static func make(
@@ -184,17 +190,19 @@ nonisolated struct FixedDayPartPresentation: Equatable, Sendable, Identifiable {
             }
 
             let interval = DateInterval(start: start, end: end)
+            let allHours = evaluation.hours.filter {
+                $0.timestamp >= start && $0.timestamp < end
+            }
+            let isPast = end <= currentTime
             let recommendation = HourlyRecommendation.mostProtective(
-                in: evaluation.hours
-                    .filter { $0.timestamp >= start && $0.timestamp < end }
-                    .map(\.recommendation)
+                in: allHours.map(\.recommendation)
             ).map { RecommendationPresentation(recommendation: $0) }
 
             return FixedDayPartPresentation(
                 dayPart: dayPart,
                 interval: interval,
                 recommendation: recommendation,
-                isPast: end <= currentTime
+                isPast: isPast
             )
         }
     }
@@ -262,6 +270,14 @@ nonisolated private enum HomeTime {
         formatter.timeZone = TimeZone(identifier: timezone) ?? .gmt
         // Explicit 24-hour local times keep ranges compact. Offsets distinguish DST repeats.
         formatter.dateFormat = offset ? "HH:mm 'UTC'xxx" : "HH:mm"
+        return formatter.string(from: date)
+    }
+
+    static func hourLabel(_ date: Date, timezone: String, offset: Bool = false) -> String {
+        let formatter = DateFormatter()
+        formatter.locale = Locale(identifier: "en_US_POSIX")
+        formatter.timeZone = TimeZone(identifier: timezone) ?? .gmt
+        formatter.dateFormat = offset ? "HH 'UTC'xxx" : "HH"
         return formatter.string(from: date)
     }
 }

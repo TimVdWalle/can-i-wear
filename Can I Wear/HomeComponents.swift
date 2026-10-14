@@ -125,11 +125,18 @@ struct DayPartCardView: View {
                 .accessibilityHidden(true)
             Text(dayPart.label)
                 .font(.subheadline.weight(.medium))
-                .fixedSize(horizontal: false, vertical: true)
+                .lineLimit(1)
+                .minimumScaleFactor(0.72)
+                .allowsTightening(true)
+                .frame(maxWidth: .infinity)
+            Text(dayPart.timeRangeLabel)
+                .font(.caption.monospacedDigit())
+                .foregroundStyle(.secondary)
+                .lineLimit(1)
             Text(dayPart.recommendation?.title ?? "—")
                 .font(.caption.bold())
                 .lineLimit(1)
-                .minimumScaleFactor(0.72)
+                .minimumScaleFactor(0.5)
                 .foregroundStyle(dayPart.recommendation.map { HomeStyle.ink($0.level) } ?? .secondary)
                 .padding(.horizontal, 4)
                 .padding(.vertical, 7)
@@ -161,6 +168,9 @@ struct DayPartCardView: View {
 struct DayPartsView: View {
     let dayParts: [FixedDayPartPresentation]
     @Environment(\.dynamicTypeSize) private var typeSize
+    @ScaledMetric(relativeTo: .body) private var rowHeight = 146
+
+    private let columnSpacing: CGFloat = 8
 
     @ViewBuilder
     var body: some View {
@@ -170,9 +180,21 @@ struct DayPartsView: View {
                     cards
                 }
             } else {
-                HStack(spacing: 8) {
-                    cards
+                GeometryReader { geometry in
+                    let cardWidth = max(
+                        0,
+                        (geometry.size.width - CGFloat(dayParts.count - 1) * columnSpacing)
+                            / CGFloat(max(1, dayParts.count))
+                    )
+                    HStack(spacing: columnSpacing) {
+                        ForEach(Array(dayParts.enumerated()), id: \.element.id) { index, dayPart in
+                            DayPartCardView(dayPart: dayPart)
+                                .frame(width: cardWidth)
+                                .accessibilityIdentifier("period-\(index)")
+                        }
+                    }
                 }
+                .frame(height: rowHeight)
             }
         }
         .accessibilityIdentifier("day-parts")
@@ -199,12 +221,40 @@ struct HourlySuitabilityView: View {
 
             GeometryReader { geometry in
                 let count = presentation.displayHours.count
-                let spacing: CGFloat = 2
-                let width = (geometry.size.width - CGFloat(max(0, count - 1)) * spacing)
-                    / CGFloat(max(1, count))
-                HStack(alignment: .top, spacing: spacing) {
-                    ForEach(Array(presentation.displayHours.enumerated()), id: \.element.id) { index, hour in
-                        segment(hour, index: index, width: width)
+                let hoursPerDayPart = 6
+                let hourSpacing: CGFloat = 2
+                let dayPartSpacing: CGFloat = 8
+                Group {
+                    if count == FixedDayPart.allCases.count * hoursPerDayPart {
+                        let internalGapCount = count - FixedDayPart.allCases.count
+                        let width = (
+                            geometry.size.width
+                                - CGFloat(internalGapCount) * hourSpacing
+                                - CGFloat(FixedDayPart.allCases.count - 1) * dayPartSpacing
+                        ) / CGFloat(count)
+                        HStack(alignment: .top, spacing: dayPartSpacing) {
+                            ForEach(FixedDayPart.allCases.indices, id: \.self) { dayPartIndex in
+                                HStack(alignment: .top, spacing: hourSpacing) {
+                                    ForEach(0..<hoursPerDayPart, id: \.self) { offset in
+                                        let index = dayPartIndex * hoursPerDayPart + offset
+                                        segment(
+                                            presentation.displayHours[index],
+                                            index: index,
+                                            width: width
+                                        )
+                                    }
+                                }
+                            }
+                        }
+                    } else {
+                        let width = (
+                            geometry.size.width - CGFloat(max(0, count - 1)) * hourSpacing
+                        ) / CGFloat(max(1, count))
+                        HStack(alignment: .top, spacing: hourSpacing) {
+                            ForEach(Array(presentation.displayHours.enumerated()), id: \.element.id) { index, hour in
+                                segment(hour, index: index, width: width)
+                            }
+                        }
                     }
                 }
                 .padding(.bottom, 4)
@@ -242,7 +292,11 @@ struct HourlySuitabilityView: View {
             Color.clear.frame(height: axisHeight)
                 .overlay(alignment: index >= presentation.displayHours.count - 2 ? .topTrailing : .topLeading) {
                     if presentation.hasRepeatedLocalHour || index % 3 == 0 {
-                        Text(presentation.hasRepeatedLocalHour ? hour.unambiguousTimeLabel : hour.timeLabel)
+                        Text(
+                            presentation.hasRepeatedLocalHour
+                                ? hour.unambiguousAxisTimeLabel
+                                : hour.axisTimeLabel
+                        )
                             .font(.caption.monospacedDigit())
                             .foregroundStyle(.secondary)
                             .fixedSize()
@@ -256,8 +310,8 @@ struct HourlySuitabilityView: View {
     }
 
     private func segmentColor(_ hour: HourlySuitabilityPresentation) -> Color {
-        if hour.isPast { return Color.secondary.opacity(0.24) }
         if hour.isInferred { return Color.secondary.opacity(0.15) }
+        if hour.isPast { return HomeStyle.color(hour.recommendation.level).opacity(0.22) }
         return HomeStyle.color(hour.recommendation.level).opacity(0.62)
     }
 }

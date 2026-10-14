@@ -11,11 +11,12 @@ final class Can_I_WearUITests: XCTestCase {
 
         let wear = app.descendants(matching: .any)["period-0"]
         let caution = app.descendants(matching: .any)["period-1"]
-        let avoid = app.descendants(matching: .any)["period-3"]
+        let avoid = app.descendants(matching: .any)["period-2"]
         XCTAssertTrue(avoid.waitForExistence(timeout: 3))
         XCTAssertTrue(wear.exists)
         XCTAssertTrue(caution.exists)
-        XCTAssertTrue(avoid.label.contains("Night"))
+        XCTAssertTrue(avoid.label.contains("Evening"))
+        XCTAssertTrue(avoid.label.contains("18–24"))
         XCTAssertTrue(wear.label.contains("Morning"))
         XCTAssertTrue(caution.label.contains("Afternoon"))
         XCTAssertTrue(avoid.label.contains("AVOID"))
@@ -186,11 +187,11 @@ final class Can_I_WearUITests: XCTestCase {
     }
 
     @MainActor
-    func testFourDayPartsAndHourlyStatusesHaveNonColorMeaning() {
+    func testThreeDayPartsAndHourlyStatusesHaveNonColorMeaning() {
         let app = launch(scenario: "okay")
         XCTAssertTrue(app.descendants(matching: .any)["recommendation-hero"].label.contains("today: OK"))
         XCTAssertTrue(app.descendants(matching: .any)["period-0"].label.contains("OK"))
-        XCTAssertTrue(app.descendants(matching: .any)["period-3"].label.contains("OK"))
+        XCTAssertTrue(app.descendants(matching: .any)["period-2"].label.contains("OK"))
         XCTAssertTrue(app.descendants(matching: .any)["hour-0"].label.contains("OK. Dry and cool enough."))
         capture(app, name: "Home — OK")
     }
@@ -204,7 +205,7 @@ final class Can_I_WearUITests: XCTestCase {
         XCTAssertTrue(hero.waitForExistence(timeout: 3))
         XCTAssertLessThanOrEqual(hero.frame.width, app.frame.width)
         capture(app, name: "Home — accessibility text")
-        let last = app.descendants(matching: .any)["period-3"]
+        let last = app.descendants(matching: .any)["period-2"]
         for _ in 0..<8 where !last.isHittable { app.swipeUp() }
         XCTAssertTrue(last.isHittable)
         XCTAssertTrue(last.label.contains("AVOID"))

@@ -7,6 +7,11 @@ struct ContentView: View {
     @State private var isShowingDiagnostics = false
 
     init() {
+        #if DEBUG
+        // Development installs expose the local diagnostics shortcut by default.
+        // The release build remains controlled by the opt-in Settings switch.
+        UserDefaults.standard.set(true, forKey: DebugSettings.enabledKey)
+        #endif
         _model = State(initialValue: RecommendationViewModel())
     }
 
@@ -20,15 +25,7 @@ struct ContentView: View {
                 VStack(alignment: .leading, spacing: HomeStyle.spacing) {
                     header
                     content
-
-                    Link(destination: URL(string: "https://open-meteo.com/")!) {
-                        Text("Weather provided by Open-Meteo")
-                            .font(.footnote)
-                            .frame(maxWidth: .infinity, minHeight: 44)
-                            .multilineTextAlignment(.center)
-                            .contentShape(Rectangle())
-                    }
-                    .tint(.secondary)
+                    footer
                 }
                 .padding(.horizontal, 20)
                 .padding(.top, 40)
@@ -37,6 +34,7 @@ struct ContentView: View {
                 .frame(maxWidth: .infinity)
             }
             .scrollBounceBehavior(.always, axes: .vertical)
+            .scrollIndicators(.hidden)
             .refreshable {
                 await model.manualRefresh()
             }
@@ -59,12 +57,35 @@ struct ContentView: View {
 
     private var header: some View {
         VStack(alignment: .leading, spacing: 12) {
-            HStack(alignment: .center) {
-                Text("Can I Wear")
-                    .font(.largeTitle.bold())
-                    .accessibilityAddTraits(.isHeader)
-                Spacer()
-                if model.diagnostics.isEnabled {
+            Text("Can I Wear")
+                .font(.largeTitle.bold())
+                .accessibilityAddTraits(.isHeader)
+            HStack(spacing: 8) {
+                LocationPinIcon()
+                    .accessibilityHidden(true)
+                Text(model.locality ?? "Current location")
+            }
+                .font(.headline)
+                .accessibilityElement(children: .combine)
+                .accessibilityIdentifier("weather-locality")
+        }
+        .padding(.bottom, 8)
+    }
+
+    private var footer: some View {
+        ZStack {
+            Link(destination: URL(string: "https://open-meteo.com/")!) {
+                Text("Weather provided by Open-Meteo")
+                    .font(.footnote)
+                    .frame(maxWidth: .infinity, minHeight: 44)
+                    .multilineTextAlignment(.center)
+                    .contentShape(Rectangle())
+            }
+            .tint(.secondary)
+
+            if model.diagnostics.isEnabled {
+                HStack {
+                    Spacer()
                     Button {
                         isShowingDiagnostics = true
                     } label: {
@@ -78,16 +99,7 @@ struct ContentView: View {
                     .accessibilityIdentifier("diagnostics-button")
                 }
             }
-            HStack(spacing: 8) {
-                LocationPinIcon()
-                    .accessibilityHidden(true)
-                Text(model.locality ?? "Current location")
-            }
-                .font(.headline)
-                .accessibilityElement(children: .combine)
-                .accessibilityIdentifier("weather-locality")
         }
-        .padding(.bottom, 8)
     }
 
     @ViewBuilder

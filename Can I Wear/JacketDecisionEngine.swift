@@ -184,7 +184,7 @@ nonisolated struct DailyRecommendationEngine: Sendable {
     }
 
     /// Evaluates the complete planning timeline shown on the home screen.
-    /// The visual day starts at 06:00 to match the four day-part cards.
+    /// The visual day starts at 06:00 to match the day-part cards.
     func evaluateDisplayHours(_ forecast: NormalizedForecast, now: Date) -> DailyEvaluation? {
         let timezoneIdentifiers = Set(forecast.hours.compactMap(\.timezoneIdentifier))
         guard
