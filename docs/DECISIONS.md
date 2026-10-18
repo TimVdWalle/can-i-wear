@@ -52,10 +52,10 @@ This file records decisions that AI and developers must not casually reopen.
 
 These are initial product rules and must remain centralized so they can be tuned later.
 
-### D-014 — Rain tolerance
+### D-014 — Rain tolerance (historical; measurable policy superseded by D-023)
 **Decision:** A few drops may be tolerated, but rain can ruin a leather jacket and should therefore generally be avoided. Normal or heavy rain is an immediate avoid condition.
 
-The exact measurable API threshold for "a few drops" remains an implementation/configuration detail to validate.
+The measurable hourly policy was subsequently settled by D-023: any forecast precipitation amount above 0 mm or explicit precipitation type produces Avoid. The earlier possibility of tolerating "a few drops" is not an exception to that policy.
 
 ### D-015 — Dynamic-period simplification
 **Decision:** The app must not create many tiny alternating Wear/Avoid periods. Noisy alternating periods should be consolidated into a larger meaningful period, with safety toward avoiding rain.
@@ -111,6 +111,8 @@ All thresholds remain centralized and tunable. Invalid or insufficient required 
 
 ### D-024 — Initial relevant-day and summary policy
 **Decision:** Evaluate only the remaining hours of the forecast location’s current calendar day, from the current local hour through 23:59. For the temporary single-answer vertical slice, the most protective hourly result wins: **Avoid** over **Caution** over **OK**. Phase 2 replaces this coarse answer with meaningful time segments so later weather is not hidden.
+
+**Later presentation clarification (D-046):** “Replaces” refers to the single-answer-only presentation, not removal of the most-protective summary. The Home hero retains that summary alongside meaningful periods; the daily window, ranking and incomplete-coverage policy below remain in force.
 
 For incomplete daily coverage, exactly one isolated unusable/missing hour may be inferred only when valid hours exist immediately before and after it. Use the more protective neighboring result, and never infer better than **Caution**. Two or more missing hours, or a gap at either edge without valid data on both sides, means the forecast is incomplete and no daily recommendation may be produced.
 
@@ -229,6 +231,20 @@ The two Settings controls remain consistent: turning **Guided Home** off also tu
 
 ### D-052 — Consistent daypart status typography
 **Decision:** Render every daypart YES/MAYBE/NO with the same non-shrinking font and minimum badge height. Do not dim the status text when a daypart is past; dim only its background, icon, label and time metadata. This preserves past-state context without making an equivalent recommendation appear smaller or weaker.
+
+### D-053 — Reliable system Settings preference contract
+**Decision:** Use `home_presentation_guided` and `home_introduction_visible` as the canonical Apple system Settings keys for Guided Home and Show How It Works. Both switches store explicit Boolean ON/OFF values in the standard application preference domain. Migrate the earlier `guided_home_enabled` and `show_home_introduction` values once so an existing user’s choices are preserved; retain the existing acknowledgement migration so a dismissed explanation is not redisplayed.
+
+The app synchronizes and resolves these externally edited preferences when it becomes active rather than relying on cached `@AppStorage` state or a `UserDefaults` suite named after the app bundle identifier. The D-051 relationship between the switches remains unchanged. This contract was verified on the physical iPhone 13: Settings wrote Guided Home from on to off while the app was terminated, and launching the app left the stored off value unchanged.
+
+### D-054 — Persistent issue ledger
+**Decision:** Track observed bugs, regressions and reliability problems in `ISSUES.md`, including status, priority, expected/observed behavior, acceptance criteria and validation evidence. AI must review relevant active issues during implementation work and may fix them without a new decision only when the expected behavior is already established by higher-priority truth files. Issues that require changed or undefined product behavior must be marked **NEEDS DECISION** and brought to the user before implementation. Resolved entries remain as regression history.
+
+### D-055 — Missing versus unknown precipitation type
+**Decision:** For a leather-jacket hour with otherwise valid required precipitation amount, chance and temperature, an absent precipitation type does not block evaluation: use the available amount and chance. An explicitly **unknown** type makes that hour unusable for a direct recommendation, even if the other inputs are present, because an unrecognized condition could represent rain or another moisture hazard. Do not treat unknown as dry or guess its meaning. The approved D-024 rule for conservatively inferring at most one isolated unusable hour still applies to daily evaluation.
+
+### D-056 — Reason precedence for equal recommendation levels
+**Decision:** Preserve the existing same-level reason order when selecting one overall leather-jacket reason. Highest priority first: **precipitation (including rain)**, fog/mist, excessive heat, precipitation chance, incomplete forecast, warm temperature, suitable temperature. Rain remains the primary protection concern. This breaks ties between results of the same level; it does not override the approved level order (**Avoid > Caution > OK**) or change hourly thresholds.
 
 ## Not yet decided
 

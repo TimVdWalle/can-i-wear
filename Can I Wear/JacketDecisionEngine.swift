@@ -41,6 +41,7 @@ nonisolated extension HourlyRecommendation {
         return reasonPriority(lhs.reason) < reasonPriority(rhs.reason)
     }
 
+    /// D-056: for equal levels, precipitation outranks fog, heat and the remaining reasons.
     private static func reasonPriority(_ reason: RecommendationReason) -> Int {
         switch reason {
         case .suitableTemperature:
@@ -69,6 +70,8 @@ nonisolated struct JacketDecisionEngine: Sendable {
     }
 
     /// Returns nil when the hour lacks valid inputs required for a safe decision.
+    /// D-055: nil type is absent and does not invalidate otherwise valid data;
+    /// .unknown is an unclassified supplied condition that could conceal moisture.
     func evaluate(_ hour: HourlyWeather) -> HourlyRecommendation? {
         guard
             let precipitationAmount = hour.precipitationAmountMillimeters,

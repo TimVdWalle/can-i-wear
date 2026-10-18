@@ -38,6 +38,7 @@ nonisolated enum PrecipitationType: String, Codable, Equatable, Sendable {
     case snow
     case sleet
     case mixed
+    /// A supplied condition we cannot classify; unlike a missing type, it may conceal moisture risk.
     case unknown
 }
 
@@ -59,6 +60,7 @@ nonisolated struct HourlyWeather: Codable, Equatable, Sendable {
     let actualTemperatureCelsius: Double?
     let apparentTemperatureCelsius: Double?
     let precipitationAmountMillimeters: Double?
+    /// Nil means no type was supplied; valid amount/chance may still support a decision (D-055).
     let precipitationType: PrecipitationType?
     /// A provider-normalized value from 0 (impossible) through 1 (certain).
     let precipitationChanceFraction: Double?

@@ -67,10 +67,10 @@ Keep text extremely short.
 
 Examples:
 
-**WEAR**
+**YES**
 `Dry and cool`
 
-**AVOID**
+**NO**
 `Rain expected`
 
 These are examples, not final copy.
@@ -80,10 +80,10 @@ These are examples, not final copy.
 Example:
 
 Morning
-**AVOID**
+**NO**
 
 11:00 onward
-**WEAR**
+**YES**
 
 Do not render many tiny alternating periods. Consolidate noisy forecasts into meaningful periods.
 

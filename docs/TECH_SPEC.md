@@ -135,7 +135,9 @@ The decision engine must not depend on UI.
 
 The weather provider must be replaceable.
 
-The Home Screen presentation carries the existing `DailyEvaluation` hourly results alongside `DayPeriodEngine` output from the same evaluation/request. The hero reuses `HourlyRecommendation.mostProtective`; SwiftUI does not aggregate weather or apply thresholds. It directly presents the mapped status and reason without a question or second action sentence. Raw hours retain timestamps/timezone and inferred-gap identity, distinct from consolidated periods. Bundled item artwork has no remote dependency. `HomePresentationMode` centrally selects Guided or Compact presentation without changing these outputs; Guided is the default. The default-on `home_presentation_guided` and `home_introduction_visible` Settings-bundle preferences use explicit Boolean ON/OFF values, migrate the earlier keys, and are synchronized from the standard application preference domain when the app returns active. Disabling Guided also disables the introduction, while enabling the introduction also enables Guided. Do not use a cached `@AppStorage` binding for these externally edited values. **Got it** turns off the introduction only. The legacy acknowledgement key is migrated without redisplaying an already dismissed card.
+The Home Screen presentation carries the existing `DailyEvaluation` hourly results alongside `DayPeriodEngine` output from the same evaluation/request. The hero reuses `HourlyRecommendation.mostProtective`; SwiftUI does not aggregate weather or apply thresholds. It directly presents the mapped status and reason without a question or second action sentence. Raw hours retain timestamps/timezone and inferred-gap identity, distinct from consolidated periods. Bundled item artwork has no remote dependency. `HomePresentationMode` centrally selects Guided or Compact presentation without changing these outputs; Guided is the default.
+
+The default-on `home_presentation_guided` and `home_introduction_visible` Settings-bundle preferences use explicit Boolean `TrueValue`/`FalseValue` values in the standard application preference domain. On first use of this contract, migrate stored `guided_home_enabled` and `show_home_introduction` values to the canonical keys. Preserve the separate legacy acknowledgement migration so an already dismissed card is not redisplayed. Synchronize and resolve the standard domain when the app returns active; do not use a cached `@AppStorage` binding or construct a `UserDefaults` suite from the app’s own bundle identifier for these externally edited values. Disabling Guided also disables the introduction, while enabling the introduction also enables Guided. **Got it** turns off the introduction only.
 
 ## Central configuration
 
@@ -157,7 +159,7 @@ Infrastructure constants that are not product behavior may remain close to their
 
 ## Local debug diagnostics
 
-Use `Settings.bundle` preferences for **Guided Home** and **Show How It Works** (both default on) and **Debug Enabled** (default off). The first two control presentation only. Debug state must not alter decision rules, cache validity or normal location/weather request policy.
+Use `Settings.bundle` preferences for **Guided Home** and **Show How It Works** (both default on) and **Debug Enabled** (default off). The presentation switches follow the D-053 preference-domain and migration contract. The first two control presentation only. Debug state must not alter decision rules, cache validity or normal location/weather request policy.
 
 When enabled, expose a dismissible in-app diagnostics surface and a bounded on-device event store of at most 20 events. Record structured request/cache reasons and outcomes rather than relying on console text. Clear retained diagnostics when the setting is disabled. Detailed reverse geocoding for a readable street/place runs only for diagnostics. The normal screen independently resolves only a concise locality. Neither lookup may block recommendation delivery. A copied report is initiated by the user and visibly includes place information.
 
@@ -213,16 +215,15 @@ V1 has no account requirement and no need for a personal profile.
 - final bundle identifiers;
 - production weather provider and terms for distribution.
 
-## Planned extensibility by phase (not yet implemented)
+## Technical constraints for approved future work (not yet implemented)
 
-- **Phase 4:** Refactor the existing single-jacket rules/output path only as needed for **multiple predefined items**; each item uses appropriate centrally defined rules. Do not alter jacket thresholds or create a large general-purpose rules engine without approval. Confirm item catalog and domain model first.
-- **Phase 5:** Provide the approved widget using app-owned recommendation/cache contracts. Decide safe data sharing, staleness and refresh before implementation; do not add background location tracking.
-- **Phase 8:** Persist basic user-created items locally. Keep models minimal and data migratable without committing to accounts/sync.
-- **Phase 9:** Keep editable item thresholds centralized and testable, with clearly defined defaults and validation; scope TBD at design gate.
-- **Phase 10:** Make weather/cache identity **location-aware**. Distinct saved cities must not cross-contaminate caches or recommendation outputs; ensure a deterministic active/current-location selection and clean multi-city presentation. Exact storage/UI TBD.
-- **Phase 11/15:** Extend forecast horizon incrementally. Define provider limits, temporal boundaries, incomplete forecast safety and per-location timezones when scope is approved.
-- **Phase 12:** Recurring schedules apply to saved locations; do not silently create background GPS tracking, server processing or push requirements. Calendar recurrence details to be designed/tested.
-- **Phase 13:** Notification architecture and permissions are decided at the phase gate; no remote push or background location requirement is implied.
-- **Phase 14–19:** Item details/photos, more complex rules, preferences, history, sync and Android are later gated work, not permission to add those systems now.
+Scope, ordering and open choices are maintained in [ROADMAP.md](ROADMAP.md); implementation gates are in [IMPLEMENTATION_PLAN.md](IMPLEMENTATION_PLAN.md). These constraints apply only when the relevant work is approved:
 
-Treat `ROADMAP.md` as the phase ledger, `IMPLEMENTATION_PLAN.md` as the implementation gate breakdown, and `TODO.md` as status. Preserve all existing real-device test evidence and approved cache/provider behavior when evolving the app.
+- Multiple item rules must stay centrally defined and testable. Do not change jacket thresholds or introduce a general-purpose rules engine without approval.
+- A widget must use app-owned recommendation/cache contracts; its data sharing, staleness and refresh need a decision before implementation. Do not add background location tracking.
+- Custom items remain local-first with minimal, migratable storage; editable item thresholds need defaults and validation. Neither requires accounts/sync.
+- Multi-location weather and caches must be location-aware so cities cannot cross-contaminate recommendations; current/active location selection must be deterministic.
+- Forecast extensions must define provider limits, temporal boundaries, incomplete-coverage safety and per-location timezones before implementation.
+- Recurring schedules do not imply background GPS, server processing or push. Notifications require their own permission/architecture decision; neither implies remote push or background location.
+
+Preserve real-device test evidence and approved cache/provider behavior as the app evolves. Later features are not authorized merely by appearing here.

@@ -1,14 +1,14 @@
 # Can I Wear — Weather Logic
 
 > Status: ACTIVE
-> Last updated: 2026-10-13
+> Last updated: 2026-10-18
 > Source of truth: YES
 
 ## Goal
 
 Convert local weather forecast data into a simple leather-jacket recommendation.
 
-The logic should be deterministic, testable and easy to tune.
+This is the current leather-jacket rule reference for hourly classification, remaining-day summary and meaningful periods (D-023/D-024/D-026/D-029/D-046/D-055/D-056). The logic should be deterministic, testable and easy to tune. `DECISIONS.md` retains the approval and supersession history.
 
 ## Core rule priorities
 
@@ -24,14 +24,7 @@ The app is fundamentally a leather-jacket protection tool.
 
 A comfortable temperature does not override meaningful rain risk.
 
-Conceptually:
-
-```text
-meaningful rain -> AVOID
-otherwise -> evaluate temperature
-```
-
-Even the smallest forecast precipitation amount or explicit precipitation type produces **Avoid**. When the forecast amount is 0 mm, probability handles forecast uncertainty: below 10% has no rain effect, 10% through less than 20% produces **Caution**, and 20% or more produces **Avoid**. These initial values remain centralized and tunable.
+Any forecast precipitation amount above 0 mm, or an explicit rain, drizzle, snow, sleet, hail or mixed-precipitation type, produces **Avoid**. With 0 mm and no type indicating precipitation, probability handles forecast uncertainty: below 10% has no rain effect, 10% through less than 20% produces **Caution**, and 20% or more produces **Avoid**. These initial values remain centralized and tunable. A comfortable temperature cannot override precipitation risk.
 
 ## Fog and mist are protection constraints
 
@@ -45,47 +38,49 @@ Initial product rules:
 
 ```text
 temperature <= 15°C          -> OK
-15°C < temperature <= 20°C  -> SEMI_OK / caution
-temperature > 20°C           -> TOO_HOT
+15°C < temperature <= 20°C  -> CAUTION
+temperature > 20°C           -> AVOID (excessive heat)
 ```
 
 These values are centralized configuration, not literals scattered through the application.
 
 Use the warmer of actual and apparent temperature. If only one value is available, use it. If neither is available, do not produce an hourly recommendation.
 
+## Required hourly data
+
+An hourly recommendation requires valid, sufficient precipitation amount and probability and at least one usable actual/apparent temperature. A **missing** precipitation type means no type was supplied: it does not block evaluation when those other inputs are valid, so use their amount/chance signals. An explicitly **unknown** type means a supplied condition could not be classified; it might indicate rain or another moisture hazard, so the hour cannot receive a direct recommendation even when amount/chance are present (D-055). Do not guess that unknown means dry. Daily evaluation may still apply D-024's one-isolated-hour conservative inference. An absent fog/mist-specific signal alone does not invalidate an otherwise usable hour.
+
 ## Recommendation precedence
 
-Initial conceptual precedence:
+The only recommendation levels are **OK**, **Caution** and **Avoid**. Precedence:
 
-1. Data validity
-2. Rain/fog/mist protection
-3. Excessive heat
-4. Temperature comfort/caution
+1. Data validity: no answer from insufficient required inputs.
+2. Precipitation or explicit fog/mist: Avoid regardless of temperature.
+3. Excessive heat: Avoid even if precipitation chance alone would produce Caution.
+4. Remaining precipitation chance and temperature: use the more protective level.
+
+When results of the same level compete for one displayed reason, choose in this order, highest first: precipitation (including rain), fog/mist, excessive heat, precipitation chance, incomplete forecast, warm temperature, suitable temperature (D-056). This selects a reason; it does not change the recommendation level or let a lower-level rain chance override a higher-level hazard.
 
 This means:
 
 - Rain + 18°C -> AVOID
 - Rain + 12°C -> AVOID
 - Dry + 24°C -> AVOID
-- Dry + 18°C -> SEMI_OK
+- Dry + 18°C -> CAUTION
 - Dry + 12°C -> OK
 
 These examples express the product intent and should become automated tests.
 
 ## Day evaluation
 
-1. Get hourly forecast for the relevant local day.
-2. Classify each relevant hour.
-3. Detect contiguous/meaningful recommendation periods.
-4. Suppress noisy rapid alternation.
-5. Prefer a conservative larger period when tiny periods alternate between Wear/Avoid.
-6. Display only meaningful changes.
+1. Evaluate only the forecast location's remaining current calendar day, from its current local hour through day end, using its timezone (including DST boundaries).
+2. Classify every relevant hour; an incomplete window follows the missing-hour rule below.
+3. The Home hero uses the most-protective hourly result: Avoid over Caution over OK, with the existing approved reason precedence. It is not a majority vote.
+4. Group the hours into meaningful, non-overlapping periods; do not present noisy alternation as many tiny changes.
 
-Normal recommendation changes require 3 consecutive forecast hours to form a separate period. A one-hour Avoid result expands into a 2-hour safety period, preferably including the preceding hour. Short safer intervals do not override surrounding risk. Repeated hour-by-hour alternation is consolidated into one period using the most protective result in the noisy span. These parameters remain centralized and fixture-tested.
+Normal recommendation changes require 3 consecutive forecast hours to form a separate period. A one-hour Avoid result expands into a 2-hour safety period by including the preceding hour, or the following hour if it is at the start of the evaluated window. Short safer intervals do not override surrounding risk. Repeated hour-by-hour alternation is consolidated into one period using the most protective result in the noisy span. These parameters remain centralized and fixture-tested.
 
-For the temporary single-answer vertical slice, evaluate the current local hour through the end of the forecast location's calendar day and return the most protective hourly result. Phase 2 replaces this coarse result with meaningful periods.
-
-One isolated missing/unusable hour may be inferred only when it has valid immediate neighbors. Use the more protective neighbor and never infer better than Caution. Multiple gaps or a gap at either edge make the daily forecast incomplete, so no daily recommendation is produced.
+Exactly one isolated missing/unusable hour may be inferred only when it has valid immediate neighbors. Use the more protective neighbor and never infer better than Caution; mark the raw hour uncertain rather than presenting it as observed weather. Two or more gaps or a gap at either edge make the daily forecast incomplete, so no daily recommendation is produced. Meaningful periods are consolidated advice; raw hourly classifications remain distinct.
 
 ## Central configuration
 
@@ -93,20 +88,18 @@ All tunable values must live in one concentrated configuration area.
 
 This includes:
 - temperature boundaries;
-- rain tolerance;
-- precipitation probability thresholds, if used;
+- precipitation amount and probability thresholds;
 - minimum meaningful period duration;
 - noise/alternation consolidation;
-- cache freshness;
 - other product-level magic values.
 
-Do not scatter these through UI, networking or domain logic.
+Do not scatter these through UI, networking or domain logic. Weather/location cache freshness is specified in `PRODUCT_SPEC.md` and its technical contract in `TECH_SPEC.md`.
 
 ## Test cases
 
 At minimum:
 - dry + 12°C -> OK;
-- dry + 18°C -> SEMI_OK;
+- dry + 18°C -> CAUTION;
 - dry + 24°C -> AVOID;
 - rain + 12°C -> AVOID;
 - rain + 18°C -> AVOID;
@@ -123,4 +116,4 @@ At minimum:
 
 ## Scope of existing rules and later items
 
-All rain, fog/mist, temperature, grouping and precedence thresholds documented **above** are the approved **leather-jacket** decision policy. They must not be automatically applied to additional item types. Phase 4 adds item-specific predefined rules only after their scope is approved; Phase 8 adds basic custom items; Phase 9 adds editable per-item thresholds. New weather factors may be introduced incrementally for an approved item, with provider normalization and deterministic test coverage, while jacket wind remains diagnostic-only until explicitly changed. Advanced rule combinations are deferred to Phase 15. Forecast lookahead is extended in Phase 11 and then reconsidered in Phase 15.
+All rain, fog/mist, temperature, grouping and precedence thresholds above apply to the **leather jacket**, not automatically to other items. Introduce new weather factors only with approved item-specific policy, provider normalization and deterministic tests; wind remains diagnostic-only for leather unless separately changed. Future item rules and forecast-horizon scope are tracked in [ROADMAP.md](ROADMAP.md).

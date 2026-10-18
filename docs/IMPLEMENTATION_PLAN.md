@@ -1,12 +1,12 @@
 # Can I Wear — Complete Implementation Plan
 
 > Status: ACTIVE — agreed scope plus gated, sometimes provisional future execution
-> Last updated: 2026-10-14
+> Last updated: 2026-10-18
 > Source of truth: execution detail subordinate to the existing truth files
 
 ## Authority and execution rules
 
-This plan implements the updated scope/sequence in [ROADMAP.md](ROADMAP.md). Resolve conflicts using the hierarchy in [PROJECT.md](PROJECT.md): approved decisions, product specification, technical specification, weather logic, UX, then roadmap/execution detail. [DECISIONS.md](DECISIONS.md) remains authoritative for approved decisions. Follow [AI_RULES.md](AI_RULES.md).
+This plan implements the updated scope/sequence in [ROADMAP.md](ROADMAP.md). Resolve conflicts using the hierarchy in [PROJECT.md](PROJECT.md): approved decisions, product specification, technical specification, weather logic, UX, active issue records, then roadmap/execution detail. [DECISIONS.md](DECISIONS.md) remains authoritative for approved decisions. Review relevant active defects in [ISSUES.md](ISSUES.md) and follow [AI_RULES.md](AI_RULES.md).
 
 Each numbered subphase is a separate implementation/review unit. Complete its acceptance criteria and required validation before marking it done in [TODO.md](TODO.md). Dependencies mean completed subphases unless explicitly described as evidence-gathering that may run earlier. A decision subphase is complete only when the user has approved the material choices and the affected truth files have been updated; this plan does not approve them.
 
@@ -30,11 +30,11 @@ These identifiers originated as implementation-blocking TBDs. Their current reso
 | --- | --- | --- |
 | T-01 | Measurable “few drops” tolerance; precipitation amount/type/probability interpretation and normal/heavy rain classification | 0.7, 1.1 |
 | T-02 | Actual versus apparent temperature selection/weighting, including unavailable selected input | 0.7, 1.1 |
-| T-03 | Relevant local-day evaluation window, first-slice whole-day summary policy, and incomplete hourly coverage behavior. These are details not specified by the truth files. | 0.7, 1.2, 2.1 |
+| T-03 | Resolved in D-024: relevant local-day window, most-protective summary and incomplete hourly coverage behavior | 0.7, 1.2, 2.1 |
 | T-04 | Minimum meaningful period duration, material-change/grouping rules, and conservative noise-consolidation parameters | 0.8, 2.2–2.3 |
 | T-05 | Weather cache freshness/reliability, expiry behavior, and matching cached forecasts to location | 0.9, 2.5–2.6 |
 | T-06 | Location accuracy and freshness, safe reuse, and behavior-affecting acquisition/request timeout values | 0.5, 0.9, 2.4 |
-| T-07 | Minimum supported iOS version; current iOS 26.2 setting is not an approved product decision | 0.2, 0.3, 7.5 |
+| T-07 | Resolved in D-020: minimum supported iOS version is 26.2 | 0.2, 0.3, 7.5 |
 | T-08 | Final bundle identifiers; whether the current identifier can be used for development/provider setup before finalization | 0.2, 0.6, 7.1 |
 | T-09 | Analytics/telemetry policy, including whether any collection is allowed | 7.1, 7.3; before any instrumentation that collects data |
 | T-10 | Exact recommendation/caution labels, reason copy, semantic palette and final layout | Basic proposal in 1.3; final decisions in 3.1 |
@@ -326,7 +326,7 @@ Goal: add meaningful periods and safe reuse/fallback while retaining determinist
 
 ## Phase 3 — Core app polish
 
-Goal: remove measured/user-visible friction without adding features.
+Goal: remove measured/user-visible friction without adding unapproved features.
 
 ### 3.1 — Approve final V1 presentation details
 
@@ -338,7 +338,7 @@ Goal: remove measured/user-visible friction without adding features.
 - **Objective:** Settle the existing screen and state design.
 - **Exact scope:** Review concrete result/period/loading/error and enabled-debug examples; obtain approval for exact labels/caution wording, short reasons, semantic palette, layout, permission/stale copy and accessibility behavior. Preserve recommendation-first hierarchy and meaning without color alone; diagnostics remain visually subordinate and absent when disabled.
 - **Likely files/components:** `UX.md`, `DECISIONS.md` where material, `TODO.md`, proposed SwiftUI previews/mockups.
-- **Acceptance criteria:** T-10/T-11 are resolved for all existing states; no settings/features are added; approved designs are reviewable before implementation.
+- **Acceptance criteria:** T-10/T-11 are resolved for all existing states; no unapproved settings/features are added; approved designs are reviewable before implementation. D-048/D-049 subsequently approved the focused Home presentation switches.
 - **Tests/validation:** Review dry/rain/fog/caution/heat/period/error and enabled-debug examples, large-text and non-color interpretation.
 - **Dependencies:** 2.9.
 - **Non-goals:** New screens/features, final icon/marketing assets, notification/widget design.

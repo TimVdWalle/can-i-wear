@@ -60,55 +60,13 @@ The primary visual result should be understandable almost immediately.
 
 The Phase 3 single-item Home Screen follows D-046/D-047/D-051 and `UX.md`: a Leather Jacket hero with **YES / MAYBE / NO**, the existing most-protective remaining-day summary, a short data-derived weather reason, daypart cards, and raw hourly suitability with explicit uncertainty/grouping context. **Guided Home** is the default and adds the item-neutral purpose line, **When can I wear it?** context and a concise dismissible explanation. **Compact Home** omits this guidance and retains the denser presentation. These presentation modes do not change weather rules or decide the later multi-item screen.
 
-## Initial temperature interpretation
+## Leather-jacket recommendation policy
 
-- **15°C or below:** okay.
-- **Above 15°C through 20°C:** semi-okay / caution zone.
-- **Above 20°C:** definitely too hot.
+Protect the jacket from precipitation and explicit forecast fog/mist, even when the temperature is comfortable; also avoid excessive heat. Evaluate the remaining local day, show an overall answer and meaningful changes rather than many tiny alternating periods. Do not apply leather thresholds to other items by default.
 
-These are initial rules, not permanent truths. They must be centralized and easy to tune.
+The complete current hourly thresholds, valid-input requirements, signal interpretation, conservative missing-hour handling, daily summary and period-grouping policy are in [WEATHER_LOGIC.md](WEATHER_LOGIC.md) (D-023/D-024/D-026/D-029/D-046/D-055/D-056). Keep tunable values centralized; changes to approved rules require a new decision.
 
-Temperature logic may later be refined using apparent temperature and real-world testing.
-
-## Rain interpretation
-
-Rain is the dominant constraint.
-
-- No rain: preferred.
-- Any forecast precipitation amount or explicit precipitation type: avoid.
-- At 0 mm, a 10% to less than 20% precipitation chance: caution.
-- At 0 mm, a 20% or greater precipitation chance: avoid.
-- Normal/heavy rain: avoid.
-- If rain is expected to materially expose the jacket, the recommendation should be Avoid regardless of otherwise comfortable temperature.
-
-The app should optimize for **not ruining the jacket**, not for maximizing time spent wearing it.
-
-These initial probability thresholds are centralized and may be tuned after real-world validation.
-
-## Fog and mist interpretation
-
-Fog or mist is an Avoid condition because moisture in the air can damage leather. It is a protection rule, not a visibility-comfort rule.
-
-Use only an explicit provider forecast condition identifying fog or mist. For Open-Meteo, WMO weather codes 45 (fog) and 48 (depositing rime fog) are Avoid. Do not infer fog/mist from humidity, dew point or visibility, and do not invent a probability when the provider supplies none. A missing fog/mist-specific signal does not by itself invalidate an otherwise usable hour; existing rain and temperature rules still apply.
-
-The temporary Phase 2 user-facing reason is **“Fog is expected.”** Final reason copy remains part of the Phase 3 presentation review.
-
-## Dynamic day periods
-
-Preferred behavior:
-- evaluate the forecast across the relevant part of the day;
-- if conditions are effectively the same, show one recommendation;
-- if conditions materially change, split the day;
-- do not show many tiny alternating periods.
-
-Example:
-
-Morning — AVOID
-11:00 onward — WEAR
-
-If a forecast creates noisy alternating hourly results, consolidate them into a larger meaningful period. The safe recommendation should win when rain risk is the meaningful difference.
-
-Initial V1 grouping uses 3 hours for a normal meaningful change. A one-hour Don't wear risk expands into a 2-hour safety period rather than being hidden. Short safer intervals are absorbed into surrounding risk, and repeated hourly alternation is consolidated using the most protective result.
+The approved temporary Phase 2 fog reason is **“Fog is expected.”** Final reason copy remains part of the Phase 3 presentation review.
 
 ## Personalization
 
@@ -136,7 +94,7 @@ If weather cannot be obtained:
 - if the saved forecast is over 90 minutes old and live weather fails, show **“Weather unavailable”** with **“The saved forecast is too old to use. Connect to the internet and try again.”** and provide retry without showing the expired recommendation.
 - pull-to-refresh is available from 15 minutes, remains blocked while a request is active, and waits 30 seconds after failure; blocked attempts do not contact the provider and the screen explains the wait.
 
-For the initial daily evaluation, one isolated unusable hour may be inferred conservatively from valid immediate neighbors and never as better than Caution. Multiple missing hours or an unbounded edge gap produce no daily recommendation.
+Incomplete hourly coverage follows the conservative missing-hour policy in [WEATHER_LOGIC.md](WEATHER_LOGIC.md); beyond its single permitted inference, no daily recommendation may be shown.
 
 If location cannot be obtained:
 - a recent cached location may be used if it is still considered reliable;
@@ -167,24 +125,9 @@ Implementation details are secondary to these outcomes.
 - Support a user-approved predefined collection of items in addition to the original leather jacket; exact set **TBD in Phase 4.1**.
 - Each item must have its own appropriate, testable weather recommendation rules; preserve all original leather-protection policy and provenance/cache guardrails.
 - Present multiple item recommendations clearly; **overview versus item switching TBD** in Phase 4.1.
-- Include an iOS home-screen widget. Candidate directions: per-item widgets + combined widget, or a smart combined overview with meaningful time windows; exact scope **TBD in Phase 5.1**.
+- Include an iOS home-screen widget; its form and content remain **TBD in Phase 5.1**.
 - Use current device location and today's relevant hours for first release. No user-created items, saved cities, notification feature or editable rules required for release.
 
-## Approved post-release capabilities and reserved decisions
+## Post-release scope
 
-| Phase | Capability | Scope constraints / still undecided |
-| --- | --- | --- |
-| 8 | Create/manage basic custom items | Predefined items remain available; minimal item details, local-first; template and validation TBD |
-| 9 | Adjust per-item weather thresholds | Sensible defaults; temperature/rain etc.; exact editor/items TBD |
-| 10 | Search/save/select multiple cities, automatic current location, multi-city overview | The overview must be very clean and scannable; active/inactive and default visibility TBD |
-| 11 | Simple forecast lookahead extension | Start with today; exact horizon TBD |
-| 12 | Recurring location schedules | Weekly weekdays, nth weekday monthly, repeating intervals; only scheduled cities appear automatically on matching days; manual override TBD |
-| 13 | Notifications | Optional, after release, may be late; exact timing and order versus Phase 12 TBD |
-| 14 | Evaluate later item details/photos and minimal settings needs | Do not assume photos/schema or general settings screen |
-| 15 | Flexible horizon/advanced configurable rules | Dedicated later scope; add item-specific weather inputs earlier only as actually needed |
-| 16 | Evaluate general personal preferences | Evaluation first, not approved implementation |
-| 17 | User-facing recommendation history | Much later, separate from debug log |
-| 18 | Accounts and sync | Much later; everything works locally until then |
-| 19 | Android | Much later once iOS is mature |
-
-Social features are explicitly excluded. A generic “Should I?”/“Can I?” item classification is optional for later design, not mandated. Exact trip planning, arrivals and date picking are not yet approved.
+The approved capabilities, exclusions, provisional ordering and still-open design choices for Phases 8–19 are maintained in [ROADMAP.md](ROADMAP.md). The numbered decision gates and acceptance criteria are in [IMPLEMENTATION_PLAN.md](IMPLEMENTATION_PLAN.md). Future scope is not a requirement to implement a feature before its gate is approved.

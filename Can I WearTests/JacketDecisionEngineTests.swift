@@ -111,6 +111,39 @@ struct JacketDecisionEngineTests {
         ))
     }
 
+    @Test func missingTypeUsesValidAmountAndChanceButUnknownTypeBlocksTheHour() {
+        #expect(engine.evaluate(hour(amount: 0, type: nil, chance: 0)) == HourlyRecommendation(
+            level: .okay,
+            reason: .suitableTemperature
+        ))
+        #expect(engine.evaluate(hour(amount: 0, type: nil, chance: 0.10)) == HourlyRecommendation(
+            level: .caution,
+            reason: .precipitationRisk
+        ))
+        #expect(engine.evaluate(hour(amount: 1, type: nil, chance: 0)) == HourlyRecommendation(
+            level: .avoid,
+            reason: .precipitation
+        ))
+        #expect(engine.evaluate(hour(amount: 0, type: .unknown, chance: 0)) == nil)
+        #expect(engine.evaluate(hour(amount: 1, type: .unknown, chance: 0)) == nil)
+    }
+
+    @Test func sameLevelReasonPriorityKeepsRainFirst() {
+        let avoid = HourlyRecommendation.mostProtective(in: [
+            HourlyRecommendation(level: .avoid, reason: .excessiveHeat),
+            HourlyRecommendation(level: .avoid, reason: .precipitation),
+            HourlyRecommendation(level: .avoid, reason: .fogOrMist)
+        ])
+        let caution = HourlyRecommendation.mostProtective(in: [
+            HourlyRecommendation(level: .caution, reason: .warmTemperature),
+            HourlyRecommendation(level: .caution, reason: .precipitationRisk),
+            HourlyRecommendation(level: .caution, reason: .incompleteForecast)
+        ])
+
+        #expect(avoid?.reason == .precipitation)
+        #expect(caution?.reason == .precipitationRisk)
+    }
+
     @Test func rejectsMissingOrInvalidRequiredData() {
         #expect(engine.evaluate(hour(actual: nil, apparent: nil)) == nil)
         #expect(engine.evaluate(hour(actual: nil, apparent: nil, amount: 1)) == nil)

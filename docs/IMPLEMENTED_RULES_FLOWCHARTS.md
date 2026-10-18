@@ -1,12 +1,13 @@
 # Can I Wear — Implemented Rules Flowcharts
 
-> Status: DESCRIPTIVE IMPLEMENTATION REFERENCE
+> Status: DESCRIPTIVE IMPLEMENTATION REFERENCE — not a current-code verification
 > Source of truth: NO — approved behavior remains in `DECISIONS.md` and the other truth files
-> Generated from the implementation on 2026-10-09
+> Original implementation snapshot: 2026-10-09
+> Documentation/presentation annotations updated: 2026-10-18
 
-These charts describe the rules currently implemented in the app. They do not approve any remaining TBD product or UX decisions. Values shown below come from `AppConfiguration.swift`.
+These diagrams began as an implementation snapshot and were annotated as later approved presentation and diagnostic work landed. The 2026-10-18 documentation update was not a fresh audit of every current code path. Use `DECISIONS.md` and the relevant specifications for expected behavior; use the code and tests to verify what is implemented. The charts do not approve TBD choices. Values shown below refer to `AppConfiguration.swift`.
 
-**Presentation update (2026-10-18, D-046–D-051):** Weather/cache/period algorithms below are unchanged. The internal OK/Caution/Avoid levels render as “YES / MAYBE / NO” on the Home Screen with the mapped weather reason and no redundant question/action sentence. Guided Home is the configured default and adds concise, item-neutral explanation/context; Compact Home retains the denser hierarchy. The Home Screen shows the existing most-protective raw-hour summary in a hero, daypart advice and raw hourly suitability beneath. Inferred hours are visibly uncertain; a note explains raw/consolidated differences. See `UX.md` for the approved visual contract.
+**Presentation update (2026-10-18, D-046–D-051):** These presentation annotations do not change the weather/cache/period algorithms depicted below. The internal OK/Caution/Avoid levels render as “YES / MAYBE / NO” on the Home Screen with the mapped weather reason and no redundant question/action sentence. Guided Home is the configured default and adds concise, item-neutral explanation/context; Compact Home retains the denser hierarchy. The Home Screen shows the existing most-protective raw-hour summary in a hero, daypart advice and raw hourly suitability beneath. Inferred hours are visibly uncertain; a note explains raw/consolidated differences. See `UX.md` for the approved visual contract; reason examples in the charts describe decision-engine categories, not final Home copy.
 
 ## 1. Location, weather, and cache flow
 
@@ -88,18 +89,18 @@ flowchart TD
     B -- "Yes" --> C["Selected temperature = warmer of actual and apparent<br/>If only one exists, use it"]
 
     C --> D{"Precipitation amount >0 mm<br/>OR explicit type is drizzle, rain, hail, snow, sleet, or mixed?"}
-    D -- "Yes" --> AP["AVOID<br/>Reason: precipitation<br/>UI: Don’t wear"]
+    D -- "Yes" --> AP["AVOID<br/>Reason: precipitation<br/>Home: NO"]
     D -- "No" --> E{"Precipitation chance ≥20%?"}
     E -- "Yes" --> AP
     E -- "No" --> F{"Explicit provider fog/mist condition?"}
-    F -- "Yes" --> AF["AVOID<br/>Reason: fog/mist<br/>UI reason: Fog is expected."]
+    F -- "Yes" --> AF["AVOID<br/>Reason: fog/mist<br/>Home: NO"]
     F -- "No / unavailable" --> G{"Selected temperature >20°C?"}
-    G -- "Yes" --> AH["AVOID<br/>Reason: excessive heat<br/>UI: Don’t wear"]
+    G -- "Yes" --> AH["AVOID<br/>Reason: excessive heat<br/>Home: NO"]
     G -- "No" --> H{"Precipitation chance ≥10%?"}
-    H -- "Yes" --> CP["CAUTION<br/>Reason: precipitation risk<br/>UI: Maybe"]
+    H -- "Yes" --> CP["CAUTION<br/>Reason: precipitation risk<br/>Home: MAYBE"]
     H -- "No" --> I{"Selected temperature >15°C?"}
-    I -- "Yes; ≤20°C" --> CW["CAUTION<br/>Reason: warm temperature<br/>UI: Maybe"]
-    I -- "No; ≤15°C" --> OK["OK<br/>Reason: suitable temperature<br/>UI: Wear"]
+    I -- "Yes; ≤20°C" --> CW["CAUTION<br/>Reason: warm temperature<br/>Home: MAYBE"]
+    I -- "No; ≤15°C" --> OK["OK<br/>Reason: suitable temperature<br/>Home: YES"]
 ```
 
 The ordering implements protective precedence:
@@ -145,7 +146,7 @@ flowchart TD
     I -- "Two or more" --> NR
 
     J --> M["DayPeriodEngine creates the result used by the current UI"]
-    J --> N["Legacy/basic summary helper, when called, chooses the most protective hour<br/>Avoid > Caution > OK; same-level ties use reason priority"]
+    J --> N["Home hero summary chooses the most protective hour<br/>Avoid > Caution > OK; same-level ties use reason priority"]
 ```
 
 An empty evaluated window cannot produce a daily evaluation. The current hour is included even when the current time is partway through that hour.
@@ -187,8 +188,8 @@ flowchart TD
     R --> S["One daypart per final contiguous level<br/>Ordered and non-overlapping<br/>End = next part’s start, or evaluated day end"]
     S --> T["Choose the most protective reason within each final run"]
     T --> U{"How many final dayparts?"}
-    U -- "One" --> V["Show one prominent recommendation without a time-range heading"]
-    U -- "More than one" --> W["Show every ordered daypart with its local start–end range"]
+    U -- "One" --> V["Present the single consolidated daypart"]
+    U -- "More than one" --> W["Present every ordered daypart with its local start–end range"]
 ```
 
 Additional implemented implications:
@@ -265,7 +266,7 @@ flowchart TD
 
 ## Implementation coverage
 
-The charts cover the implemented behavior in:
+The diagrams refer to these implementation components; this is not an exhaustive list of current app files:
 
 - `AppConfiguration.swift`
 - `ProviderContracts.swift`
@@ -280,4 +281,4 @@ The charts cover the implemented behavior in:
 - `DebugDiagnostics.swift`
 - `Settings.bundle/Root.plist`
 
-Phase 2.9 local diagnostics and the Phase 2 fog/mist protection are implemented. D-046 now approves the single-item Home Screen presentation; broader Phase 3 recovery and real-device accessibility validation remain pending. Historical UI annotations in these charts are superseded by the presentation update above.
+Phase 2.9 local diagnostics and the Phase 2 fog/mist protection are implemented. D-046–D-051 approve the current single-item Home Screen presentation; broader Phase 3 recovery and real-device accessibility validation remain pending. Consult `UX.md` for the full current presentation contract.

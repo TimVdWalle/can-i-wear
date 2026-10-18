@@ -1,7 +1,7 @@
 # Can I Wear — AI Working Rules
 
 > Status: ACTIVE
-> Last updated: 2026-10-13
+> Last updated: 2026-10-18
 > Source of truth: YES
 
 ## 1. Optimize for the final product
@@ -113,10 +113,18 @@ Fix user-visible friction before polishing internal implementation.
 ## 13. Update truth files
 
 When an approved decision changes:
-1. update `DECISIONS.md`;
-2. update affected specifications;
-3. update `TODO.md`/roadmap;
+1. record the approval or supersession in `DECISIONS.md`;
+2. update only the affected specification(s) in their [assigned document roles](PROJECT.md#document-responsibilities);
+3. update `ROADMAP.md` if scope or sequencing changes, `IMPLEMENTATION_PLAN.md` if gates or acceptance criteria change, and `TODO.md` if execution status or validation changes;
 4. then change implementation.
+
+Link to the owning file rather than copying its detailed rules into unrelated files.
+
+## 13.5 Work from the issue ledger
+
+Review relevant active entries in `ISSUES.md` when starting implementation work. An issue is authorized bug-fix work only when its expected behavior is already established by the higher-priority truth files. If the expected result is unclear or the fix would change an approved decision, mark the issue **NEEDS DECISION** and ask the user.
+
+Keep issue status and evidence current. Do not mark an issue **RESOLVED** until its acceptance criteria pass. A defect observed on a physical device requires physical-device revalidation when that environment is available; otherwise leave it **AWAITING VERIFICATION**. Preserve resolved entries as regression history.
 
 ## 14. Detect contradictions
 
@@ -132,4 +140,4 @@ V1 is done when the intended behavior works reliably on a real phone, key weathe
 
 ## 16. Work from the assigned future feature gates
 
-Every retained future idea has a phase or a decision/evaluation milestone in `ROADMAP.md`. Do **not** treat an evaluation milestone or tentative widget/visibility design as approved implementation behavior. Phase 12 (location schedules) and Phase 13 (notifications) are planning slots with **unapproved relative ordering**. Social features are explicitly excluded. Preserve finished Phase 0–2 evidence, do not rewrite approved leather rules, and update `DECISIONS.md`, `PRODUCT_SPEC.md`, `ROADMAP.md`, `IMPLEMENTATION_PLAN.md` and `TODO.md` together whenever a phase gate resolves a product decision.
+Every retained future idea has a phase or a decision/evaluation milestone in `ROADMAP.md`. Do **not** treat an evaluation milestone or tentative widget/visibility design as approved implementation behavior. Phase 12 (location schedules) and Phase 13 (notifications) are planning slots with **unapproved relative ordering**. Social features are explicitly excluded. Preserve finished Phase 0–2 evidence and approved leather rules. When a phase gate resolves a decision, follow §13: record the decision and update only the documents whose responsibilities it affects.
