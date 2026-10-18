@@ -18,7 +18,7 @@ All product thresholds, freshness windows, grouping parameters, location accurac
 
 ## Current baseline (source-of-truth handoff as of 2026-10-13)
 
-`TODO.md` is the authoritative completion record, not the historical scaffold snapshot previously embedded here. Phases 0–2 / subphases 0.1–2.9 are recorded complete with real-iPhone evidence, deterministic test coverage, weather/location/provider and cache work, fog/mist protection, daily periods and opt-in diagnostics. Phase 3 is the **next execution stage**. This documentation refresh does not claim a new build, regression pass, release or new Swift implementation. Consult `TODO.md` for precise per-task evidence, limitations and pending rechecks.
+`TODO.md` is the authoritative completion record, not the historical scaffold snapshot previously embedded here. Phases 0–2 / subphases 0.1–2.9 are recorded complete with real-iPhone evidence, deterministic test coverage, weather/location/provider and cache work, fog/mist protection, daily periods and opt-in diagnostics. Phase 3 was closed by user acceptance on 2026-10-18; follow-up validation with no specific recorded result is listed without a phase in `TODO.md`. This documentation update does not claim a new build, regression pass, release or new Swift implementation. Consult `TODO.md` for precise evidence and limitations.
 
 **Original historical baseline:** the project initially had a SwiftUI scaffold, placeholder UI, unit/UI test targets, and configured-but-unverified signing/device settings. Those observations were superseded by later implementation and device testing; preserve that sequence in `TODO.md` rather than treating the scaffold as the present state.
 
@@ -330,9 +330,9 @@ Goal: remove measured/user-visible friction without adding unapproved features.
 
 ### 3.1 — Approve final V1 presentation details
 
-**Partial approval (D-046/D-047):** The single-item Home Screen reference, YES/MAYBE/NO labels, Guided/Compact modes, hero, daypart cards and segmented hourly timeline are approved for implementation within 3.1.1/3.4/3.5. Existing loading/recovery behavior is preserved. Broader T-11 refinements and real-device accessibility/transition acceptance remain pending; this does not close all of 3.1–3.5.
+**Approval (D-046/D-047):** The single-item Home Screen reference, YES/MAYBE/NO labels, Guided/Compact modes, hero, daypart cards and segmented hourly timeline are approved for implementation within 3.1.1/3.4/3.5. Existing loading/recovery behavior is preserved. Phase 3 closure is recorded in `TODO.md`; validation items without specific results remain open there as unphased follow-up and are not claimed as passed.
 
-**Implementation progress (2026-10-14):** The approved Home Screen and presentation models are implemented with bundled artwork, raw-hour uncertainty/grouping context, timezone/DST labels and scalable layouts. Validation evidence and remaining checks are tracked in `TODO.md`. This is partial Phase 3 delivery, not completion of the recovery, performance or manual accessibility gates.
+**Implementation progress (2026-10-14):** The approved Home Screen and presentation models are implemented with bundled artwork, raw-hour uncertainty/grouping context, timezone/DST labels and scalable layouts. Validation evidence and any outstanding follow-up are tracked in `TODO.md`.
 
 - **Type:** Product/UX decision.
 - **Objective:** Settle the existing screen and state design.
@@ -745,7 +745,7 @@ Goal: deliver the validated **multi-item + widget** first public release through
 1. **Foundation gate (historical):** 0.1–0.9 complete according to `TODO.md`.
 2. **Live real-iPhone first slice (historical):** 1.4 complete according to `TODO.md`.
 3. **Daily intelligence, fog and diagnostics (historical):** 2.9 complete according to `TODO.md`.
-4. **Current next work:** 3.1 — review final core presentation details, then close the remaining Phase 3 polish subphases.
+4. **Current next work:** Phase 3 is closed. Phase 4 begins with 4.1, the user-approval gate for the predefined item list, item-specific rules and multi-item UX.
 5. **Pre-release multi-item gate:** 4.4 — approved predefined items built, tested and run on device.
 6. **Pre-release widget gate:** 5.3 — approved widget(s) tested with honest stale/no-data states.
 7. **First-release validation gate:** 6.4 — regressions, weather scenarios and devices including new items and widget.

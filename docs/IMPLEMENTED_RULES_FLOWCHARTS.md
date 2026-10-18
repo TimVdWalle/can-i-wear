@@ -78,7 +78,7 @@ flowchart TD
 
 The app applies the same weather-age policy on launch, foreground activation and active-screen boundaries. Exactly 15 minutes starts refresh; exactly 90 minutes remains visible while refresh runs; any amount over 90 minutes is stale. A stale forecast is classified as “expired” only after storage, structure, current-day coverage, location match and non-future timestamp checks pass. Other rejected cache entries are unavailable.
 
-Pull-to-refresh uses the same flow but never starts a provider request before 15 minutes, while another request runs, or during the 30-second post-failure cooldown. A blocked pull retains the current recommendation and the home-screen status explains when refresh is available. No two weather requests run concurrently.
+Pull-to-refresh uses the same flow but never starts a provider request before 15 minutes, while another request runs, or during the 30-second post-failure cooldown. A blocked pull retains the current recommendation. Per D-057, refresh availability is not explained by a Home Screen status line; weather provenance remains in diagnostics. No two weather requests run concurrently.
 
 ## 2. Hourly OK, Caution, and Avoid rules
 

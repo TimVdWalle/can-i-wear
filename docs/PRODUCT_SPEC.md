@@ -92,7 +92,7 @@ If weather cannot be obtained:
 - do not invent a recommendation;
 - a recent cached weather result may be used if it is still considered reliable.
 - if the saved forecast is over 90 minutes old and live weather fails, show **“Weather unavailable”** with **“The saved forecast is too old to use. Connect to the internet and try again.”** and provide retry without showing the expired recommendation.
-- pull-to-refresh is available from 15 minutes, remains blocked while a request is active, and waits 30 seconds after failure; blocked attempts do not contact the provider and the screen explains the wait.
+- pull-to-refresh is available from 15 minutes, remains blocked while a request is active, and waits 30 seconds after failure; blocked attempts do not contact the provider. Per D-057, the Home Screen does not display a weather age/update/refresh-availability status line.
 
 Incomplete hourly coverage follows the conservative missing-hour policy in [WEATHER_LOGIC.md](WEATHER_LOGIC.md); beyond its single permitted inference, no daily recommendation may be shown.
 
@@ -102,7 +102,7 @@ If location cannot be obtained:
 
 The exact freshness policy is centralized/configurable.
 
-The normal recommendation screen shows concise weather age/update status and a city/locality so the user can verify the forecast context. It does not show an exact street, coordinates, location age, accuracy or cache implementation details.
+The normal recommendation screen shows a city/locality so the user can verify the forecast context, but no weather age, update, refresh-availability or cache-status line (D-057). Exact street, coordinates, location age, accuracy and cache implementation details remain hidden from the normal screen; relevant provenance remains in local diagnostics.
 
 ## Quality requirements
 

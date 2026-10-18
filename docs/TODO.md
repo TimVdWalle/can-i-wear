@@ -12,7 +12,7 @@ The numbered review units and acceptance criteria are in [IMPLEMENTATION_PLAN.md
 
 ## Current focus
 
-- **Phase 3 is in progress:** 3.1/3.1.1 need broader recovery-state and real-phone visual review; 3.2 permissions/recovery and 3.3 startup/request friction remain; 3.4 manual accessibility and 3.5 final visual/device acceptance remain. See the Phase 3 status and evidence below.
+- **Phase 3 is complete** by user acceptance on 2026-10-18. Validation items without recorded results are retained under [Unphased follow-up](#unphased-follow-up), not represented as passed.
 - **Next product gate:** 4.1 must approve the predefined items, their rules and multi-item UX before Phase 4 implementation. Widget form/refresh is still open at 5.1. Phases 6–7 are validation and release gates; Phases 8–19 are pending, with their scope in [ROADMAP.md](ROADMAP.md).
 - **Other release blockers:** production weather provider/terms, final bundle identity and telemetry/privacy policy remain undecided. Do not infer approval from a planned phase; see the open decisions below and 7.1/7.3.
 
@@ -53,27 +53,38 @@ Historical note: the first plan was written before implementation. The completed
 
 ### Phase 3 — Core UI polish
 
-- [~] 3.1 Approve final V1 presentation details — D-046 approves the reference-based single-item Home Screen; broader recovery-state review remains
-- [~] 3.1.1 Clarify the Home Screen for first-time users — D-047–D-053 concise Guided/Compact implementation, synchronized explanation settings, reliable physical-device Settings persistence, consistent daypart statuses and simulator automation complete; final visual/accessibility review on a real phone remains
-- [ ] 3.2 Polish permissions and recovery states — implementation/testing/device validation
-- [ ] 3.3 Measure and remove startup/request friction — implementation/device validation
-- [~] 3.4 Implement and verify accessibility — Home Screen scalable layouts, non-color cues and VoiceOver descriptions implemented; manual assistive-technology/device acceptance remains
-- [~] 3.5 Finish visual and transition polish — D-046 hero, bundled jacket illustration, horizontal dynamic periods and hourly segments implemented; final validation/review recorded below
+- [x] 3.1 Approve final V1 presentation details — D-046/D-047–D-057 establish the approved single-item Home Screen and presentation behavior; Phase 3 closed by user acceptance on 2026-10-18
+- [x] 3.1.1 Clarify the Home Screen for first-time users — D-047–D-053 Guided/Compact implementation, synchronized explanation settings, physical-device Settings persistence, consistent daypart statuses and simulator automation complete; unrecorded individual validation results are listed under Unphased follow-up
+- [x] 3.2 Polish permissions and recovery states — approved failure states, retry and recovery behavior covered by the existing automated checks and Phase 0.5/1.4 device evidence; on 2026-10-18 the user confirmed that restoring While Using the App access (Exact Location on) returned to the recommendation, and force-close/relaunch returned to the recommendation without another permission prompt on the paired iPhone 13. The user had previously validated the denied-location state; the optional repeat was skipped. Any walkthrough without a recorded result is in Unphased follow-up.
+- [x] 3.3 Measure and remove startup/request friction — implementation and available startup evidence recorded below; any measurement without a specific recorded result is in Unphased follow-up
+- [x] 3.4 Implement and verify accessibility — scalable layouts, non-color cues and VoiceOver descriptions implemented; any manual check without a recorded result is in Unphased follow-up
+- [x] 3.5 Finish visual and transition polish — approved hero, bundled jacket illustration, horizontal dynamic periods and hourly segments implemented; any check without a recorded result is in Unphased follow-up
+
+**Phase 3 closure (2026-10-18):** Closed by user direction. This records phase acceptance, not a claim that every individual manual or performance check passed. Checks lacking specific results have been moved to Unphased follow-up and remain open.
 
 #### D-046 Home Screen implementation — 2026-10-14
 
-- Implemented `HomePresentation.swift` and focused SwiftUI components in `HomeComponents.swift`; `ContentView` retains lifecycle refresh, retries, weather status, attribution and diagnostics. `RecommendationViewModel` carries raw evaluated hours through live, refreshing and fallback presentations from the existing evaluation pass.
+- Implemented `HomePresentation.swift` and focused SwiftUI components in `HomeComponents.swift`; `ContentView` retains lifecycle refresh, retries, the approved no-status-line Home presentation (D-057), attribution and diagnostics. `RecommendationViewModel` carries raw evaluated hours through live, refreshing and fallback presentations from the existing evaluation pass.
 - The hero uses the existing most-protective daily answer and reason precedence. Period cards retain the unchanged consolidation engine, with exact local ranges. Raw hourly segments distinguish inferred gaps and explain differences from period advice. No weather thresholds, provider/cache policy or future feature gates changed.
 - New deterministic coverage includes status mapping, summary precedence, raw-versus-consolidated output, one/two/four/six periods, missing data, remaining-day timestamps and both DST transitions. Updated integration assertions cover hourly delivery without additional requests and preservation during refresh. UI coverage includes recommendation semantics, loading/failures, diagnostics and largest-text scrolling.
 - Validation resumed after the interrupted run: **90 unit/integration tests passed in 11 suites on iPhone 16e simulator (iOS 26.3.1)**. Four focused Home Screen simulator UI tests pass, covering mixed/single/variable periods, largest-text scrolling and no fabricated recommendation in loading/failure states. The existing Settings-to-app diagnostics-toggle test also passes after making its Settings navigation resilient to duplicate app/test-runner rows. The signed build and **3 focused Home Screen UI tests passed on iPhone 13 / iOS 26.6.2**, including mixed/single periods and largest-text vertical/horizontal scrolling; the final mixed-layout rerun also passes. Final device screenshots were reviewed, including the corrected unbroken CAUTION badge and status-first accessibility layout. The interrupted aggregate run is not counted as passed; its two failures were each rerun successfully after focused fixes.
-- Remaining manual acceptance: VoiceOver navigation/pronunciation, Increase Contrast/Differentiate Without Color and Reduce Motion on a real phone; live location/weather, pull-to-refresh and failure/recovery walkthrough with the final layout. Broader Phase 3 performance/recovery work and all later phase gates remain open.
+- Phase 3 implementation and automated/device evidence are recorded above. Individual manual/performance checks without specific results are tracked under Unphased follow-up; no result is inferred from their transfer.
 
 #### D-047 Guided/Compact Home implementation — 2026-10-18
 
 - Added `HomePresentationMode.guided` and `.compact`, with Guided as the default. D-048 exposes a default-on **Guided Home** switch under **Home Screen** in Apple system Settings; turning it off selects Compact and also turns off Show How It Works. D-049/D-051 add the concise **Show How It Works** card; enabling it also enables Guided, while **Got it** turns off only the card. D-051 limits the item-neutral purpose line to guidance, removes the hero question and redundant Good/Maybe/Skip sentence, and tightens the iPhone 13 primary layout. Guided adds **When can I wear it?** context.
 - Updated short reasons and accessibility output without changing weather thresholds, most-protective daily aggregation, daypart calculation, caching or provider behavior. Corrected container test identifiers so individual dayparts and hours remain independently addressable by assistive UI automation.
-- The complete 11-suite unit/integration target passes on iPhone 17 simulator (iOS 26.3.1). Guided dismissal/relaunch/reset, Compact omission, mixed dayparts, non-color semantics and updated large-text/attribution checks pass in focused UI runs. In the complete 18-test UI run, the other 16 tests passed; the two failures were outdated test assumptions and both corrected tests pass on focused rerun. Real-phone visual and VoiceOver acceptance remains pending.
+- The complete 11-suite unit/integration target passes on iPhone 17 simulator (iOS 26.3.1). Guided dismissal/relaunch/reset, Compact omission, mixed dayparts, non-color semantics and updated large-text/attribution checks pass in focused UI runs. In the complete 18-test UI run, the other 16 tests passed; the two failures were outdated test assumptions and both corrected tests pass on focused rerun. Any remaining real-phone visual and VoiceOver checks without recorded results are listed under Unphased follow-up.
 - D-053 replaces the two stale presentation preference identifiers with canonical keys, explicit Boolean switch values and one-time migration of existing choices. Manual preference-domain verification on iPhone 13 confirmed that Apple Settings changed Guided Home from `1` to `0` while Can I Wear was terminated, and that launching Can I Wear preserved `0`. This closes the physical Settings persistence defect; final visual and assistive-technology acceptance remains open.
+
+## Unphased follow-up
+
+These checks have no phase assignment and no specific result recorded here. They remain open follow-up, not Phase 3 blockers or completed validations:
+
+- [ ] Record outcomes for manual VoiceOver navigation/pronunciation, Increase Contrast/Differentiate Without Color, and Reduce Motion checks on a real iPhone.
+- [ ] Record outcomes for live location/weather, pull-to-refresh, and failure/recovery walkthroughs using the final Home Screen.
+- [ ] Record a permitted live-refresh duration and cold location-acquisition timing; the recorded 2026-10-18 cold relaunch used cached location and skipped weather refresh.
+- [ ] Record slow-network and loading/result/failure transition observations.
 
 ### Phase 4 — Predefined multi-item support (before public release)
 
@@ -141,22 +152,22 @@ T-12 widget form/design is Phase 5.1 (first-release inclusion decided); notifica
 - [~] **Hourly jacket rules (1.1, 2.8):** focused tests pass for dry <=15°C, 15–20°C (15°C OK, 20°C Caution), >20°C, any positive precipitation amount, 10%/20% chance boundaries, normal/heavy rain, rain+cold/warm (including rain over excessive heat), fog/mist Avoid and absent fog signal. Provider/domain/cache/presentation fog tests and real-device UI fixtures pass. Audit in 6.1; real-weather rain/fog observations remain in 6.2.
 - [x] **D-055/D-056 clarification (2026-10-18):** the existing nil-versus-unknown precipitation-type behavior and same-level reason order are now explicitly approved and documented in code. Focused `JacketDecisionEngineTests` passed (14 tests, iPhone 17 simulator / iOS 26.3), including new missing/unknown type and rain-first tie-break cases; no physical-device run or full-suite claim from this change.
 - [~] **Periods (2.1–2.3):** morning-only and later-day rain, noisy alternation and conservative grouping pass deterministic/device fixtures. Audit grouping, timezone/day/DST and coverage boundaries in 6.1; observe changing real weather in 6.2.
-- [~] **Missing inputs and recovery (0.5, 1.3, 2.6):** hourly weather rejection, missing-location/provider and failure-state presentation, fallback, live offline failure and retry recovery are covered. Audit in 6.1/6.3 and complete device recovery checks in 3.2/6.3.
+- [~] **Missing inputs and recovery (0.5, 1.3, 2.6):** hourly weather rejection, missing-location/provider and failure-state presentation, fallback, live offline failure and retry recovery are covered. Audit in 6.1/6.3; unrecorded manual walkthrough results are in Unphased follow-up.
 - [~] **Cache and refresh (2.4–2.6):** under-15 skip, inclusive 15/90 boundaries, relaunch storage, foreground/active checks, pull-to-refresh, replacement and failed-refresh fallback pass. Expired, malformed, wrong-day and wrong-location cache rejection tests pass; expired-state UI coverage is implemented but awaits simulator-runtime recovery. Audit in 6.1/6.3 and validate degraded operation on device.
-- [~] **Device startup and permissions (0.3, 0.5, 1.4):** signed scaffold/live flow, allowed/denied provider and integrated denied-screen checks passed on iPhone 13. Cold/perceived startup and permission/recovery polish remain in 3.2/3.3/6.4.
+- [~] **Device startup and permissions (0.3, 0.5, 1.4):** signed scaffold/live flow, allowed/denied provider and integrated denied-screen checks passed on iPhone 13; permission restoration and relaunch without a repeated prompt were user-confirmed on 2026-10-18. Unrecorded cold/perceived startup follow-up is listed under Unphased follow-up; device matrix remains in 6.4 and degraded-operation audit in 6.3.
 
-Audit provider mapping, exact threshold/freshness/grouping boundaries, timezone/DST/day gaps, wrong-location cache and accessibility in 6.1/3.4. Fixtures do not complete real-device or natural-weather acceptance.
+Audit provider mapping, exact threshold/freshness/grouping boundaries, timezone/DST/day gaps and wrong-location cache in 6.1; accessibility checks without recorded outcomes are listed under Unphased follow-up. Fixtures do not complete real-device or natural-weather acceptance.
 
 ## Quality validation
 
-- [~] Measure startup/perceived startup — 1.4 warm provider-to-result path measured 0.038 s, excluding process/UI startup; cold/perceived measurements remain for 3.3/6.4
-- [~] Measure location acquisition — 1.4 warm authorized acquisition measured 0.007 s; cold/slow measurements remain for 3.3
-- [~] Measure weather fetch — 0.6 live fetch succeeded and 1.4 warm fetch measured 0.030 s; broader 3.3/6.2 measurements remain
-- [ ] Verify no unnecessary location/background work — 0.5/1.4; 3.3/6.4
+- [~] Measure startup/perceived startup — 1.4 warm provider-to-result path measured 0.038 s, excluding process/UI startup; user-timed iPhone 13 cold relaunch on 2026-10-18 showed first screen under 1 s and recommendation under 2 s. Diagnostics showed location reuse and a skipped weather refresh; outstanding measurements are listed under Unphased follow-up and supported-device validation in 6.4
+- [~] Measure location acquisition — 1.4 warm authorized acquisition measured 0.007 s; any cold/slow measurement without a result is listed under Unphased follow-up
+- [~] Measure weather fetch — 0.6 live fetch succeeded and 1.4 warm fetch measured 0.030 s; 2026-10-18 diagnostics confirmed the under-15-minute cached path skipped a request; outstanding live-refresh timing is listed under Unphased follow-up; provider field evaluation remains in 6.2
+- [ ] Verify no unnecessary location/background work — 0.5/1.4; 6.4
 - [~] Test on real iPhone — the earlier 74 unit tests and all 9 UI tests passed on the connected iPhone 13, including fog, diagnostics copy/dismissal and the real Apple Settings on/off walkthrough; the expanded 82-unit/9-UI-test suite passes on iPhone 17 simulator and awaits renewed connected-device validation
 - [ ] Test multiple real devices across approved support — 6.4
-- [ ] Test slow network — 3.3/6.3; live offline failure/recovery passed in 1.4 but is not a slow-network measurement
-- [~] Test denied permissions — 0.5 provider/device and 1.4 integrated-screen checks complete; 3.2/6.3 recovery/polish checks remain
+- [ ] Test slow network — 6.3; live offline failure/recovery passed in 1.4 but is not a slow-network measurement. Unrecorded observation is listed under Unphased follow-up.
+- [~] Test denied permissions — 0.5 provider/device and 1.4 integrated-screen checks complete; 3.2 permission-restoration/relaunch recovery confirmed on 2026-10-18; degraded-operation audit remains in 6.3
 - [~] Test app relaunch — Phase 1 live relaunch and Phase 2 signed install/launch/relaunch passed; visible cached-state walkthrough and 6.3/6.4 remain
 - [~] Test forecast changes — Phase 2 live replacement flow is covered; real changing-forecast validation remains in 6.2/6.3
 - [x] Test debug off/on equivalence and diagnostics — deterministic output equality, hidden/visible UI, packaged Settings default, active-state changes, cache rejection reasons, live/timeout/fallback sequences, 20-event bound/clearing, wind neutrality, place success/fallback, report privacy/copy and real-iPhone Settings walkthrough pass in 2.9

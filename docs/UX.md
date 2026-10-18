@@ -19,9 +19,9 @@ This is not a weather dashboard. Weather supports a quick **item recommendation*
 5. If the day changes materially, show meaningful periods.
 6. Give a very short reason.
 
-The recommendation screen also shows a quiet weather-status line and concise locality. Status examples include **“Weather updated 8 min ago • Refresh available in 7 min”**, **“Showing saved weather • Updating…”**, and **“Refresh failed • Using weather from 34 min ago • Try again in 18 s”**. Technical location age, accuracy, source and exact street remain in diagnostics.
+The recommendation screen shows a concise locality. Per D-057, it does not show a weather age, update, refresh-availability or saved-weather/cache-status line. Weather provenance remains available in opt-in diagnostics.
 
-The standard pull-down gesture refreshes weather once it is at least 15 minutes old. Pulling sooner, during a request or during the 30-second post-failure cooldown performs no network request; the status line explains availability. There is no separate Refresh button. Failure states without a usable recommendation retain **Try Again**, with a visible cooldown after a failed retry.
+The standard pull-down gesture refreshes weather once it is at least 15 minutes old. Pulling sooner, during a request or during the 30-second post-failure cooldown performs no network request. There is no separate Refresh button. Failure states without a usable recommendation retain **Try Again**, with a visible cooldown after a failed retry. The Home Screen omits refresh-availability status per D-057.
 
 ## Information hierarchy
 
@@ -57,7 +57,7 @@ Daypart YES/MAYBE/NO badges use identical non-shrinking typography and height. F
 
 Below a quiet divider, **Hourly suitability** uses small rounded colored segments and a local time axis. These are **raw hourly evaluations**, whereas the cards are consolidated advice. When their levels differ, explain: “Hourly conditions shown; period advice groups brief changes for safety.” Mark an inferred missing/unusable hour with a neutral `?` segment and “? Forecast uncertain”; the daily/period engines retain their approved conservative inference. Do not fill any other gaps. Repeated DST hours must be distinguishable by UTC offset; do not assume 24 hours or the device timezone.
 
-Use text statuses and check/exclamation/cross cues, including on timeline segments, plus per-hour VoiceOver time/status/reason labels. Allow vertical scrolling, Dynamic Type and horizontal overflow without shrinking text to illegibility. At accessibility text sizes, use compact item artwork and place the main status before the explanation so the answer remains prominent. Keep card status words unbroken; scroll the row rather than cramping them. The **Got it** control has at least a 44-point target. Support dark/increased-contrast appearances, introduce no decorative motion, and keep quiet weather freshness/status and provider attribution below the main content; preserve opt-in diagnostics and pull-to-refresh.
+Use text statuses and check/exclamation/cross cues, including on timeline segments, plus per-hour VoiceOver time/status/reason labels. Allow vertical scrolling, Dynamic Type and horizontal overflow without shrinking text to illegibility. At accessibility text sizes, use compact item artwork and place the main status before the explanation so the answer remains prominent. Keep card status words unbroken; scroll the row rather than cramping them. The **Got it** control has at least a 44-point target. Support dark/increased-contrast appearances, introduce no decorative motion, and keep provider attribution below the main content; do not add a weather freshness/status line to the Home Screen (D-057). Preserve opt-in diagnostics and pull-to-refresh.
 
 No comfort meter, chart curve, info button or new detail navigation. Future detail screens and multi-item/multi-location UX remain open.
 
