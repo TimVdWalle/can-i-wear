@@ -7,15 +7,73 @@ struct HomePresentationTests {
 
     @Test func mapsAllThreeStatusesAndShortReasons() {
         for (level, title, symbol, reason) in [
-            (RecommendationLevel.okay, "OK", "checkmark", RecommendationReason.suitableTemperature),
-            (.caution, "CAUTION", "exclamationmark", .warmTemperature),
-            (.avoid, "AVOID", "xmark", .precipitation)
+            (RecommendationLevel.okay, "YES", "checkmark", RecommendationReason.suitableTemperature),
+            (.caution, "MAYBE", "exclamationmark", .warmTemperature),
+            (.avoid, "NO", "xmark", .precipitation)
         ] {
             let result = RecommendationPresentation(recommendation: HourlyRecommendation(level: level, reason: reason))
             #expect(result.title == title)
             #expect(result.segmentSymbol == symbol)
             #expect(!result.reason.isEmpty)
         }
+    }
+
+    @Test func guidedHomeIsTheConfiguredDefault() {
+        #expect(AppConfiguration.homePresentationMode == .guided)
+    }
+
+    @Test func guidedHomeSettingDefaultsOnWithoutOverwritingAChoice() throws {
+        let suite = "HomePresentationTests.\(UUID().uuidString)"
+        let defaults = try #require(UserDefaults(suiteName: suite))
+        defer { defaults.removePersistentDomain(forName: suite) }
+
+        AppConfiguration.registerDefaults(in: defaults)
+        #expect(defaults.bool(forKey: AppConfiguration.guidedHomeEnabledKey))
+        #expect(defaults.bool(forKey: AppConfiguration.showHomeIntroductionKey))
+
+        defaults.set(false, forKey: AppConfiguration.guidedHomeEnabledKey)
+        defaults.set(false, forKey: AppConfiguration.showHomeIntroductionKey)
+        AppConfiguration.registerDefaults(in: defaults)
+        #expect(!defaults.bool(forKey: AppConfiguration.guidedHomeEnabledKey))
+        #expect(!defaults.bool(forKey: AppConfiguration.showHomeIntroductionKey))
+    }
+
+    @Test func acknowledgedIntroductionMigratesToHiddenSetting() throws {
+        let suite = "HomePresentationMigrationTests.\(UUID().uuidString)"
+        let defaults = try #require(UserDefaults(suiteName: suite))
+        defer { defaults.removePersistentDomain(forName: suite) }
+        defaults.set(true, forKey: AppConfiguration.homeIntroductionAcknowledgedKey)
+
+        AppConfiguration.registerDefaults(in: defaults)
+
+        #expect(!defaults.bool(forKey: AppConfiguration.showHomeIntroductionKey))
+    }
+
+    @Test func homePresentationSettingsKeepGuidanceControlsConsistent() throws {
+        let suite = "HomePresentationPreferenceTests.\(UUID().uuidString)"
+        let defaults = try #require(UserDefaults(suiteName: suite))
+        defer { defaults.removePersistentDomain(forName: suite) }
+        AppConfiguration.registerDefaults(in: defaults)
+
+        var preferences = AppConfiguration.resolveHomePresentationPreferences(in: defaults)
+        #expect(preferences == HomePresentationPreferences(
+            guidedHomeEnabled: true,
+            showHomeIntroduction: true
+        ))
+
+        defaults.set(false, forKey: AppConfiguration.guidedHomeEnabledKey)
+        preferences = AppConfiguration.resolveHomePresentationPreferences(in: defaults)
+        #expect(preferences == HomePresentationPreferences(
+            guidedHomeEnabled: false,
+            showHomeIntroduction: false
+        ))
+
+        defaults.set(true, forKey: AppConfiguration.showHomeIntroductionKey)
+        preferences = AppConfiguration.resolveHomePresentationPreferences(in: defaults)
+        #expect(preferences == HomePresentationPreferences(
+            guidedHomeEnabled: true,
+            showHomeIntroduction: true
+        ))
     }
 
     @Test func heroUsesExistingWorstHourPolicyAndPrecipitationReasonPriority() throws {
@@ -29,7 +87,7 @@ struct HomePresentationTests {
 
         #expect(result.summary?.recommendation == engine.evaluate(forecast, now: forecast.hours[0].timestamp))
         #expect(result.summary?.recommendation == HourlyRecommendation(level: .avoid, reason: .precipitation))
-        #expect(result.summary?.reason == "Precipitation could damage leather.")
+        #expect(result.summary?.reason == "Wet weather is expected and could damage leather.")
         #expect(result.periods.first?.recommendation.level == .okay)
     }
 

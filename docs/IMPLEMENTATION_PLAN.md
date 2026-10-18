@@ -330,7 +330,7 @@ Goal: remove measured/user-visible friction without adding features.
 
 ### 3.1 — Approve final V1 presentation details
 
-**Partial approval (D-046):** The single-item Home Screen reference, OK/CAUTION/AVOID labels, hero, horizontal dynamic-period cards and segmented hourly timeline are approved for implementation within 3.4/3.5. Existing loading/recovery behavior is preserved. Broader T-11 refinements and real-device accessibility/transition acceptance remain pending; this does not close all of 3.1–3.5.
+**Partial approval (D-046/D-047):** The single-item Home Screen reference, YES/MAYBE/NO labels, Guided/Compact modes, hero, daypart cards and segmented hourly timeline are approved for implementation within 3.1.1/3.4/3.5. Existing loading/recovery behavior is preserved. Broader T-11 refinements and real-device accessibility/transition acceptance remain pending; this does not close all of 3.1–3.5.
 
 **Implementation progress (2026-10-14):** The approved Home Screen and presentation models are implemented with bundled artwork, raw-hour uncertainty/grouping context, timezone/DST labels and scalable layouts. Validation evidence and remaining checks are tracked in `TODO.md`. This is partial Phase 3 delivery, not completion of the recovery, performance or manual accessibility gates.
 
@@ -343,6 +343,26 @@ Goal: remove measured/user-visible friction without adding features.
 - **Dependencies:** 2.9.
 - **Non-goals:** New screens/features, final icon/marketing assets, notification/widget design.
 - **Blocking TBDs:** T-10, T-11.
+
+### 3.1.1 — Clarify the Home Screen for first-time users
+
+- **Type:** Product/UX decision, focused presentation implementation and review.
+- **Objective:** Make the app’s purpose, recommendation labels and relationship between the overall answer and dayparts immediately understandable without redesigning the Home Screen.
+- **Approved direction:** Name the centrally configured variants **Guided Home** and **Compact Home**, default to Guided, and add this dismissible first-use explanation card only to Guided Home:
+
+  **How it works**
+
+  **The main result covers today. Dayparts show when it changes, and the reason explains why.**
+
+  **Got it**
+
+- **Exact scope:** `HomePresentationMode` selects Guided or Compact and defaults to Guided. Expose the default-on **Guided Home** presentation preference in Apple system Settings; off selects Compact. Both modes display YES/MAYBE/NO and the data-derived reason without a redundant question or action sentence. Guided adds the item-neutral purpose line, concise card and **When can I wear it?** context. **Got it** disables the default-on **Show How It Works** preference. Turning Guided off also disables Show How It Works; turning Show How It Works on also enables Guided. Tighten the standard layout so primary content fits an iPhone 13. Preserve the existing evaluation, aggregation, weather, cache, provider and daypart rules.
+- **Likely files/components:** `ContentView.swift`, `HomeComponents.swift`, `HomePresentation.swift` if presentation labels require it, focused unit/UI tests, and the relevant truth-file decision record when implementation begins.
+- **Acceptance criteria:** A first-time Guided Home user can understand what the app evaluates, what each recommendation means, that the hero is overall advice for today, that dayparts show changes and that the short reason explains why. Tapping **Got it** hides the card persistently without removing the other Guided elements; resetting the preference shows it again. Compact omits Guided-only elements. Existing status semantics and mixed-day behavior remain unchanged.
+- **Tests/validation:** Unit tests for the three display labels and persisted-card state; UI tests for first presentation, dismissal, relaunch persistence and reset/reappearance; review mixed dayparts such as YES in the morning and NO in the evening.
+- **Dependencies:** 3.1 approval and existing Phase 2 presentation/domain outputs.
+- **Non-goals:** Changing weather thresholds, recommendation aggregation, daypart splitting, caching, API behavior, onboarding flows beyond this one card, or redesigning the Home Screen layout.
+- **Status:** Implemented; automated validation and final review tracked in `TODO.md`.
 
 ### 3.2 — Polish permissions and recovery states
 

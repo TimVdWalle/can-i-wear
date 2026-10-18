@@ -44,6 +44,7 @@ The numbered review units and their acceptance criteria are in [IMPLEMENTATION_P
 ### Phase 3 — Core UI polish
 
 - [~] 3.1 Approve final V1 presentation details — D-046 approves the reference-based single-item Home Screen; broader recovery-state review remains
+- [~] 3.1.1 Clarify the Home Screen for first-time users — D-047–D-052 concise Guided/Compact implementation, synchronized explanation settings, consistent daypart statuses and simulator automation complete; final visual/accessibility review on a real phone remains
 - [ ] 3.2 Polish permissions and recovery states — implementation/testing/device validation
 - [ ] 3.3 Measure and remove startup/request friction — implementation/device validation
 - [~] 3.4 Implement and verify accessibility — Home Screen scalable layouts, non-color cues and VoiceOver descriptions implemented; manual assistive-technology/device acceptance remains
@@ -56,6 +57,12 @@ The numbered review units and their acceptance criteria are in [IMPLEMENTATION_P
 - New deterministic coverage includes status mapping, summary precedence, raw-versus-consolidated output, one/two/four/six periods, missing data, remaining-day timestamps and both DST transitions. Updated integration assertions cover hourly delivery without additional requests and preservation during refresh. UI coverage includes recommendation semantics, loading/failures, diagnostics and largest-text scrolling.
 - Validation resumed after the interrupted run: **90 unit/integration tests passed in 11 suites on iPhone 16e simulator (iOS 26.3.1)**. Four focused Home Screen simulator UI tests pass, covering mixed/single/variable periods, largest-text scrolling and no fabricated recommendation in loading/failure states. The existing Settings-to-app diagnostics-toggle test also passes after making its Settings navigation resilient to duplicate app/test-runner rows. The signed build and **3 focused Home Screen UI tests passed on iPhone 13 / iOS 26.6.2**, including mixed/single periods and largest-text vertical/horizontal scrolling; the final mixed-layout rerun also passes. Final device screenshots were reviewed, including the corrected unbroken CAUTION badge and status-first accessibility layout. The interrupted aggregate run is not counted as passed; its two failures were each rerun successfully after focused fixes.
 - Remaining manual acceptance: VoiceOver navigation/pronunciation, Increase Contrast/Differentiate Without Color and Reduce Motion on a real phone; live location/weather, pull-to-refresh and failure/recovery walkthrough with the final layout. Broader Phase 3 performance/recovery work and all later phase gates remain open.
+
+#### D-047 Guided/Compact Home implementation — 2026-10-18
+
+- Added `HomePresentationMode.guided` and `.compact`, with Guided as the default. D-048 exposes a default-on **Guided Home** switch under **Home Screen** in Apple system Settings; turning it off selects Compact and also turns off Show How It Works. D-049/D-051 add the concise **Show How It Works** card; enabling it also enables Guided, while **Got it** turns off only the card. D-051 limits the item-neutral purpose line to guidance, removes the hero question and redundant Good/Maybe/Skip sentence, and tightens the iPhone 13 primary layout. Guided adds **When can I wear it?** context.
+- Updated short reasons and accessibility output without changing weather thresholds, most-protective daily aggregation, daypart calculation, caching or provider behavior. Corrected container test identifiers so individual dayparts and hours remain independently addressable by assistive UI automation.
+- The complete 11-suite unit/integration target passes on iPhone 17 simulator (iOS 26.3.1). Guided dismissal/relaunch/reset, Compact omission, mixed dayparts, non-color semantics and updated large-text/attribution checks pass in focused UI runs. In the complete 18-test UI run, the other 16 tests passed; the two failures were outdated test assumptions and both corrected tests pass on focused rerun. Real-phone visual and VoiceOver acceptance remains pending.
 
 ### Phase 4 — Predefined multi-item support (before public release)
 
@@ -116,7 +123,7 @@ Historical note: the first plan was written before implementation. As of this do
 - [x] Define minimum supported OS versions — iOS 26.2 and newer — T-07, 0.2
 - [~] Approve development identity and final bundle identifiers — development identifier approved as `mobi.vandewalle.caniwear`; final bundle identity remains TBD — T-08, 0.2/7.1
 - [ ] Decide analytics/telemetry policy — T-09, 7.1; before any collection
-- [~] Approve exact result/caution labels, reasons, palette and layout — D-046 approves single-item Home Screen OK/CAUTION/AVOID and reference layout; review remaining states in 3.1
+- [~] Approve exact result/caution labels, reasons, palette and layout — D-046/D-047 approve the single-item reference layout, YES/MAYBE/NO labels and Guided/Compact modes; review remaining states in 3.1
 - [~] Approve loading/failure/stale/permission UX and accessibility details — basic loading/failure copy and expired-forecast wording are approved through D-025/D-028; final broader details remain for 3.1
 - [x] Define fog/mist protection — explicit provider fog/mist produces Avoid; Open-Meteo WMO codes 45/48 are used, missing fog data alone has no effect, and no humidity/dew-point/visibility inference is allowed — D-029, T-13, 2.8
 - [x] Define local debug direction — one Apple Settings switch defaulting off, local-only diagnostics, last 20 events cleared on disable, place fallback, informational wind and user-initiated copy approved in D-030 — 2.9

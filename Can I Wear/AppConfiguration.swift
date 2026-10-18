@@ -29,8 +29,136 @@ nonisolated struct ReusePolicyConfig: Equatable, Sendable {
     let failedRequestCooldown: TimeInterval
 }
 
+nonisolated enum HomePresentationMode: Equatable, Sendable {
+    case guided
+    case compact
+}
+
+nonisolated struct HomePresentationPreferences: Equatable, Sendable {
+    let guidedHomeEnabled: Bool
+    let showHomeIntroduction: Bool
+}
+
 nonisolated enum AppConfiguration {
     static let maximumDiagnosticEvents = 20
+    static let homePresentationMode: HomePresentationMode = .guided
+    static let guidedHomeEnabledKey = "home_presentation_guided"
+    static let showHomeIntroductionKey = "home_introduction_visible"
+    static let homeIntroductionAcknowledgedKey = "homeIntroductionAcknowledged"
+    private static let legacyGuidedHomeEnabledKey = "guided_home_enabled"
+    private static let legacyShowHomeIntroductionKey = "show_home_introduction"
+    private static let homePreferenceKeysMigratedKey = "homePreferenceKeysMigratedV2"
+    private static let homeIntroductionSettingMigratedKey = "homeIntroductionSettingMigrated"
+    private static let lastAppliedGuidedHomeKey = "lastAppliedGuidedHomeEnabled"
+    private static let lastAppliedShowIntroductionKey = "lastAppliedShowHomeIntroduction"
+
+    static func registerDefaults(in defaults: UserDefaults = .standard) {
+        if !defaults.bool(forKey: homePreferenceKeysMigratedKey) {
+            if defaults.object(forKey: legacyGuidedHomeEnabledKey) != nil {
+                defaults.set(
+                    defaults.bool(forKey: legacyGuidedHomeEnabledKey),
+                    forKey: guidedHomeEnabledKey
+                )
+            }
+            if defaults.object(forKey: legacyShowHomeIntroductionKey) != nil {
+                defaults.set(
+                    defaults.bool(forKey: legacyShowHomeIntroductionKey),
+                    forKey: showHomeIntroductionKey
+                )
+            }
+            defaults.set(true, forKey: homePreferenceKeysMigratedKey)
+        }
+        if !defaults.bool(forKey: homeIntroductionSettingMigratedKey) {
+            if defaults.object(forKey: legacyShowHomeIntroductionKey) == nil,
+               defaults.bool(forKey: homeIntroductionAcknowledgedKey) {
+                defaults.set(false, forKey: showHomeIntroductionKey)
+            }
+            defaults.set(true, forKey: homeIntroductionSettingMigratedKey)
+        }
+        defaults.register(defaults: [
+            guidedHomeEnabledKey: homePresentationMode == .guided,
+            showHomeIntroductionKey: true
+        ])
+    }
+
+    static func resolveHomePresentationPreferences(
+        in defaults: UserDefaults = .standard
+    ) -> HomePresentationPreferences {
+        var guidedHomeEnabled = defaults.bool(forKey: guidedHomeEnabledKey)
+        var showHomeIntroduction = defaults.bool(forKey: showHomeIntroductionKey)
+
+        guard
+            defaults.object(forKey: lastAppliedGuidedHomeKey) != nil,
+            defaults.object(forKey: lastAppliedShowIntroductionKey) != nil
+        else {
+            // On upgrade, the persistent mode is authoritative. A Compact user
+            // should not remain in Guided presentation because of the new switch.
+            if !guidedHomeEnabled && showHomeIntroduction {
+                showHomeIntroduction = false
+                defaults.set(false, forKey: showHomeIntroductionKey)
+            }
+            recordAppliedHomePreferences(
+                guidedHomeEnabled: guidedHomeEnabled,
+                showHomeIntroduction: showHomeIntroduction,
+                in: defaults
+            )
+            return HomePresentationPreferences(
+                guidedHomeEnabled: guidedHomeEnabled,
+                showHomeIntroduction: showHomeIntroduction
+            )
+        }
+
+        let previousGuidedHomeEnabled = defaults.bool(forKey: lastAppliedGuidedHomeKey)
+        let previousShowHomeIntroduction = defaults.bool(forKey: lastAppliedShowIntroductionKey)
+        let guidedHomeChanged = guidedHomeEnabled != previousGuidedHomeEnabled
+        let showIntroductionChanged = showHomeIntroduction != previousShowHomeIntroduction
+
+        if guidedHomeChanged && !guidedHomeEnabled {
+            showHomeIntroduction = false
+            defaults.set(false, forKey: showHomeIntroductionKey)
+        } else if showIntroductionChanged && showHomeIntroduction && !guidedHomeEnabled {
+            guidedHomeEnabled = true
+            defaults.set(true, forKey: guidedHomeEnabledKey)
+        }
+
+        recordAppliedHomePreferences(
+            guidedHomeEnabled: guidedHomeEnabled,
+            showHomeIntroduction: showHomeIntroduction,
+            in: defaults
+        )
+        return HomePresentationPreferences(
+            guidedHomeEnabled: guidedHomeEnabled,
+            showHomeIntroduction: showHomeIntroduction
+        )
+    }
+
+    static func currentHomePresentationPreferences() -> HomePresentationPreferences {
+        let defaults = synchronizedApplicationDefaults()
+        return resolveHomePresentationPreferences(in: defaults)
+    }
+
+    static func setShowHomeIntroduction(_ enabled: Bool) -> HomePresentationPreferences {
+        let defaults = synchronizedApplicationDefaults()
+        defaults.set(enabled, forKey: showHomeIntroductionKey)
+        defaults.synchronize()
+        return resolveHomePresentationPreferences(in: defaults)
+    }
+
+    private static func synchronizedApplicationDefaults() -> UserDefaults {
+        UserDefaults.standard.synchronize()
+        registerDefaults()
+        return .standard
+    }
+
+    private static func recordAppliedHomePreferences(
+        guidedHomeEnabled: Bool,
+        showHomeIntroduction: Bool,
+        in defaults: UserDefaults
+    ) {
+        defaults.set(guidedHomeEnabled, forKey: lastAppliedGuidedHomeKey)
+        defaults.set(showHomeIntroduction, forKey: lastAppliedShowIntroductionKey)
+        defaults.synchronize()
+    }
 
     static let locationAcquisition = LocationAcquisitionConfig(
         requestedAccuracyMeters: 1_000,

@@ -42,14 +42,14 @@ struct RecommendationHeroView: View {
             if typeSize.isAccessibilitySize {
                 answer.frame(maxWidth: .infinity, alignment: .leading)
             } else {
-                HStack(spacing: 14) {
-                    jacket.frame(maxWidth: 150)
+                HStack(spacing: 12) {
+                    jacket.frame(maxWidth: 120)
                     answer.frame(maxWidth: .infinity, alignment: .leading)
                 }
-                .frame(minHeight: 200)
+                .frame(minHeight: 150)
             }
         }
-        .padding(20)
+        .padding(16)
         .background(HomeStyle.card, in: RoundedRectangle(cornerRadius: HomeStyle.cardRadius))
         .overlay {
             RoundedRectangle(cornerRadius: HomeStyle.cardRadius)
@@ -78,13 +78,8 @@ struct RecommendationHeroView: View {
                     .font(.title3.bold())
                     .fixedSize(horizontal: false, vertical: true)
             }
-            if typeSize.isAccessibilitySize {
-                status
-                reason
-            } else {
-                reason
-                status
-            }
+            status
+            reason
         }
     }
 
@@ -93,6 +88,7 @@ struct RecommendationHeroView: View {
             .font(.subheadline)
             .foregroundStyle(.secondary)
             .fixedSize(horizontal: false, vertical: true)
+            .accessibilityIdentifier("recommendation-reason")
     }
 
     private var status: some View {
@@ -109,8 +105,30 @@ struct RecommendationHeroView: View {
         }
         .font(.system(size: statusSize, weight: .bold, design: .rounded))
         .foregroundStyle(HomeStyle.ink(recommendation.level))
-        .padding(.top, 14)
+        .padding(.top, 2)
         .fixedSize(horizontal: false, vertical: true)
+    }
+}
+
+struct HomeIntroductionCard: View {
+    let onGotIt: () -> Void
+
+    var body: some View {
+        VStack(alignment: .leading, spacing: 8) {
+            HStack(spacing: 12) {
+                Text("How it works")
+                    .font(.headline)
+                Spacer()
+                Button("Got it", action: onGotIt)
+                    .buttonStyle(.borderedProminent)
+                    .frame(minHeight: 44)
+                    .accessibilityIdentifier("home-introduction-got-it")
+            }
+            Text("The main result covers today. Dayparts show when it changes, and the reason explains why.")
+                .foregroundStyle(.secondary)
+        }
+        .padding(14)
+        .background(HomeStyle.card, in: RoundedRectangle(cornerRadius: HomeStyle.cardRadius))
     }
 }
 
@@ -118,10 +136,11 @@ struct DayPartCardView: View {
     let dayPart: FixedDayPartPresentation
 
     var body: some View {
-        VStack(spacing: 10) {
+        VStack(spacing: 6) {
             Image(systemName: dayPart.symbolName)
-                .font(.title2.weight(.light))
+                .font(.title3.weight(.light))
                 .foregroundStyle(.secondary)
+                .opacity(detailOpacity)
                 .accessibilityHidden(true)
             Text(dayPart.label)
                 .font(.subheadline.weight(.medium))
@@ -129,33 +148,31 @@ struct DayPartCardView: View {
                 .minimumScaleFactor(0.72)
                 .allowsTightening(true)
                 .frame(maxWidth: .infinity)
+                .opacity(detailOpacity)
             Text(dayPart.timeRangeLabel)
                 .font(.caption.monospacedDigit())
                 .foregroundStyle(.secondary)
                 .lineLimit(1)
+                .opacity(detailOpacity)
             Text(dayPart.recommendation?.title ?? "—")
-                .font(.caption.bold())
+                .font(.subheadline.bold())
                 .lineLimit(1)
-                .minimumScaleFactor(0.5)
                 .foregroundStyle(dayPart.recommendation.map { HomeStyle.ink($0.level) } ?? .secondary)
                 .padding(.horizontal, 4)
-                .padding(.vertical, 7)
-                .frame(maxWidth: .infinity)
-                .background(statusColor.opacity(0.16), in: Capsule())
+                .frame(maxWidth: .infinity, minHeight: 32)
+                .background(statusColor.opacity(dayPart.isPast ? 0.08 : 0.16), in: Capsule())
         }
         .padding(.horizontal, 6)
-        .padding(.vertical, 16)
+        .padding(.vertical, 10)
         .frame(maxWidth: .infinity, maxHeight: .infinity)
         .background {
             RoundedRectangle(cornerRadius: 16)
                 .fill(HomeStyle.card)
                 .overlay {
                     RoundedRectangle(cornerRadius: 16)
-                        .fill(statusColor.opacity(0.09))
+                        .fill(statusColor.opacity(dayPart.isPast ? 0.04 : 0.09))
                 }
         }
-        .saturation(dayPart.isPast ? 0 : 1)
-        .opacity(dayPart.isPast ? 0.48 : 1)
         .accessibilityElement(children: .ignore)
         .accessibilityLabel(dayPart.accessibilityLabel)
     }
@@ -163,12 +180,16 @@ struct DayPartCardView: View {
     private var statusColor: Color {
         dayPart.recommendation.map { HomeStyle.color($0.level) } ?? .secondary
     }
+
+    private var detailOpacity: Double {
+        dayPart.isPast ? 0.48 : 1
+    }
 }
 
 struct DayPartsView: View {
     let dayParts: [FixedDayPartPresentation]
     @Environment(\.dynamicTypeSize) private var typeSize
-    @ScaledMetric(relativeTo: .body) private var rowHeight = 146
+    @ScaledMetric(relativeTo: .body) private var rowHeight = 120
 
     private let columnSpacing: CGFloat = 8
 
@@ -197,7 +218,6 @@ struct DayPartsView: View {
                 .frame(height: rowHeight)
             }
         }
-        .accessibilityIdentifier("day-parts")
     }
 
     private var cards: some View {
@@ -210,14 +230,15 @@ struct DayPartsView: View {
 
 struct HourlySuitabilityView: View {
     let presentation: DailyRecommendationPresentation
-    @ScaledMetric(relativeTo: .caption) private var axisHeight = 24
-    @ScaledMetric(relativeTo: .caption) private var segmentHeight = 30
+    @ScaledMetric(relativeTo: .caption) private var axisHeight = 20
+    @ScaledMetric(relativeTo: .caption) private var segmentHeight = 24
 
     var body: some View {
-        VStack(alignment: .leading, spacing: 16) {
+        VStack(alignment: .leading, spacing: 8) {
             Text("Hourly suitability")
                 .font(.title3.bold())
                 .accessibilityAddTraits(.isHeader)
+                .accessibilityIdentifier("hourly-timeline")
 
             GeometryReader { geometry in
                 let count = presentation.displayHours.count
@@ -260,8 +281,6 @@ struct HourlySuitabilityView: View {
                 .padding(.bottom, 4)
             }
             .frame(height: segmentHeight + axisHeight + 12)
-            .accessibilityIdentifier("hourly-timeline")
-
             if presentation.hasInferredHour {
                 Text("? Forecast uncertain")
                     .font(.caption)

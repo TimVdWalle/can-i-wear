@@ -6,7 +6,7 @@
 
 These charts describe the rules currently implemented in the app. They do not approve any remaining TBD product or UX decisions. Values shown below come from `AppConfiguration.swift`.
 
-**Presentation update (2026-10-13, D-046):** Weather/cache/period algorithms below are unchanged. Historical UI annotations “Wear / Maybe / Don’t wear” now render as “OK / CAUTION / AVOID”. The Home Screen shows the existing most-protective raw-hour summary in a hero, every consolidated period as a horizontal card, and raw hourly suitability beneath. Inferred hours are visibly uncertain; a note explains raw/consolidated differences. See `UX.md` for the approved visual contract.
+**Presentation update (2026-10-18, D-046–D-051):** Weather/cache/period algorithms below are unchanged. The internal OK/Caution/Avoid levels render as “YES / MAYBE / NO” on the Home Screen with the mapped weather reason and no redundant question/action sentence. Guided Home is the configured default and adds concise, item-neutral explanation/context; Compact Home retains the denser hierarchy. The Home Screen shows the existing most-protective raw-hour summary in a hero, daypart advice and raw hourly suitability beneath. Inferred hours are visibly uncertain; a note explains raw/consolidated differences. See `UX.md` for the approved visual contract.
 
 ## 1. Location, weather, and cache flow
 

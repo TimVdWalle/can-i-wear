@@ -1,7 +1,7 @@
 # Can I Wear — UX
 
 > Status: ACTIVE
-> Last updated: 2026-10-14
+> Last updated: 2026-10-18
 > Source of truth: YES
 
 ## Core UX goal
@@ -26,7 +26,7 @@ The standard pull-down gesture refreshes weather once it is at least 15 minutes 
 ## Information hierarchy
 
 1. Item identity — Leather Jacket
-2. Today's recommendation — OK / CAUTION / AVOID, with one short reason
+2. Today's answer — YES / MAYBE / NO and one data-derived reason
 3. Meaningful consolidated periods
 4. Hourly suitability
 
@@ -36,10 +36,10 @@ Do not lead with a weather dashboard.
 
 A small number of semantic colors may make the recommendation immediately recognizable.
 
-Approved (D-046):
-- green = OK;
-- yellow/orange = CAUTION;
-- red = AVOID.
+Approved (D-046/D-047):
+- green = YES;
+- yellow/orange = MAYBE;
+- red = NO.
 
 Use adaptive, accessible shades on soft rounded cards, strong typography and a white/system-adaptive background.
 
@@ -47,13 +47,17 @@ Accessibility must not depend on color alone.
 
 ## Approved Home Screen — one item + one location
 
-Visual reference: `design/home-screen-reference.png` (D-046). Header shows **Can I Wear** and current locality; no temperature/conditions, fake dropdown or settings button. A prominent rounded hero places a bundled leather-jacket illustration on the left and item name, short reason and large status on the right. At accessibility text sizes it may stack to preserve readability. Use the existing most-protective remaining-day summary, never a majority vote or hardcoded optimistic sentence.
+Visual reference: `design/home-screen-reference.png` (D-046), extended by D-047 and D-051. Header shows **Can I Wear**, current locality and, only while Guided explanation is active, **“Today’s weather, interpreted for each item.”** No temperature/conditions, fake dropdown or settings button. A prominent rounded hero places a bundled leather-jacket illustration on the left and item name, large **YES / MAYBE / NO** status and a short data-derived reason on the right. Do not add a redundant question or Good/Maybe/Skip sentence. At accessibility text sizes the hero may stack to preserve readability. Use the existing most-protective remaining-day summary, never a majority vote or hardcoded optimistic result.
+
+The variants are **Guided Home** (default) and **Compact Home**. Both use the direct status and weather reason without a redundant Good/Maybe/Skip sentence. Guided Home adds the item-neutral purpose line, a **When can I wear it?** heading above dayparts and, when requested, a concise **How it works** card: **“The main result covers today. Dayparts show when it changes, and the reason explains why.”** Tapping **Got it** turns off **Show How It Works**. Turning Guided Home off also turns Show How It Works off; turning Show How It Works on also enables Guided Home. Compact Home omits the purpose, heading and card. Standard-size spacing keeps the primary result and dayparts visible on an iPhone 13; scrolling remains available for details and accessibility layouts.
 
 Immediately below, show actual D-026 periods in **one horizontal row**, scrolling when necessary. Each card contains only a minimal time-of-day icon, label/time range and status. Prefer exact local ranges when a named day-part would imply different boundaries. Do not force four periods. No rain/heat meters, temperatures, start-hour subtitles or explanations inside cards; cards are not buttons.
 
+Daypart YES/MAYBE/NO badges use identical non-shrinking typography and height. For a past daypart, dim the card background, icon, label and time, but keep the status itself at full typographic weight so it does not appear smaller than current or future statuses.
+
 Below a quiet divider, **Hourly suitability** uses small rounded colored segments and a local time axis. These are **raw hourly evaluations**, whereas the cards are consolidated advice. When their levels differ, explain: “Hourly conditions shown; period advice groups brief changes for safety.” Mark an inferred missing/unusable hour with a neutral `?` segment and “? Forecast uncertain”; the daily/period engines retain their approved conservative inference. Do not fill any other gaps. Repeated DST hours must be distinguishable by UTC offset; do not assume 24 hours or the device timezone.
 
-Use text statuses and check/exclamation/cross cues, including on timeline segments, plus per-hour VoiceOver time/status/reason labels. Allow vertical scrolling, Dynamic Type and horizontal overflow without shrinking text to illegibility. At accessibility text sizes, use compact item artwork and place the main status before the explanation so the answer remains prominent. Keep card status words unbroken; scroll the row rather than cramping them. Use at least 44-point targets for actual controls, support dark/increased-contrast appearances, and introduce no decorative motion. Keep quiet weather freshness/status and provider attribution below the main content; preserve opt-in diagnostics and pull-to-refresh.
+Use text statuses and check/exclamation/cross cues, including on timeline segments, plus per-hour VoiceOver time/status/reason labels. Allow vertical scrolling, Dynamic Type and horizontal overflow without shrinking text to illegibility. At accessibility text sizes, use compact item artwork and place the main status before the explanation so the answer remains prominent. Keep card status words unbroken; scroll the row rather than cramping them. The **Got it** control has at least a 44-point target. Support dark/increased-contrast appearances, introduce no decorative motion, and keep quiet weather freshness/status and provider attribution below the main content; preserve opt-in diagnostics and pull-to-refresh.
 
 No comfort meter, chart curve, info button or new detail navigation. Future detail screens and multi-item/multi-location UX remain open.
 
@@ -114,7 +118,7 @@ Recent cached data may be used according to the centralized freshness policy.
 
 ## Debug diagnostics
 
-Debugging is off by default and enabled through the app's single switch in Apple system Settings. When enabled, a subtle control on the main screen opens a clean, dismissible diagnostics view; diagnostics must not be mixed into the normal recommendation hierarchy.
+Debugging is off by default and enabled through **Debug Enabled** in Apple system Settings. This is separate from the presentation-only **Guided Home** and **Show How It Works** switches. When debugging is enabled, a subtle control on the main screen opens a clean, dismissible diagnostics view; diagnostics must not be mixed into the normal recommendation hierarchy.
 
 The view should be readable rather than a raw log dump: summarize location, weather/cache state, fetch reasons/timing and final periods first, with remaining-hour inputs and the bounded event history available below. It may scroll, so optional provider-supplied wind context does not compete with the recommendation. Place information and the copy-report action must be clearly identified. Exact visual treatment follows the delegated implementation review and Phase 3 polish.
 

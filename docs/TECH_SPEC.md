@@ -1,7 +1,7 @@
 # Can I Wear — Technical Specification
 
 > Status: ACTIVE
-> Last updated: 2026-10-14
+> Last updated: 2026-10-18
 > Source of truth: YES
 
 ## Technical goal
@@ -135,7 +135,7 @@ The decision engine must not depend on UI.
 
 The weather provider must be replaceable.
 
-The Home Screen presentation carries the existing `DailyEvaluation` hourly results alongside `DayPeriodEngine` output from the same evaluation/request. The hero reuses `HourlyRecommendation.mostProtective`; SwiftUI does not aggregate weather or apply thresholds. Raw hours retain timestamps/timezone and inferred-gap identity, distinct from consolidated periods. Bundled item artwork has no remote dependency.
+The Home Screen presentation carries the existing `DailyEvaluation` hourly results alongside `DayPeriodEngine` output from the same evaluation/request. The hero reuses `HourlyRecommendation.mostProtective`; SwiftUI does not aggregate weather or apply thresholds. It directly presents the mapped status and reason without a question or second action sentence. Raw hours retain timestamps/timezone and inferred-gap identity, distinct from consolidated periods. Bundled item artwork has no remote dependency. `HomePresentationMode` centrally selects Guided or Compact presentation without changing these outputs; Guided is the default. The default-on `home_presentation_guided` and `home_introduction_visible` Settings-bundle preferences use explicit Boolean ON/OFF values, migrate the earlier keys, and are synchronized from the standard application preference domain when the app returns active. Disabling Guided also disables the introduction, while enabling the introduction also enables Guided. Do not use a cached `@AppStorage` binding for these externally edited values. **Got it** turns off the introduction only. The legacy acknowledgement key is migrated without redisplaying an already dismissed card.
 
 ## Central configuration
 
@@ -149,6 +149,7 @@ Examples:
 - noise suppression;
 - cache freshness;
 - timeout values where product behavior depends on them.
+- Home Screen presentation mode.
 
 No scattered magic numbers.
 
@@ -156,7 +157,7 @@ Infrastructure constants that are not product behavior may remain close to their
 
 ## Local debug diagnostics
 
-Use a `Settings.bundle` switch backed by app preferences for the sole initial setting, **Debug Enabled**, defaulting to false. Debug state must not alter decision rules, cache validity or normal location/weather request policy.
+Use `Settings.bundle` preferences for **Guided Home** and **Show How It Works** (both default on) and **Debug Enabled** (default off). The first two control presentation only. Debug state must not alter decision rules, cache validity or normal location/weather request policy.
 
 When enabled, expose a dismissible in-app diagnostics surface and a bounded on-device event store of at most 20 events. Record structured request/cache reasons and outcomes rather than relying on console text. Clear retained diagnostics when the setting is disabled. Detailed reverse geocoding for a readable street/place runs only for diagnostics. The normal screen independently resolves only a concise locality. Neither lookup may block recommendation delivery. A copied report is initiated by the user and visibly includes place information.
 

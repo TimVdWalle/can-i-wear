@@ -1,7 +1,7 @@
 # Can I Wear — Product Specification
 
 > Status: ACTIVE
-> Last updated: 2026-10-14
+> Last updated: 2026-10-18
 > Source of truth: YES
 
 ## Initial real-device user story (historical foundation)
@@ -58,7 +58,7 @@ The app should communicate:
 
 The primary visual result should be understandable almost immediately.
 
-The Phase 3 single-item Home Screen follows D-046 and `UX.md`: Leather Jacket hero, existing most-protective remaining-day summary, actual consolidated period cards, and raw hourly suitability with explicit uncertainty/grouping context. This presentation approval does not change weather rules or decide the later multi-item screen.
+The Phase 3 single-item Home Screen follows D-046/D-047/D-051 and `UX.md`: a Leather Jacket hero with **YES / MAYBE / NO**, the existing most-protective remaining-day summary, a short data-derived weather reason, daypart cards, and raw hourly suitability with explicit uncertainty/grouping context. **Guided Home** is the default and adds the item-neutral purpose line, **When can I wear it?** context and a concise dismissible explanation. **Compact Home** omits this guidance and retains the denser presentation. These presentation modes do not change weather rules or decide the later multi-item screen.
 
 ## Initial temperature interpretation
 
@@ -114,7 +114,7 @@ Initial V1 grouping uses 3 hours for a normal meaningful change. A one-hour Don'
 
 No personal recommendation settings in the original first-release core. Adjustable item thresholds come **after release**, once basic custom items work (Phase 9).
 
-The Apple system Settings app contains one off-by-default **Debug Enabled** technical switch. It only reveals local diagnostics and does not personalize or alter recommendations.
+The Apple system Settings page contains default-on **Guided Home** and **Show How It Works** presentation switches plus an off-by-default **Debug Enabled** technical switch. Guided Home changes explanation density, Show How It Works controls the Guided introduction card and Debug Enabled only reveals local diagnostics. None changes recommendation rules or weather handling.
 
 ## Local debug diagnostics
 

@@ -1,7 +1,7 @@
 # Can I Wear — Decisions
 
 > Status: ACTIVE
-> Last updated: 2026-10-14
+> Last updated: 2026-10-18
 > Source of truth: YES
 
 This file records decisions that AI and developers must not casually reopen.
@@ -140,7 +140,7 @@ A live weather request may wait at most 10 seconds before falling back to valid 
 The measurable signal is an explicit provider forecast condition identifying fog or mist. For Open-Meteo, WMO weather codes 45 (fog) and 48 (depositing rime fog) produce Avoid. Do not infer fog/mist from humidity, dew point or visibility, and do not invent a chance-of-mist value when the provider supplies none. If a provider omits the fog/mist-specific signal for an hour, that absence alone does not make the hour unusable and the existing rain and temperature rules still apply. The approved temporary Phase 2 reason is **“Fog is expected.”**; final copy remains part of Phase 3.1.
 
 ### D-030 — Opt-in local debug diagnostics
-**Decision:** Add one technical setting, **Debug Enabled**, through the Apple system Settings app. It is off by default and is the only app setting initially. This is diagnostic tooling, not a personal recommendation preference.
+**Decision:** Add the technical setting **Debug Enabled** through the Apple system Settings app, off by default. It was the only app setting when introduced; D-048/D-049 later add presentation-only Home Screen switches. Debugging is not a personal recommendation preference.
 
 When enabled, the app exposes a clean, non-intrusive in-app diagnostics view that can be shown and dismissed without changing the recommendation experience. Diagnostics remain on-device and do not approve analytics or telemetry. Keep at most the latest 20 timestamped diagnostic events and clear them when debug is disabled.
 
@@ -206,10 +206,34 @@ Reuse D-024's existing most-protective remaining-day summary and reason preceden
 
 This approval is limited to the single-item Home Screen. Detail screens, multi-item/multi-location design and broader recovery-state refinements remain open at their existing gates.
 
+### D-047 — Guided and Compact Home Screen modes
+**Decision:** Name the two single-item variants **Guided Home** and **Compact Home**. Select them through the centralized `HomePresentationMode` configuration, with **Guided Home** as the default. D-048 clarifies that users can select this presentation preference in Apple system Settings.
+
+Both modes replace the D-046 user-facing labels with **YES / MAYBE / NO** while preserving the existing OK/Caution/Avoid domain levels, thresholds, most-protective daily aggregation and daypart logic. The hero continues to show one short, data-derived weather reason. This decision originally added a natural-language recommendation sentence in Guided Home; D-050 removed that sentence, and D-051 removes its replacement question from the hero. Guided Home retains the heading **“When can I wear it?”** above dayparts.
+
+Guided Home includes a first-use **How it works** card. It explains that the main answer is the overall advice for today, that **When can I wear it?** shows when the advice changes, and that the short reason identifies the weather behind the answer. **Got it** dismisses only this card and persists the acknowledgement; Guided Home's other explanatory elements remain. Compact Home never presents the card. This change does not alter weather evaluation or add a broader onboarding flow.
+
+### D-048 — Guided Home system setting
+**Decision:** Add a **Guided Home** toggle under **Home Screen** in the app’s Apple system Settings page. It defaults on; turning it off selects Compact Home. The app reflects the preference when it becomes active. This is a presentation preference only: it does not change recommendation levels, weather rules, aggregation, dayparts, cache behavior or provider requests. It is a focused addition to the existing Settings bundle, not approval for a broad settings surface.
+
+### D-049 — Re-enable the Guided Home introduction
+**Decision:** Add a default-on **Show How It Works** toggle under **Home Screen** in Apple system Settings. The enabled preference presents the **How it works** card. Tapping **Got it** disables the preference; a user can later turn it on to show the card again. D-051 clarifies how this setting stays consistent with Guided Home. This setting does not affect recommendation behavior.
+
+### D-050 — State the Home Screen’s purpose before the answer
+**Decision:** Remove the redundant **“Good to wear today.” / “Maybe wear it today.” / “Skip it today.”** recommendation sentence from every state. The initially approved purpose wording and direct hero question are superseded by D-051. Recommendation logic and reasons are unchanged.
+
+### D-051 — Concise, mode-aware Home guidance
+**Decision:** Show the item-neutral purpose line **“Today’s weather, interpreted for each item.”** only while Guided explanation is active; Compact Home shows neither that line nor a hero question. The hero directly presents item identity, YES/MAYBE/NO and its weather-derived reason. Tighten standard-size spacing and component heights so the primary recommendation and dayparts fit on an iPhone 13 without scrolling; retain scrolling for hourly details, exceptional notes and accessibility text sizes.
+
+The two Settings controls remain consistent: turning **Guided Home** off also turns **Show How It Works** off, while turning **Show How It Works** on also enables **Guided Home**. **Got it** turns off only Show How It Works. The card is reduced to: **“The main result covers today. Dayparts show when it changes, and the reason explains why.”**
+
+### D-052 — Consistent daypart status typography
+**Decision:** Render every daypart YES/MAYBE/NO with the same non-shrinking font and minimum badge height. Do not dim the status text when a daypart is past; dim only its background, icon, label and time metadata. This preserves past-state context without making an equivalent recommendation appear smaller or weaker.
+
 ## Not yet decided
 
 The following are intentionally NOT decisions:
-- UI labels/palette beyond the approved single-item Home Screen;
+- UI labels/palette beyond the approved Guided and Compact single-item Home Screens;
 - analytics/telemetry;
 - final bundle identifiers;
 - which predefined items launch in Phase 4 and their non-leather rules;

@@ -11,13 +11,17 @@ import SwiftUI
 struct Can_I_WearApp: App {
     init() {
         DebugSettings.registerDefaults()
+        AppConfiguration.registerDefaults()
     }
 
     var body: some Scene {
         WindowGroup {
             #if DEBUG
             if let model = UITestScenario.model {
-                ContentView(model: model)
+                ContentView(
+                    model: model,
+                    homePresentationModeOverride: UITestScenario.homePresentationModeOverride
+                )
             } else {
                 ContentView()
             }

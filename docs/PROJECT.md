@@ -21,8 +21,8 @@ The initial vertical slice and its already approved rules:
 - prioritizes rain protection;
 - treats forecast fog/mist as an avoid condition because atmospheric moisture can damage leather;
 - uses initial fixed thresholds stored in one centralized configuration;
-- has no personal settings;
-- has one off-by-default technical Debug Enabled switch in Apple system Settings for local diagnostics;
+- has no personal recommendation settings;
+- has default-on Guided Home and Show How It Works presentation switches and an off-by-default Debug Enabled switch in Apple system Settings;
 - gives an immediately understandable recommendation;
 - must work on a real iPhone;
 - is implemented natively for iOS using Swift + SwiftUI;
@@ -37,8 +37,9 @@ This is a decision app, not a weather dashboard.
 The user should not have to study weather information.
 
 The product should answer quickly and correctly:
-- Wear
-- Avoid
+- Yes
+- Maybe
+- No
 - or a small number of meaningful periods
 
 with a very short reason.
@@ -92,7 +93,7 @@ The first App Store release (Phases 4–7) **adds multiple predefined items and 
 - background location tracking;
 - broad settings.
 
-The approved technical debug switch is not a personal preference or broad settings surface and does not alter recommendation policy.
+The approved Guided Home and Show How It Works display preferences plus the technical debug switch form a focused system Settings surface; none alters recommendation policy.
 
 ## Future product scope
 

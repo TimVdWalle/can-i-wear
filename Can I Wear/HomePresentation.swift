@@ -7,9 +7,9 @@ nonisolated struct RecommendationPresentation: Equatable, Sendable {
 
     var title: String {
         switch level {
-        case .okay: "OK"
-        case .caution: "CAUTION"
-        case .avoid: "AVOID"
+        case .okay: "YES"
+        case .caution: "MAYBE"
+        case .avoid: "NO"
         }
     }
 
@@ -31,11 +31,11 @@ nonisolated struct RecommendationPresentation: Equatable, Sendable {
 
     var reason: String {
         switch recommendation.reason {
-        case .suitableTemperature: "Dry and cool enough."
+        case .suitableTemperature: "Dry weather and suitable temperatures."
         case .warmTemperature: "It may feel too warm."
         case .excessiveHeat: "Too warm for leather."
-        case .precipitationRisk: "A chance of precipitation."
-        case .precipitation: "Precipitation could damage leather."
+        case .precipitationRisk: "Precipitation is possible today."
+        case .precipitation: "Wet weather is expected and could damage leather."
         case .fogOrMist: "Fog is expected."
         case .incompleteForecast: "Part of the forecast is uncertain."
         }

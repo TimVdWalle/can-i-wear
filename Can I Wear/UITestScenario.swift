@@ -3,6 +3,15 @@ import Foundation
 
 @MainActor
 enum UITestScenario {
+    static var homePresentationModeOverride: HomePresentationMode? {
+        let arguments = ProcessInfo.processInfo.arguments
+        guard
+            let flagIndex = arguments.firstIndex(of: "-ui-test-home-mode"),
+            arguments.indices.contains(flagIndex + 1)
+        else { return nil }
+        return arguments[flagIndex + 1] == "compact" ? .compact : .guided
+    }
+
     static var model: RecommendationViewModel? {
         let arguments = ProcessInfo.processInfo.arguments
         guard
@@ -12,6 +21,10 @@ enum UITestScenario {
 
         let scenario = arguments[flagIndex + 1]
         UserDefaults.standard.set(scenario == "diagnostics", forKey: DebugSettings.enabledKey)
+        if arguments.contains("-ui-test-reset-home-introduction") {
+            UserDefaults.standard.removeObject(forKey: AppConfiguration.homeIntroductionAcknowledgedKey)
+            UserDefaults.standard.set(true, forKey: AppConfiguration.showHomeIntroductionKey)
+        }
 
         let state: RecommendationViewModel.State
         switch scenario {

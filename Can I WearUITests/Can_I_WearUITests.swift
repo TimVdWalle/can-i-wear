@@ -19,15 +19,15 @@ final class Can_I_WearUITests: XCTestCase {
         XCTAssertTrue(avoid.label.contains("18–24"))
         XCTAssertTrue(wear.label.contains("Morning"))
         XCTAssertTrue(caution.label.contains("Afternoon"))
-        XCTAssertTrue(avoid.label.contains("AVOID"))
+        XCTAssertTrue(avoid.label.contains("NO"))
         XCTAssertFalse(avoid.label.contains("Precipitation"))
-        XCTAssertTrue(wear.label.contains("OK"))
-        XCTAssertTrue(caution.label.contains("CAUTION"))
+        XCTAssertTrue(wear.label.contains("YES"))
+        XCTAssertTrue(caution.label.contains("MAYBE"))
         let hero = app.descendants(matching: .any)["recommendation-hero"]
-        XCTAssertTrue(hero.label.contains("Leather Jacket, today: AVOID"))
-        XCTAssertTrue(hero.label.contains("Precipitation could damage leather."))
+        XCTAssertTrue(hero.label.contains("Leather Jacket, today: NO"))
+        XCTAssertTrue(hero.label.contains("Wet weather is expected and could damage leather."))
         XCTAssertTrue(app.descendants(matching: .any)["hour-0"].label.contains("06:00"))
-        XCTAssertTrue(app.descendants(matching: .any)["hour-17"].label.contains("AVOID"))
+        XCTAssertTrue(app.descendants(matching: .any)["hour-17"].label.contains("NO"))
         capture(app, name: "Home — mixed periods")
     }
 
@@ -35,7 +35,9 @@ final class Can_I_WearUITests: XCTestCase {
     func testUsesConciseWeatherAttribution() throws {
         let app = launch(scenario: "cached")
 
-        XCTAssertTrue(app.staticTexts["Weather provided by Open-Meteo"].waitForExistence(timeout: 3))
+        let attribution = weatherAttribution(in: app)
+        for _ in 0..<6 where !attribution.exists { app.swipeUp() }
+        XCTAssertTrue(attribution.waitForExistence(timeout: 3))
         XCTAssertFalse(app.descendants(matching: .any)["weather-status"].exists)
     }
 
@@ -69,7 +71,7 @@ final class Can_I_WearUITests: XCTestCase {
 
         let hero = app.descendants(matching: .any)["recommendation-hero"]
         XCTAssertTrue(hero.waitForExistence(timeout: 3))
-        XCTAssertTrue(hero.label.contains("AVOID"))
+        XCTAssertTrue(hero.label.contains("NO"))
         XCTAssertTrue(hero.label.contains("Fog is expected."))
     }
 
@@ -105,7 +107,9 @@ final class Can_I_WearUITests: XCTestCase {
 
     @MainActor
     func testSystemSettingsToggleIsReflectedWhenAppBecomesActive() throws {
-        let app = launch(scenario: "periods")
+        let app = XCUIApplication()
+        app.launchArguments = ["-ui-test-scenario", "periods"]
+        app.launch()
         XCTAssertFalse(app.buttons["diagnostics-button"].exists)
 
         let settings = XCUIApplication(bundleIdentifier: "com.apple.Preferences")
@@ -135,18 +139,64 @@ final class Can_I_WearUITests: XCTestCase {
 
         let debugSwitch = settings.switches["Debug Enabled"]
         XCTAssertTrue(debugSwitch.waitForExistence(timeout: 5))
+        let guidedHomeSwitch = settings.switches["Guided Home"]
+        XCTAssertTrue(guidedHomeSwitch.waitForExistence(timeout: 5))
+        let introductionSwitch = settings.switches["Show How It Works"]
+        XCTAssertTrue(introductionSwitch.waitForExistence(timeout: 5))
+        if switchIsOn(introductionSwitch) {
+            toggle(introductionSwitch)
+        }
+        if switchIsOn(guidedHomeSwitch) {
+            toggle(guidedHomeSwitch)
+        }
         if switchIsOn(debugSwitch) {
             toggle(debugSwitch)
         }
         XCTAssertFalse(switchIsOn(debugSwitch))
+
+        app.activate()
+        XCTAssertTrue(app.descendants(matching: .any)["recommendation-hero"].waitForExistence(timeout: 5))
+        XCTAssertFalse(app.staticTexts["How it works"].exists)
+        XCTAssertFalse(app.staticTexts["home-purpose"].exists)
+        XCTAssertFalse(app.staticTexts["day-parts-heading"].exists)
+
+        settings.activate()
+        XCTAssertTrue(introductionSwitch.waitForExistence(timeout: 5))
+        XCTAssertTrue(guidedHomeSwitch.waitForExistence(timeout: 5))
+        XCTAssertFalse(switchIsOn(guidedHomeSwitch))
+        toggle(introductionSwitch)
         toggle(debugSwitch)
         XCTAssertTrue(switchIsOn(debugSwitch), "Switch value: \(String(describing: debugSwitch.value))")
 
         app.activate()
         XCTAssertTrue(app.buttons["diagnostics-button"].waitForExistence(timeout: 5))
+        XCTAssertTrue(app.staticTexts["How it works"].waitForExistence(timeout: 5))
+        XCTAssertTrue(app.staticTexts["home-purpose"].waitForExistence(timeout: 5))
+        XCTAssertTrue(app.staticTexts["day-parts-heading"].waitForExistence(timeout: 5))
 
         settings.activate()
         XCTAssertTrue(debugSwitch.waitForExistence(timeout: 5))
+        XCTAssertTrue(guidedHomeSwitch.waitForExistence(timeout: 5))
+        XCTAssertTrue(introductionSwitch.waitForExistence(timeout: 5))
+        XCTAssertTrue(switchIsOn(guidedHomeSwitch))
+        XCTAssertTrue(switchIsOn(introductionSwitch))
+        toggle(guidedHomeSwitch)
+
+        app.activate()
+        let heading = app.staticTexts["day-parts-heading"]
+        expectation(for: NSPredicate(format: "exists == false"), evaluatedWith: heading)
+        waitForExpectations(timeout: 5)
+        XCTAssertFalse(app.staticTexts["home-purpose"].exists)
+        XCTAssertFalse(app.staticTexts["How it works"].exists)
+
+        settings.activate()
+        XCTAssertTrue(guidedHomeSwitch.waitForExistence(timeout: 5))
+        XCTAssertTrue(introductionSwitch.waitForExistence(timeout: 5))
+        XCTAssertFalse(switchIsOn(guidedHomeSwitch))
+        XCTAssertFalse(switchIsOn(introductionSwitch))
+        if !switchIsOn(guidedHomeSwitch) {
+            toggle(guidedHomeSwitch)
+        }
         if switchIsOn(debugSwitch) {
             toggle(debugSwitch)
         }
@@ -156,6 +206,7 @@ final class Can_I_WearUITests: XCTestCase {
         let disappeared = NSPredicate(format: "exists == false")
         expectation(for: disappeared, evaluatedWith: diagnostics)
         waitForExpectations(timeout: 5)
+        XCTAssertTrue(app.staticTexts["day-parts-heading"].waitForExistence(timeout: 5))
     }
 
     private func switchIsOn(_ element: XCUIElement) -> Bool {
@@ -189,17 +240,75 @@ final class Can_I_WearUITests: XCTestCase {
     @MainActor
     func testThreeDayPartsAndHourlyStatusesHaveNonColorMeaning() {
         let app = launch(scenario: "okay")
-        XCTAssertTrue(app.descendants(matching: .any)["recommendation-hero"].label.contains("today: OK"))
-        XCTAssertTrue(app.descendants(matching: .any)["period-0"].label.contains("OK"))
-        XCTAssertTrue(app.descendants(matching: .any)["period-2"].label.contains("OK"))
-        XCTAssertTrue(app.descendants(matching: .any)["hour-0"].label.contains("OK. Dry and cool enough."))
-        capture(app, name: "Home — OK")
+        XCTAssertTrue(app.descendants(matching: .any)["recommendation-hero"].label.contains("today: YES"))
+        XCTAssertTrue(app.descendants(matching: .any)["period-0"].label.contains("YES"))
+        XCTAssertTrue(app.descendants(matching: .any)["period-2"].label.contains("YES"))
+        XCTAssertTrue(app.descendants(matching: .any)["hour-0"].label.contains("YES. Dry weather and suitable temperatures."))
+        capture(app, name: "Home — YES")
+    }
+
+    @MainActor
+    func testGuidedHomeExplainsTheResultAndPersistsGotIt() {
+        let app = launch(scenario: "okay", homeMode: "guided", resetIntroduction: true)
+
+        let introduction = app.staticTexts["How it works"]
+        XCTAssertTrue(introduction.waitForExistence(timeout: 3))
+        XCTAssertTrue(app.staticTexts["home-purpose"].exists)
+        XCTAssertFalse(app.staticTexts["Skip it today."].exists)
+        XCTAssertTrue(app.staticTexts["day-parts-heading"].exists)
+        let relationshipExplanation = app.staticTexts.matching(NSPredicate(
+            format: "label CONTAINS %@ AND label CONTAINS %@",
+            "main result covers today",
+            "reason explains why"
+        )).firstMatch
+        XCTAssertTrue(relationshipExplanation.exists)
+
+        let gotIt = app.buttons["home-introduction-got-it"]
+        for _ in 0..<4 where !gotIt.isHittable { app.swipeUp() }
+        XCTAssertTrue(gotIt.isHittable)
+        gotIt.tap()
+        XCTAssertFalse(introduction.exists)
+
+        app.terminate()
+        app.launchArguments = ["-ui-test-scenario", "okay", "-ui-test-home-mode", "guided"]
+        app.launch()
+        XCTAssertTrue(app.descendants(matching: .any)["recommendation-hero"].waitForExistence(timeout: 3))
+        XCTAssertFalse(app.staticTexts["How it works"].exists)
+
+        app.terminate()
+        app.launchArguments.append("-ui-test-reset-home-introduction")
+        app.launch()
+        XCTAssertTrue(app.staticTexts["How it works"].waitForExistence(timeout: 3))
+    }
+
+    @MainActor
+    func testCompactHomeOmitsGuidedContent() {
+        let app = launch(scenario: "okay", homeMode: "compact", resetIntroduction: true)
+
+        XCTAssertTrue(app.descendants(matching: .any)["recommendation-hero"].waitForExistence(timeout: 3))
+        XCTAssertFalse(app.staticTexts["How it works"].exists)
+        XCTAssertFalse(app.staticTexts["home-purpose"].exists)
+        XCTAssertFalse(app.staticTexts["day-parts-heading"].exists)
+    }
+
+    @MainActor
+    func testCompactHomeFitsWithoutScrollingAtStandardText() {
+        let app = launch(scenario: "okay", homeMode: "compact")
+
+        XCTAssertTrue(app.descendants(matching: .any)["recommendation-hero"].waitForExistence(timeout: 3))
+        XCTAssertTrue(app.descendants(matching: .any)["period-2"].isHittable)
+        XCTAssertTrue(app.descendants(matching: .any)["hourly-timeline"].isHittable)
+        XCTAssertTrue(weatherAttribution(in: app).isHittable)
     }
 
     @MainActor
     func testLargestDynamicTypeUsesAReadableTwoColumnDayPartGrid() {
         let app = XCUIApplication()
-        app.launchArguments = ["-ui-test-scenario", "many-periods", "-UIPreferredContentSizeCategoryName", "UICTContentSizeCategoryAccessibilityXXXL"]
+        app.launchArguments = [
+            "-ui-test-scenario", "many-periods",
+            "-ui-test-home-mode", "compact",
+            "-UIPreferredContentSizeCategoryName", "UICTContentSizeCategoryAccessibilityXXXL"
+        ]
         app.launch()
         let hero = app.descendants(matching: .any)["recommendation-hero"]
         XCTAssertTrue(hero.waitForExistence(timeout: 3))
@@ -208,8 +317,8 @@ final class Can_I_WearUITests: XCTestCase {
         let last = app.descendants(matching: .any)["period-2"]
         for _ in 0..<8 where !last.isHittable { app.swipeUp() }
         XCTAssertTrue(last.isHittable)
-        XCTAssertTrue(last.label.contains("AVOID"))
-        let attribution = app.staticTexts["Weather provided by Open-Meteo"]
+        XCTAssertTrue(last.label.contains("NO"))
+        let attribution = weatherAttribution(in: app)
         for _ in 0..<8 where !attribution.isHittable { app.swipeUp() }
         XCTAssertTrue(attribution.isHittable)
     }
@@ -222,6 +331,13 @@ final class Can_I_WearUITests: XCTestCase {
         add(attachment)
     }
 
+    private func weatherAttribution(in app: XCUIApplication) -> XCUIElement {
+        app.descendants(matching: .any).matching(NSPredicate(
+            format: "label == %@",
+            "Weather provided by Open-Meteo"
+        )).firstMatch
+    }
+
     @MainActor
     func testLaunchPerformance() throws {
         measure(metrics: [XCTApplicationLaunchMetric()]) {
@@ -232,9 +348,19 @@ final class Can_I_WearUITests: XCTestCase {
     }
 
     @MainActor
-    private func launch(scenario: String) -> XCUIApplication {
+    private func launch(
+        scenario: String,
+        homeMode: String = "compact",
+        resetIntroduction: Bool = false
+    ) -> XCUIApplication {
         let app = XCUIApplication()
-        app.launchArguments = ["-ui-test-scenario", scenario]
+        app.launchArguments = [
+            "-ui-test-scenario", scenario,
+            "-ui-test-home-mode", homeMode
+        ]
+        if resetIntroduction {
+            app.launchArguments.append("-ui-test-reset-home-introduction")
+        }
         app.launch()
         return app
     }

@@ -5,6 +5,9 @@ struct ContentView: View {
     @Environment(\.scenePhase) private var scenePhase
     @State private var model: RecommendationViewModel
     @State private var isShowingDiagnostics = false
+    @State private var guidedHomeEnabled: Bool
+    @State private var showHomeIntroduction: Bool
+    private let homePresentationModeOverride: HomePresentationMode?
 
     init() {
         #if DEBUG
@@ -12,24 +15,42 @@ struct ContentView: View {
         // The release build remains controlled by the opt-in Settings switch.
         UserDefaults.standard.set(true, forKey: DebugSettings.enabledKey)
         #endif
+        let preferences = AppConfiguration.currentHomePresentationPreferences()
+        homePresentationModeOverride = nil
+        _guidedHomeEnabled = State(initialValue: preferences.guidedHomeEnabled)
+        _showHomeIntroduction = State(initialValue: preferences.showHomeIntroduction)
         _model = State(initialValue: RecommendationViewModel())
     }
 
-    init(model: RecommendationViewModel) {
+    init(
+        model: RecommendationViewModel,
+        homePresentationModeOverride: HomePresentationMode? = nil
+    ) {
+        let preferences = AppConfiguration.currentHomePresentationPreferences()
+        self.homePresentationModeOverride = homePresentationModeOverride
+        _guidedHomeEnabled = State(initialValue: preferences.guidedHomeEnabled)
+        _showHomeIntroduction = State(initialValue: preferences.showHomeIntroduction)
         _model = State(initialValue: model)
+    }
+
+    private var homePresentationMode: HomePresentationMode {
+        if let homePresentationModeOverride {
+            return homePresentationModeOverride
+        }
+        return guidedHomeEnabled || showHomeIntroduction ? .guided : .compact
     }
 
     var body: some View {
         GeometryReader { geometry in
             ScrollView {
-                VStack(alignment: .leading, spacing: HomeStyle.spacing) {
+                VStack(alignment: .leading, spacing: 14) {
                     header
                     content
                     footer
                 }
-                .padding(.horizontal, 20)
-                .padding(.top, 40)
-                .padding(.bottom, 24)
+                .padding(.horizontal, 16)
+                .padding(.top, 24)
+                .padding(.bottom, 16)
                 .frame(maxWidth: 640, minHeight: geometry.size.height, alignment: .topLeading)
                 .frame(maxWidth: .infinity)
             }
@@ -45,6 +66,7 @@ struct ContentView: View {
         .background(HomeStyle.background)
         .task(id: scenePhase) {
             guard scenePhase == .active else { return }
+            refreshHomePresentationPreference()
             await model.appBecameActive()
         }
         .onChange(of: model.diagnostics.isEnabled) { _, enabled in
@@ -55,11 +77,30 @@ struct ContentView: View {
         }
     }
 
+    private func refreshHomePresentationPreference() {
+        guard homePresentationModeOverride == nil else { return }
+        let preferences = AppConfiguration.currentHomePresentationPreferences()
+        guidedHomeEnabled = preferences.guidedHomeEnabled
+        showHomeIntroduction = preferences.showHomeIntroduction
+    }
+
+    private func dismissHomeIntroduction() {
+        let preferences = AppConfiguration.setShowHomeIntroduction(false)
+        guidedHomeEnabled = preferences.guidedHomeEnabled
+        showHomeIntroduction = preferences.showHomeIntroduction
+    }
+
     private var header: some View {
-        VStack(alignment: .leading, spacing: 12) {
+        VStack(alignment: .leading, spacing: 8) {
             Text("Can I Wear")
                 .font(.largeTitle.bold())
                 .accessibilityAddTraits(.isHeader)
+            if homePresentationMode == .guided {
+                Text("Today’s weather, interpreted for each item.")
+                    .font(.subheadline)
+                    .foregroundStyle(.secondary)
+                    .accessibilityIdentifier("home-purpose")
+            }
             HStack(spacing: 8) {
                 LocationPinIcon()
                     .accessibilityHidden(true)
@@ -69,7 +110,6 @@ struct ContentView: View {
                 .accessibilityElement(children: .combine)
                 .accessibilityIdentifier("weather-locality")
         }
-        .padding(.bottom, 8)
     }
 
     private var footer: some View {
@@ -140,12 +180,21 @@ struct ContentView: View {
     }
 
     private func result(_ presentation: DailyRecommendationPresentation) -> some View {
-        VStack(alignment: .leading, spacing: HomeStyle.spacing) {
+        VStack(alignment: .leading, spacing: 14) {
+            if homePresentationMode == .guided && showHomeIntroduction {
+                HomeIntroductionCard(onGotIt: dismissHomeIntroduction)
+            }
             if let summary = presentation.summary {
                 RecommendationHeroView(recommendation: summary)
             }
+            if homePresentationMode == .guided {
+                Text("When can I wear it?")
+                    .font(.title3.bold())
+                    .accessibilityAddTraits(.isHeader)
+                    .accessibilityIdentifier("day-parts-heading")
+            }
             DayPartsView(dayParts: presentation.dayParts)
-            Divider().padding(.vertical, 8)
+            Divider().padding(.vertical, 2)
             HourlySuitabilityView(presentation: presentation)
         }
         .task(id: scenePhase == .active ? presentation.weatherFetchedAt : nil) {
