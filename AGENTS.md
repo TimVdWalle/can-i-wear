@@ -9,12 +9,17 @@
 
 Preserve unrelated changes, including uncommitted work. Do not overwrite, revert, or discard them.
 
+## Verification commands
+
+Run `bash scripts/verify.sh` after code changes before declaring the task complete. For UI changes or broad/project changes, run `bash scripts/verify.sh full`. Documentation-only changes use `bash scripts/verify.sh docs`. Setup, scope, and evidence handling are in `docs/TECH_SPEC.md#local-verification-tooling`; completion requirements are in `docs/AI_RULES.md` §1.3.
+
 ## Repository map
 
 - `Can I Wear/` — app implementation.
 - `Can I WearTests/` — unit/integration tests.
 - `Can I WearUITests/` — UI tests.
 - `Can I Wear.xcodeproj/` — Xcode project.
+- `scripts/` — local verification/setup commands and tooling regression tests.
 - `docs/` — authoritative project documents and work status, as assigned by `docs/PROJECT.md`.
 
 Keep working rules in `docs/AI_RULES.md`; link to them rather than maintaining another copy here.

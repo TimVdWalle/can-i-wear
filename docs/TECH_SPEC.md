@@ -187,6 +187,23 @@ Add integration tests for:
 - error states;
 - real-device flows.
 
+### Local verification tooling
+
+Install the development-only tools with `bash scripts/setup-tools.sh` from the repository root. It installs ShellCheck (verification-script static analysis) via `Brewfile` and downloads the official universal SwiftLint **0.65.1** binary (Swift correctness/code-smell checks), verifying its SHA-256 before installation under `.build/tools/bin/`. This avoids Homebrew source builds on Intel Macs. The verification script prefers this local binary. Python 3 runs the verification script's standard-library regression tests; full Xcode and an installed compatible iOS simulator runtime are required for build/test profiles. No app dependency, paid service, or network-backed code-analysis service is added.
+
+| Command | Checks |
+| --- | --- |
+| `bash scripts/verify.sh docs` | Staged and unstaged diff whitespace. |
+| `bash scripts/verify.sh static` | Diff checks, ShellCheck, verification-script regression tests, focused SwiftLint rules, and bundled plist validity. |
+| `bash scripts/verify.sh` | Static checks, Debug simulator build and all unit/integration tests, compiler warnings as errors, and coverage. |
+| `bash scripts/verify.sh full` | Static checks, Release simulator build, Debug build and all unit/integration/UI tests, compiler warnings as errors, and coverage. |
+
+The default destination is `platform=iOS Simulator,name=iPhone 17,OS=latest`. Set `VERIFY_DESTINATION` to an installed compatible simulator destination when needed. Test execution is serial to avoid UI/Settings interference. The script does not install tools, rewrite source, delete old results, or automatically retry failing tests. Missing tools and failed commands return a nonzero exit status. Independent checks continue after a finding so a lint failure does not hide test evidence, but the overall gate still fails. Coverage is collected only after a successful test run.
+
+SwiftLint uses a focused rule set in `.swiftlint.yml`, including its default complexity limit with switch cases excluded from the count. `redundant_nil_coalescing` is intentionally not enabled: a Swift type probe confirms the provider's `?? nil` converts `Double??` to `Double?`, and the syntactic rule flags this necessary flattening. Tooling regression tests check both defect detection and this legitimate case. Do not baseline or suppress genuine findings merely to make the gate pass.
+
+Each invocation saves logs and a PASS/FAIL status under a unique `.build/verification/` directory. Successful test profiles also save `Tests.xcresult`, a target coverage summary, and per-file/function data in `coverage.json`. Inspect changed recommendation, grouping, cache, and provider logic for uncovered branches; no arbitrary global percentage is treated as proof of correctness. `.build/` is ignored by Git. Simulator/fixture success is not live-provider, visual, or physical-device acceptance. The agent's completion gate is maintained in [AI_RULES.md](AI_RULES.md#13-run-the-verification-gate-before-completion).
+
 ## UX performance
 
 Optimize for perceived responsiveness:

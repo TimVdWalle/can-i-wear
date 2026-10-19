@@ -1,0 +1,19 @@
+# Focus on correctness and maintainability, not wholesale style changes.
+included:
+  - Can I Wear
+  - Can I WearTests
+  - Can I WearUITests
+
+only_rules:
+  - cyclomatic_complexity
+  - duplicate_imports
+  - force_cast
+  - force_try
+  - identical_operands
+  - unused_closure_parameter
+  - unused_optional_binding
+
+# Do not enable redundant_nil_coalescing: ?? nil legitimately flattens the
+# nested optionals returned by safe subscripting optional forecast arrays.
+cyclomatic_complexity:
+  ignores_case_statements: true

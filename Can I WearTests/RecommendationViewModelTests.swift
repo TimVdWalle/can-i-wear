@@ -52,6 +52,39 @@ struct RecommendationViewModelTests {
         #expect(weatherFailure.state == .weatherUnavailable)
     }
 
+    @Test func locationFailuresStopWeatherRequestsAndAllowRetry() async {
+        let failures: [(LocationProviderError, RecommendationViewModel.State)] = [
+            (.permissionDenied, .locationPermissionDenied),
+            (.cancelled, .idle),
+            (.unavailable, .locationUnavailable),
+            (.timedOut, .locationUnavailable)
+        ]
+
+        for (error, expectedState) in failures {
+            let store = MemoryCacheDataStore()
+            let weatherProvider = CountingWeatherProvider(forecast: forecast())
+            let model = RecommendationViewModel(
+                locationProvider: FixedLocationProvider(result: .failure(error)),
+                weatherProvider: weatherProvider,
+                locationCache: LocationCache(store: store),
+                weatherCache: WeatherCache(store: store),
+                now: { self.now }
+            )
+
+            await model.loadIfNeeded()
+
+            #expect(model.state == expectedState)
+            #expect(await weatherProvider.requestCount == 0)
+            #expect(model.retryAvailableAt == nil)
+
+            await model.retry()
+
+            #expect(model.state == expectedState)
+            #expect(await weatherProvider.requestCount == 0)
+            #expect(model.retryAvailableAt == now.addingTimeInterval(30))
+        }
+    }
+
     @Test func representsIncompleteForecastWithoutInventingAResult() async {
         let model = makeModel(forecast: forecast().replacingHours(with: []))
 

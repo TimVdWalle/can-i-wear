@@ -1,0 +1,3 @@
+# Local verification logs, coverage, result bundles, and DerivedData.
+.build/
+__pycache__/

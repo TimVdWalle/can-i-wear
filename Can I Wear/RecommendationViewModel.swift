@@ -240,75 +240,7 @@ final class RecommendationViewModel {
             detail: "\(trigger.diagnosticText) requested."
         )
 
-        let location: LocationReading
-        switch await locationCache.lookup(at: now()) {
-        case .valid(let cachedLocation, let age):
-            location = cachedLocation
-            latestLocation = cachedLocation
-            latestLocationSource = "Location cache"
-            latestLocationCacheStatus = "Reused: fresh and sufficiently accurate"
-            resolveLocality(for: cachedLocation.identity)
-            diagnostics.updateLocation(
-                cachedLocation,
-                source: latestLocationSource,
-                ageSeconds: age,
-                cacheStatus: latestLocationCacheStatus
-            )
-            diagnostics.record(
-                category: .cache,
-                outcome: .reused,
-                title: "Location cache",
-                detail: "Reused a \(Self.durationText(age))-old reading with \(Self.accuracyText(cachedLocation.accuracyMeters))."
-            )
-        case .unavailable(let reason):
-            diagnostics.record(
-                category: .cache,
-                outcome: .rejected,
-                title: "Location cache",
-                detail: Self.locationCacheReason(reason)
-            )
-            let startedAt = now()
-            diagnostics.record(
-                category: .location,
-                outcome: .started,
-                title: "Location request",
-                detail: "Requested because the cache was not reusable: \(Self.locationCacheReason(reason))"
-            )
-            do {
-                location = try await locationProvider.currentLocation()
-                await locationCache.save(location)
-                let duration = max(0, now().timeIntervalSince(startedAt))
-                latestLocation = location
-                latestLocationSource = "Live device location"
-                latestLocationCacheStatus = "New reading • \(Self.shortLocationCacheReason(reason))"
-                resolveLocality(for: location.identity)
-                diagnostics.updateLocation(
-                    location,
-                    source: latestLocationSource,
-                    ageSeconds: max(0, now().timeIntervalSince(location.timestamp)),
-                    cacheStatus: latestLocationCacheStatus
-                )
-                diagnostics.record(
-                    category: .location,
-                    outcome: .success,
-                    title: "Location request",
-                    detail: "Accepted and cached a reading with \(Self.accuracyText(location.accuracyMeters)).",
-                    durationSeconds: duration
-                )
-            } catch LocationProviderError.permissionDenied {
-                recordLocationFailure("Permission denied", startedAt: startedAt)
-                finishLocationFailure(.locationPermissionDenied, trigger: trigger)
-                return
-            } catch LocationProviderError.cancelled {
-                recordLocationFailure("Request cancelled", startedAt: startedAt)
-                finishLocationFailure(.idle, trigger: trigger)
-                return
-            } catch {
-                recordLocationFailure("\(error)", startedAt: startedAt)
-                finishLocationFailure(.locationUnavailable, trigger: trigger)
-                return
-            }
-        }
+        guard let location = await loadLocation(trigger: trigger) else { return }
 
         let cache = await cachedWeather(for: location.identity)
         var fallback: CachedWeather?
@@ -485,6 +417,78 @@ final class RecommendationViewModel {
                 isRefreshing: state.result?.isRefreshing ?? false,
                 refreshFailed: state.result?.refreshFailed ?? false
             )
+        }
+    }
+
+    private func loadLocation(trigger: LoadTrigger) async -> LocationReading? {
+        switch await locationCache.lookup(at: now()) {
+        case .valid(let cachedLocation, let age):
+            latestLocation = cachedLocation
+            latestLocationSource = "Location cache"
+            latestLocationCacheStatus = "Reused: fresh and sufficiently accurate"
+            resolveLocality(for: cachedLocation.identity)
+            diagnostics.updateLocation(
+                cachedLocation,
+                source: latestLocationSource,
+                ageSeconds: age,
+                cacheStatus: latestLocationCacheStatus
+            )
+            diagnostics.record(
+                category: .cache,
+                outcome: .reused,
+                title: "Location cache",
+                detail: "Reused a \(Self.durationText(age))-old reading with \(Self.accuracyText(cachedLocation.accuracyMeters))."
+            )
+            return cachedLocation
+        case .unavailable(let reason):
+            diagnostics.record(
+                category: .cache,
+                outcome: .rejected,
+                title: "Location cache",
+                detail: Self.locationCacheReason(reason)
+            )
+            let startedAt = now()
+            diagnostics.record(
+                category: .location,
+                outcome: .started,
+                title: "Location request",
+                detail: "Requested because the cache was not reusable: \(Self.locationCacheReason(reason))"
+            )
+            do {
+                let location = try await locationProvider.currentLocation()
+                await locationCache.save(location)
+                let duration = max(0, now().timeIntervalSince(startedAt))
+                latestLocation = location
+                latestLocationSource = "Live device location"
+                latestLocationCacheStatus = "New reading • \(Self.shortLocationCacheReason(reason))"
+                resolveLocality(for: location.identity)
+                diagnostics.updateLocation(
+                    location,
+                    source: latestLocationSource,
+                    ageSeconds: max(0, now().timeIntervalSince(location.timestamp)),
+                    cacheStatus: latestLocationCacheStatus
+                )
+                diagnostics.record(
+                    category: .location,
+                    outcome: .success,
+                    title: "Location request",
+                    detail: "Accepted and cached a reading with \(Self.accuracyText(location.accuracyMeters)).",
+                    durationSeconds: duration
+                )
+                return location
+            } catch LocationProviderError.permissionDenied {
+                recordLocationFailure("Permission denied", startedAt: startedAt)
+                finishLocationFailure(.locationPermissionDenied, trigger: trigger)
+                return nil
+            } catch LocationProviderError.cancelled {
+                recordLocationFailure("Request cancelled", startedAt: startedAt)
+                finishLocationFailure(.idle, trigger: trigger)
+                return nil
+            } catch {
+                recordLocationFailure("\(error)", startedAt: startedAt)
+                finishLocationFailure(.locationUnavailable, trigger: trigger)
+                return nil
+            }
         }
     }
 

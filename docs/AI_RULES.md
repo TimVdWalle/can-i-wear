@@ -37,6 +37,12 @@ Keep this process proportional to the task; trivial changes do not need a formal
 5. **Review the final edits.** Review all changes made for the task for accidental behavior changes, missed edge cases, duplicated logic, and unnecessary complexity. Preserve unrelated existing changes; do not include them in cleanup.
 6. **Report evidence honestly.** Briefly state what changed, what was actually checked, and any remaining limitation. Distinguish implementation from tests, visual inspection, and physical-device verification. Never imply that an unperformed, interrupted, or failing check passed.
 
+## 1.3 Run the verification gate before completion
+
+After code changes, run `bash scripts/verify.sh` (static checks, simulator build/tests, and coverage). Use `bash scripts/verify.sh full` for visible UI, project/build configuration, or broad cross-cutting changes; it also checks a Release build and the full UI suite. Documentation-only changes use `bash scripts/verify.sh docs`. For tooling changes, validate the affected profiles and failure handling. See [TECH_SPEC.md](TECH_SPEC.md#local-verification-tooling) for setup and outputs.
+
+Do not call a code task complete/done while required checks fail or remain unrun. Report blocked validation and existing failures explicitly instead. Never bypass checks, weaken rules, suppress findings, or change tests merely to obtain a passing result. Diagnose failures and distinguish pre-existing problems from task regressions. Review coverage for changed logic; a coverage percentage alone does not establish correctness. Simulator results do not replace required physical-device or visual validation.
+
 ## 2. Never invent major decisions
 
 If a missing decision can materially affect:
