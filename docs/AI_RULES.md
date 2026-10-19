@@ -1,7 +1,7 @@
 # Can I Wear — AI Working Rules
 
 > Status: ACTIVE
-> Last updated: 2026-10-18
+> Last updated: 2026-10-19
 > Source of truth: YES
 
 ## 1. Optimize for the final product
@@ -19,6 +19,23 @@ Judge work by:
 - Can it reach the App Store?
 
 Do not optimize for clever implementation at the expense of these outcomes.
+
+## 1.1 Keep responses concise
+
+Answer the user's question directly and briefly. Include only the context and detail needed to answer or move the task forward; avoid repeating project documentation or giving lengthy summaries unless requested. For "what's next?" questions, state the next concrete action and any genuine decision blocker.
+
+Concise responses must not mean shallow investigation, skipped checks, or incomplete work.
+
+## 1.2 Per-task quality standard
+
+Keep this process proportional to the task; trivial changes do not need a formal plan or additional documentation.
+
+1. **Know what success looks like.** Inspect the relevant requirements, implementation, and existing tests. Before implementation, identify the requested outcome and observable acceptance checks. For substantive work, briefly state the target and checks. Use approved requirements where clear; ask only when a material decision is missing or conflicts with an approved decision. Routine implementation does not need a separate approval step.
+2. **Investigate before fixing.** Trace the relevant behavior and determine why a bug happens before changing it. Do not apply speculative workarounds or symptom-only fixes. If the cause cannot be confirmed, state the uncertainty and what still needs checking.
+3. **Keep changes focused and simple.** Change only what the request requires, including necessary supporting changes. Do not slip in unrelated cleanup, new dependencies, or behavior changes. Do not add unrequested or unapproved complexity, abstractions, or extra layers of code or architecture. Prefer the simplest solution that satisfies the task and existing constraints. Keep approved recommendation logic, thresholds, aggregation, caching, and provider behavior unchanged unless the user explicitly approves a change.
+4. **Verify the result.** Check that the change solves the requested problem, not just that it compiles. Run relevant tests and build checks; add regression coverage for bugs where practical. For visible UI changes, inspect the screen when possible. Match validation to the change and its risk: documentation edits do not require device testing; location and permission-flow changes may. Disclose checks that could not be completed; follow §13.5 for issue verification status.
+5. **Review the final edits.** Review all changes made for the task for accidental behavior changes, missed edge cases, duplicated logic, and unnecessary complexity. Preserve unrelated existing changes; do not include them in cleanup.
+6. **Report evidence honestly.** Briefly state what changed, what was actually checked, and any remaining limitation. Distinguish implementation from tests, visual inspection, and physical-device verification. Never imply that an unperformed, interrupted, or failing check passed.
 
 ## 2. Never invent major decisions
 
@@ -122,7 +139,7 @@ Link to the owning file rather than copying its detailed rules into unrelated fi
 
 ## 13.5 Work from the issue ledger
 
-Review relevant active entries in `ISSUES.md` when starting implementation work. An issue is authorized bug-fix work only when its expected behavior is already established by the higher-priority truth files. If the expected result is unclear or the fix would change an approved decision, mark the issue **NEEDS DECISION** and ask the user.
+Review relevant active entries in `ISSUES.md` when starting implementation work. For reported bugs, update the matching issue entry and record validation. An issue is authorized bug-fix work only when its expected behavior is already established by the higher-priority truth files. If the expected result is unclear or the fix would change an approved decision, mark the issue **NEEDS DECISION** and ask the user.
 
 Keep issue status and evidence current. Do not mark an issue **RESOLVED** until its acceptance criteria pass. A defect observed on a physical device requires physical-device revalidation when that environment is available; otherwise leave it **AWAITING VERIFICATION**. Preserve resolved entries as regression history.
 

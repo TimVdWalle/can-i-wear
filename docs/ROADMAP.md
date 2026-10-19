@@ -1,7 +1,7 @@
 # Can I Wear — Implementation Phases & Roadmap
 
 > Status: ACTIVE
-> Last updated: 2026-10-14
+> Last updated: 2026-10-18
 > Source of truth: YES
 
 ## Version and milestone rule
@@ -37,10 +37,10 @@ D-046 approves the reference-based single-item Home Screen for Phase 3 implement
 
 ## Phase 4 — Predefined multi-item support (required before first release)
 
-- Approve which initial item types are included; the precise list is **TBD**, not automatically chosen by AI.
+- The initial collection is approved in D-058; resolve remaining item-specific rules and daily policies at 4.1 rather than choosing them automatically.
 - Refactor the item/rules representation enough to support multiple predefined items with their own sensible rules and short explanations. Preserve all approved jacket-protection behavior; do **not** apply leather thresholds blindly to other items.
 - Support the existing current-location, remaining-day/meaningful-period recommendation for supported items.
-- Design and validate a simple multi-item presentation. Overview versus single-item navigation is **TBD**; settle in 4.1.
+- Design and validate the approved compact overview with explicit daily verdicts and timing (D-058/D-060). Fixed-item policies may be predefined; a user-facing group taxonomy is not required for Phase 4. Remaining behavior and concrete presentation cases stay gated in 4.1.
 - No user-created items, personalized thresholds, accounts, saved cities or notifications yet.
 
 ## Phase 5 — First-release iOS widget
@@ -60,7 +60,7 @@ Complete identity, production weather-provider/license decision, privacy/telemet
 
 ## Phase 8 — Basic custom items (early post-release)
 
-Let users create/manage basic custom items alongside the predefined collection, working locally. Keep information minimal. Rule/template mechanism, default choices and any mandatory properties are decided in 8.1; do not silently implement a full rule builder, detailed wardrobe catalog or photo management. “Can I?” versus “Should I?” may be an item property, but is **not** yet a required distinction.
+Let users create/manage basic custom items alongside the predefined collection, working locally. Keep information minimal. Rule/template mechanism, default choices and any mandatory properties are decided in 8.1; do not silently implement a full rule builder, detailed wardrobe catalog or photo management. D-060 defers exact group labels and the configuration UX explaining different item behaviors to this gate, where users need to understand their choices. D-059's historical wording is superseded; no particular category field or editor is assumed.
 
 ## Phase 9 — Adjustable per-item weather thresholds
 

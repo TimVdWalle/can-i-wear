@@ -26,7 +26,7 @@ The standard pull-down gesture refreshes weather once it is at least 15 minutes 
 ## Information hierarchy
 
 1. Item identity — Leather Jacket
-2. Today's answer — YES / MAYBE / NO and one data-derived reason
+2. Today's answer — Phase 4 uses an explicit item-appropriate daily verdict, timing and weather reason (D-060); the implemented Phase 3 baseline uses YES / MAYBE / NO
 3. Meaningful consolidated periods
 4. Hourly suitability
 
@@ -46,6 +46,8 @@ Use adaptive, accessible shades on soft rounded cards, strong typography and a w
 Accessibility must not depend on color alone.
 
 ## Approved Home Screen — one item + one location
+
+The following records the approved/implemented Phase 3 baseline. D-060 supersedes its daily YES/MAYBE/NO verdict for the Phase 4 Home Screen, as specified below; unchanged layout/accessibility guidance and the jacket's underlying evaluation still apply. This is not a claim that Phase 4 has been implemented.
 
 Visual reference: `design/home-screen-reference.png` (D-046), extended by D-047 and D-051. Header shows **Can I Wear**, current locality and, only while Guided explanation is active, **“Today’s weather, interpreted for each item.”** No temperature/conditions, fake dropdown or settings button. A prominent rounded hero places a bundled leather-jacket illustration on the left and item name, large **YES / MAYBE / NO** status and a short data-derived reason on the right. Do not add a redundant question or Good/Maybe/Skip sentence. At accessibility text sizes the hero may stack to preserve readability. Use the existing most-protective remaining-day summary, never a majority vote or hardcoded optimistic result.
 
@@ -129,20 +131,48 @@ The implemented diagnostic detail view uses compact same-day times, minute-based
 The Home Screen must eventually support four item/location configurations:
 
 1. **One item, one location** — the approved D-046 reference-based Home Screen (Phase 3).
-2. **Multiple items, one location** — planned with predefined multi-item support (Phase 4); the presentation needs separate approval in Phase 4.1.
+2. **Multiple items, one location** — Phase 4 has an approved compact-overview direction (D-058) and explicit daily-verdict contract (D-060); detailed layout and remaining item behavior stay gated in 4.1.
 3. **One item, multiple locations** — part of the future multi-location experience (Phase 10); detailed presentation remains TBD.
 4. **Multiple items, multiple locations** — also part of the future multi-location experience (Phase 10); detailed presentation remains TBD.
 
 In every configuration, the primary goal is to tell the user **at a very fast glance whether each relevant item can/should be worn or brought, and when**. Keep recommendation states and timing information consistent and immediately scannable as complexity grows. Reuse visual components and interaction patterns wherever that improves consistency, but **do not force all four configurations into one layout**: separate views or layouts are explicitly acceptable when they improve clarity.
 
-Only the **one-item/one-location** layout is currently approved. The other three are **design scenarios, not approved mockups, interaction choices, or commitments to display all combinations simultaneously**. Their detailed designs remain open for the existing Phase 4.1 and Phase 10.1 decision gates. This principle does not change phase ordering, initial item/location scope, weather/recommendation logic, or the approved single-item Home Screen.
+The **one-item/one-location** reference layout is approved. The multiple-item/one-location direction is approved to the extent of D-058/D-060, not as a finished mockup. The two multi-location configurations remain design scenarios rather than approved layouts or commitments to display all combinations simultaneously. Outstanding design choices remain at their Phase 4.1 and Phase 10.1 gates; this principle does not change phase ordering or weather rules.
 
 ## First-release multi-item and widget UX (not yet implemented)
 
 - The current Phase 3 single-jacket screen is the foundation, not a final multiple-item design.
-- In Phase 4.1, obtain explicit user approval for the initial multi-item presentation. The user has **not** chosen between all-item overview, one-item-at-a-time, or another layout.
+- The approved Phase 4 collection and compact overview direction are recorded in D-058: show all item answers together, with item detail available on selection.
+- Keep the weather-fit perspective **“Is today a good day for [item]?”**, but express the daily answer through the explicit verdict/timing contract below. Do not require that question to be repeated as a heading on every item.
+- Exact user-facing group labels and the UX explaining the different item behaviors are deferred to custom-item configuration in Phase 8.1. D-059 is superseded; predefined-item Home advice must be understandable without learning a category taxonomy. D-061's “Can I wear items” / “Should I wear items” are internal working labels only, not UI copy.
 - In Phase 5.1, select a widget direction. Possibilities expressed by the user: separate item widgets plus an overall widget, **or** a smart combined overview of items and relevant wearing times. Do not assume both are required.
-- No invented visual hierarchy or default item selection should be treated as approved ahead of those gates.
+- Detailed multi-item layout, visual hierarchy, and daily aggregation must follow approved rules; do not invent them during implementation.
+
+### Phase 4 daily verdicts and timing (D-060)
+
+**Problem being solved:** A daily YES for sunglasses could mean “useful during at least one sunny hour,” while a daily YES for the jacket means “no disqualifying weather in the remaining day.” A shared bare label makes these look like contradictory algorithms. Naming groups does not explain that difference at a glance.
+
+**Approved approach:** Replace the universal daily YES/MAYBE/NO label with a concise verdict whose wording states the actual advice. Support it with the relevant timing and weather reason, directly readable in the item summary rather than requiring users to open an explanation of item types. Keep item identity prominent and the overview quick to scan.
+
+| Illustrative forecast | Daily verdict | Supporting timing/reason |
+| --- | --- | --- |
+| Sunglasses useful only in a sunny interval | **Useful today** | Strong sun, 12:00–15:00 |
+| No raincoat need in the evaluated window | **Not needed today** | Dry forecast |
+| Jacket restricted by a rain interval | **Avoid during rain** | Rain, 16:00–18:00 |
+| Jacket suitable throughout the evaluated window | **Good all day** | Throughout the remaining day |
+
+These examples establish the intended meaning, not fabricated live times, numeric thresholds, a complete list of verdicts or a new minimum qualifying duration. Their times are illustrative; actual supporting times must come from evaluated forecast/advice output. Continue distinguishing raw weather timing from consolidated safety advice: a short rain event may expand into a longer jacket avoidance period under the existing rules, and the summary must not imply the expanded advice is safe to ignore.
+
+**Required semantics:**
+- **Useful today** means there is a qualifying opportunity/need during the remaining day, not that the item is needed or suitable every hour. The summary identifies when and why.
+- **Not needed today** means no qualifying need is forecast in the usable evaluated window, not that wearing the item is dangerous, damaging or uncomfortable. Missing data must not be converted into “not needed.”
+- **Avoid during rain** communicates a restriction and its scope; it does not claim all other hours are necessarily suitable. Show any additional relevant restrictions through the actual advice rather than hiding them behind this example phrase.
+- **Good all day** is an all-window suitability claim: use it only when the approved evaluation supports it throughout the remaining current local day. It must not be derived from one good hour, a majority vote, incomplete coverage or fabricated certainty about an inferred hour. Do not imply the already-past day was evaluated.
+- Borderline and uncertain outcomes must remain visibly qualified; do not force them into one of these confident example verdicts. Final wording/mapping for unsupported cases and conflicts remains open in Phase 4.1.
+
+**Preserved behavior:** The jacket's most-protective daily result still applies, including a single hazardous hour. The presentation can explain a timed restriction without changing that result. Hourly answers may continue to use YES/MAYBE/NO, inferred hours remain uncertain, and consolidated periods retain their distinct role. D-060 does not introduce a universal best-hour or worst-hour rule for other items.
+
+**Accessibility and acceptance:** The spoken and visual summaries must convey item, verdict meaning, relevant time scope and reason without relying on color or a group badge. Review useful-for-only-part-of-day, not-needed, timed restriction, all-window suitability, conflicting conditions, and incomplete-data scenarios. In particular, one sunny hour must not look like all-day suitability, and one jacket hazard must not disappear because the rest of the day is dry. Keep the established scrolling, scalable-text and non-color requirements.
 
 ## Later multi-location overview UX (Phase 10)
 

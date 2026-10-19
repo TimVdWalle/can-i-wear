@@ -1,7 +1,7 @@
 # Can I Wear — Technical Specification
 
 > Status: ACTIVE
-> Last updated: 2026-10-18
+> Last updated: 2026-10-19
 > Source of truth: YES
 
 ## Technical goal
@@ -135,7 +135,9 @@ The decision engine must not depend on UI.
 
 The weather provider must be replaceable.
 
-The Home Screen presentation carries the existing `DailyEvaluation` hourly results alongside `DayPeriodEngine` output from the same evaluation/request. The hero reuses `HourlyRecommendation.mostProtective`; SwiftUI does not aggregate weather or apply thresholds. It directly presents the mapped status and reason without a question or second action sentence. Raw hours retain timestamps/timezone and inferred-gap identity, distinct from consolidated periods. Bundled item artwork has no remote dependency. `HomePresentationMode` centrally selects Guided or Compact presentation without changing these outputs; Guided is the default.
+The implemented Phase 3 Home Screen presentation carries the existing `DailyEvaluation` hourly results alongside `DayPeriodEngine` output from the same evaluation/request. The jacket hero reuses `HourlyRecommendation.mostProtective`; SwiftUI does not aggregate weather or apply thresholds. It directly presents the mapped status and reason without a question or second action sentence. Raw hours retain timestamps/timezone and inferred-gap identity, distinct from consolidated periods. Bundled item artwork has no remote dependency. `HomePresentationMode` centrally selects Guided or Compact presentation without changing these outputs; Guided is the default.
+
+For Phase 4, D-060 replaces the universal daily YES/MAYBE/NO presentation with an explicit verdict and timing; this is approved future work, not implemented by this documentation. Keep the daily advice's meaning and supporting time intervals distinct from its display wording and from raw hourly levels. SwiftUI must present evaluated item-specific advice, not select a best/worst hour by parsing copy or inspecting an item's display name. Preserve the jacket's most-protective evaluation and the raw-hour/consolidated-period distinction.
 
 The default-on `home_presentation_guided` and `home_introduction_visible` Settings-bundle preferences use explicit Boolean `TrueValue`/`FalseValue` values in the standard application preference domain. On first use of this contract, migrate stored `guided_home_enabled` and `show_home_introduction` values to the canonical keys. Preserve the separate legacy acknowledgement migration so an already dismissed card is not redisplayed. Synchronize and resolve the standard domain when the app returns active; do not use a cached `@AppStorage` binding or construct a `UserDefaults` suite from the app’s own bundle identifier for these externally edited values. Disabling Guided also disables the introduction, while enabling the introduction also enables Guided. **Got it** turns off the introduction only.
 
@@ -220,6 +222,11 @@ V1 has no account requirement and no need for a personal profile.
 Scope, ordering and open choices are maintained in [ROADMAP.md](ROADMAP.md); implementation gates are in [IMPLEMENTATION_PLAN.md](IMPLEMENTATION_PLAN.md). These constraints apply only when the relevant work is approved:
 
 - Multiple item rules must stay centrally defined and testable. Do not change jacket thresholds or introduce a general-purpose rules engine without approval.
+- D-060 permits explicit predefined-item policies without requiring a user-facing group taxonomy. Keep those policies separable from catalog display names and localized verdict text so supported behavior can later serve custom items. This does not approve a particular group enum, custom-item schema/editor or generic rule builder. Exact group labels/configuration UX are a Phase 8.1 gate; item-specific daily behavior still requires approval in Phase 4.1.
+- D-061 permits “Can I wear items” and “Should I wear items” as internal working terminology only. Do not expose these as UI labels or infer an exclusive category enum, catalog assignments or conflict priority from those names.
+- D-058 approves apparent/feels-like temperature with actual-temperature fallback for Warm Coat, Sweater, Gloves and Shorts. D-062 approves Raincoat rain/chance conditions and optional wind modifier, plus Sunglasses daylight/sky-condition advice with optional hourly UV override; exact thresholds belong in `WEATHER_LOGIC.md`, not provider code. Do not make wind or UV affect Leather Jacket recommendations.
+- Extend app-owned normalized inputs only as needed for those approved rules: preserve liquid rain distinctly from total precipitation that includes snow, daylight/sky-condition identity, and hourly UV availability. Open-Meteo already requests rain/showers and wind, but the current normalized model does not retain a distinct liquid-rain amount or the new daylight/sky/UV fields. Provider-specific codes must stay inside the adapter. Do not default missing values to dry, overcast, night or zero UV, and do not substitute a daily maximum for hourly UV. Validate hourly temporal alignment when mapping the provider's preceding-hour rain accumulations.
+- Missing wind/UV preserves the approved base Raincoat/Sunglasses evaluation respectively. Required-input validity and conservative isolated-hour inference remain separate from optional-field absence. Add mapping, cache compatibility and deterministic boundary/fallback tests during implementation; the provider probe recorded in `TODO.md` is not validation of an implemented adapter or production-provider approval.
 - A widget must use app-owned recommendation/cache contracts; its data sharing, staleness and refresh need a decision before implementation. Do not add background location tracking.
 - Custom items remain local-first with minimal, migratable storage; editable item thresholds need defaults and validation. Neither requires accounts/sync.
 - Multi-location weather and caches must be location-aware so cities cannot cross-contaminate recommendations; current/active location selection must be deterministic.

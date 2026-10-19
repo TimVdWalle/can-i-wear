@@ -1,7 +1,7 @@
 # Can I Wear — Decisions
 
 > Status: ACTIVE
-> Last updated: 2026-10-18
+> Last updated: 2026-10-19
 > Source of truth: YES
 
 This file records decisions that AI and developers must not casually reopen.
@@ -163,7 +163,7 @@ These decisions supersede earlier *scope/timing* language where it conflicts; al
 **Decision:** Keep the current completed leather-jacket-only real-device milestone. The first public App Store release (Phase 7) must additionally support multiple predefined items and an iOS home-screen widget. Notifications and multiple saved cities are **after** that release.
 
 ### D-033 — Predefined items before public release
-**Decision:** The first public release includes a predefined collection of supported items, beyond leather jackets. The exact list, per-item rule values, whether the main screen is a combined item overview or single-item switcher, and the exact UX are **TBD in Phase 4**. Do not invent them. Leather-specific rain/fog/temperature policies stay unchanged unless separately approved for leather.
+**Decision:** The first public release includes a predefined collection of supported items, beyond leather jackets. D-058 resolves the initial collection and primary multi-item presentation; remaining item-specific rules and daily summary behavior stay gated in Phase 4.1. Leather-specific rain/fog/temperature policies stay unchanged unless separately approved for leather.
 
 ### D-034 — Basic user-created items soon after release
 **Decision:** Allow users to add and manage their own **items**, not necessarily a conventional wardrobe. Start simple with predefined items plus basic custom items, with minimal details and local storage. Custom items are Phase 8; item details/photos are deliberately much later and need further approval. A “Can I?” versus “Should I?” item property is a possibility, **not** yet an approved requirement.
@@ -213,6 +213,8 @@ This approval is limited to the single-item Home Screen. Detail screens, multi-i
 
 Both modes replace the D-046 user-facing labels with **YES / MAYBE / NO** while preserving the existing OK/Caution/Avoid domain levels, thresholds, most-protective daily aggregation and daypart logic. The hero continues to show one short, data-derived weather reason. This decision originally added a natural-language recommendation sentence in Guided Home; D-050 removed that sentence, and D-051 removes its replacement question from the hero. Guided Home retains the heading **“When can I wear it?”** above dayparts.
 
+**Phase 4 presentation update:** D-060 supersedes the universal YES/MAYBE/NO daily-verdict presentation, not the jacket's domain levels or protective evaluation. This paragraph otherwise records the approved Phase 3 baseline.
+
 Guided Home includes a first-use **How it works** card. It explains that the main answer is the overall advice for today, that **When can I wear it?** shows when the advice changes, and that the short reason identifies the weather behind the answer. **Got it** dismisses only this card and persists the acknowledgement; Guided Home's other explanatory elements remain. Compact Home never presents the card. This change does not alter weather evaluation or add a broader onboarding flow.
 
 ### D-048 — Guided Home system setting
@@ -249,15 +251,82 @@ The app synchronizes and resolves these externally edited preferences when it be
 ### D-057 — Omit weather freshness status from the Home Screen
 **Decision:** Do not display a normal Home Screen line for weather age, refresh availability, updating state, or saved-weather/cache provenance. Keep locality, provider attribution, recommendation, existing failure/retry states and pull-to-refresh behavior. This supersedes only D-031's normal-screen status/explanation requirements and clarifies D-046's preservation of freshness: the freshness and refresh policies remain unchanged, but their status is not shown on the Home Screen. Detailed weather age, cache source and request status remain available in opt-in local diagnostics. This decision does not change recommendation logic, cache validity, provider requests, refresh cadence, cooldowns or failure behavior.
 
+### D-058 — Phase 4 initial item collection and approved item rules
+**Decision:** The approved Phase 4 collection contains seven items: **Leather Jacket, Warm Coat, Sweater, Raincoat, Sunglasses, Shorts, and Gloves**. The existing Leather Jacket rules remain unchanged.
+
+Use one weather-fit framing for every item: **“Is today a good day for [item]?”** YES means the weather is a good fit, MAYBE means mixed/borderline conditions, and NO means a poor fit. The short reason explains the weather basis. The main multi-item screen is a compact overview showing each item's answer together, with item detail available on selection.
+
+**Later clarification:** D-060 retains the shared weather-fit perspective and compact overview, but supersedes a universal YES/MAYBE/NO daily verdict with an explicit, item-appropriate verdict and timing. The temperature bands below remain approved hourly classifications, not a universal daily aggregation rule.
+
+For Warm Coat, Sweater, Gloves and Shorts, use apparent/feels-like temperature when available, otherwise actual temperature. The approved initial bands are:
+
+| Item | YES | MAYBE | NO |
+| --- | --- | --- | --- |
+| Warm Coat | ≤5°C | >5°C through 12°C | >12°C |
+| Sweater | ≤12°C | >12°C through 18°C | >18°C |
+| Gloves | ≤5°C | >5°C through 10°C | >10°C |
+| Shorts | ≥22°C | ≥17°C and <22°C | <17°C |
+
+Raincoat: rain takes priority; light rain alone does not necessarily make it needed, more substantial rain does. Wind strengthens the Raincoat recommendation only when rain is expected; wind alone does not. D-062 settles the initial rain/chance/wind thresholds.
+
+Sunglasses: brightness/sunshine is the primary signal. Exceptionally high UV may make them a good fit even without bright conditions. If UV data is unavailable, use brightness alone. D-062 settles the initial sky-condition proxy, daylight scope and UV threshold; provider normalization must preserve these signals.
+
+Extend D-024's isolated one-hour missing/unusable-hour inference rule to every Phase 4 item: inference is allowed only for one isolated hour with valid immediate neighbors; infer conservatively and never more favorably than MAYBE; two or more gaps or a gap at either edge make coverage incomplete and do not produce a daily answer. For non-jacket items, the inferred recommendation must respect the item's approved behavior; do not assume the jacket's level ordering determines other items' daily aggregation.
+
+Remaining item-specific conditions, daily policies not settled by D-060, and missing-signal behavior beyond the approved one-hour inference remain TBD in Phase 4.1. Assigning user-facing group names is not a Phase 4 blocker. This decision does not authorize implementation before the Phase 4.1 gate is complete.
+
+### D-059 — Clear wording for the item distinction
+**Status:** Superseded by D-060. The wording below is historical, not the current configuration contract or approved final group labels.
+
+**Decision:** Where the item distinction needs to be presented, including future item configuration, use the question **“What should the app help you decide?”** with these choices:
+- **Can I wear it?**
+- **Will I need it?**
+- **Both**
+
+These choices describe different purposes, not alternative names for the same behavior. This approves the user-facing wording, not the assignment of every predefined item, the daily aggregation/conflict policy, or implementation of custom-item configuration in Phase 4. The shared recommendation-screen framing from D-058 remains unchanged.
+
+### D-060 — Explicit daily verdicts and timing; defer group labels
+**Decision:** For the Phase 4 Home Screen, replace the universal daily YES/MAYBE/NO answer with a concise, item-appropriate verdict that states what the advice means, supported by the relevant timing and weather reason. A user must not need to know an internal item type to understand the answer. The compact overview and the shared “Is today a good day for [item]?” perspective remain; this does not require adding that question as a heading on every card.
+
+This supersedes only the daily-label presentation requirements of D-047/D-051/D-058 and the group wording of D-059. The explicit verdict replaces the ambiguous daily label; it is not an extra redundant action sentence of the kind removed by D-050. Historical Phase 3 implementation/validation records remain valid for that baseline, not evidence of D-060 implementation.
+
+The approved presentation direction is **“Useful today”** with the useful times, **“Not needed today”** when no need is forecast, **“Avoid during rain”** with the relevant avoidance times, and **“Good all day”** when the item suits the whole evaluated remaining-day window. These are representative verdicts, not an exhaustive state list or a mapping of every item to a fixed group. Detailed UX requirements and illustrative examples belong in `UX.md`.
+
+Different item behaviors are intentional: a disqualifying hour still makes the leather jacket's protective daily result Avoid; a qualifying sunny hour can make sunglasses useful today without making them useful every hour. Do not force either a worst-hour or a best-hour daily algorithm onto every item. “Not needed” is not equivalent to “unsafe/unsuitable,” and “useful today” is not an all-day suitability claim. Hourly answers can retain YES/MAYBE/NO. Existing jacket thresholds, reason precedence, conservative coverage, period consolidation and most-protective daily evaluation are unchanged; only their daily presentation changes under this decision.
+
+For the fixed collection, item-specific daily behavior may be explicitly defined in code/configuration; no user-facing group taxonomy or generic rule builder is required. Keep the behavior separable from item display names and UI wording so future custom items can use supported behaviors. Exact group labels and the configuration UX explaining the distinction are **deferred to Phase 8.1**, where users will need to understand their choice. D-059's labels are no longer locked. Do not implement custom-item creation or assume its data fields now.
+
+Per-item daily policies still need to be deterministic and approved before implementation. In particular, the policy when the same item is both needed and unsuitable at different times remains open; the proposed assignment of Warm Coat/Sweater/Gloves to “Both” was not approved. Raincoat/Sunglasses thresholds were not decided by this presentation approval; their subsequent approval is recorded in D-062. Remaining policies, missing-signal details and unsupported daily outcomes must not be silently invented. Implementation still requires explicit user permission.
+
+### D-061 — Internal working labels for different item behaviors
+**Decision:** Use **“Can I wear items”** and **“Should I wear items”** as internal working labels only, in project discussions/documentation and implementation terminology where useful.
+
+- **Can I wear items:** Check whether conditions make wearing an item unsuitable; the leather jacket is the established example where a hazardous hour retains the protective daily Avoid result.
+- **Should I wear items:** Check whether conditions make an item useful/needed; sunglasses are the established example where a qualifying sunny interval can make them useful today without implying all-day need.
+
+These are not approved UI labels, Home headings, configuration choices or final names for users. D-060's explicit daily verdicts and timing remain the Home contract, and user-facing group naming/configuration remains deferred to Phase 8.1. This does not make the behaviors mutually exclusive, assign the rest of the catalog, or settle combined/conflicting-condition policies. No app implementation is authorized by this naming decision.
+
+### D-062 — Initial Raincoat and Sunglasses conditions
+**Decision:** Approve the proposed hourly conditions for Raincoat and Sunglasses, with the D-060 explicit daily-verdict/timing presentation. These rules do not change the Leather Jacket policy.
+
+**Raincoat:** Rain at or above **0.5 mm/hour** makes it Useful. Below that, positive rain or a forecast rain chance at or above **30%** makes it Maybe useful. With no rain forecast and chance below **30%**, it is Not needed. Wind speed at or above **30 km/h** upgrades light-rain advice (positive rain below 0.5 mm/hour) from Maybe useful to Useful; wind alone or wind with chance-only uncertainty does not. Rain protection takes priority over warmth. These are initial product thresholds, not a universal meteorological boundary for needing a coat; the earlier 2.5 mm/hour draft is not the approved cutoff.
+
+**Sunglasses:** During daylight, clear/mainly-clear conditions make them Useful, partly-cloudy conditions make them Maybe useful, and overcast/fog conditions mean Not needed on the sunshine signal alone. **UV Index ≥6** makes them Useful regardless of cloudiness. Forecast sky conditions are the approved practical brightness proxy, not a direct measurement of brightness. UV is optional: when unavailable, use the sky-condition signal alone. Do not apply the daytime sky rule to a clear night or spread a daily UV maximum across all hours.
+
+Missing wind does not invalidate the Raincoat's base rain recommendation or justify a wind upgrade. Missing UV does not invalidate the Sunglasses' sky-based recommendation. Missing required signals follow the already approved conservative coverage/gap policy; they must not be converted into “Not needed.” Detailed rules, precedence and boundary examples are maintained in `WEATHER_LOGIC.md`; normalized-input constraints belong in `TECH_SPEC.md`.
+
+This records policy approval only, not implementation permission, a provider migration or a change to freshness/location/coverage rules. Phase 4.1 is not declared complete by this decision.
+
 ## Not yet decided
 
 The following are intentionally NOT decisions:
-- UI labels/palette beyond the approved Guided and Compact single-item Home Screens;
+- detailed labels/palette/layout beyond the approved Home directions, including outcomes not specified by D-060;
 - analytics/telemetry;
 - final bundle identifiers;
-- which predefined items launch in Phase 4 and their non-leather rules;
-- multiple-item main UI and exact first widget design;
+- remaining Phase 4.1 item-specific rules, daily summary behavior and data-signal details;
+- exact first widget design;
 - specific creation/template mechanism for basic custom items;
+- exact user-facing item-group labels and the configuration UX explaining their different daily behaviors (Phase 8.1; D-060 supersedes D-059; D-061 approves internal working labels only);
 - threshold editing UX and affected item types;
 - saved-location visibility controls, including possible active/inactive state and manual overrides;
 - precise lookahead/horizon behavior and later trip/date ideas;

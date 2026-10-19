@@ -6,7 +6,7 @@
 
 ## Purpose
 
-Can I Wear is a simple, recommendation-first mobile app answering weather-based questions about **items**. Its **first real-device milestone** focuses on “Can I wear my leather jacket today?” The broader app supports other predefined items by the first public release, and custom items later. “Can I?” and “Should I wear/bring?” are possible item semantics, not a design distinction we must settle now.
+Can I Wear is a simple, recommendation-first mobile app answering weather-based questions about **items**. Its **first real-device milestone** focuses on “Can I wear my leather jacket today?” The broader app supports other predefined items by the first public release, and custom items later. The Phase 4 Home Screen communicates item-specific daily advice with explicit verdicts and timing (D-060); exact labels for the different item behaviors are deferred to custom-item configuration.
 
 For the leather jacket specifically, the main concern is avoiding rain/fog damage and excessive heat, not maximizing comfort.
 
@@ -43,6 +43,8 @@ The product should answer quickly and correctly:
 - or a small number of meaningful periods
 
 with a very short reason.
+
+For Phase 4 daily advice, D-060 replaces a universal daily Yes/Maybe/No label with an explicit verdict and time scope; hourly answers can retain those labels. See `PRODUCT_SPEC.md` and `UX.md` for the current presentation requirements.
 
 ## Primary product rule
 
@@ -124,7 +126,7 @@ The hierarchy above resolves conflicts; this list says **where to maintain each 
 | `AI_RULES.md` | Instructions for AI/developer work and decision handling. |
 | `DECISIONS.md` | Approved decisions, supersession history, and explicitly undecided choices. |
 | `PRODUCT_SPEC.md` | Current user-facing requirements and product scope; exact jacket classification and grouping rules belong in `WEATHER_LOGIC.md`. |
-| `WEATHER_LOGIC.md` | Current leather-jacket weather classification, daily aggregation, missing-data and period-grouping rules. |
+| `WEATHER_LOGIC.md` | Current item-specific weather rules, daily evaluation, missing-data and period grouping; distinguish the implemented leather-jacket foundation from approved/pending additional item policies. |
 | `UX.md` | Approved presentation, interaction and accessibility requirements; open design questions stay labeled open. |
 | `TECH_SPEC.md` | Technical architecture, integrations, caching implementation constraints and settings storage contracts. |
 | `ISSUES.md` | Short, ID-based list of observed defects and their resolution/verification status; other files may refer to issue IDs. |

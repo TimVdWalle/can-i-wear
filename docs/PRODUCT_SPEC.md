@@ -1,7 +1,7 @@
 # Can I Wear — Product Specification
 
 > Status: ACTIVE
-> Last updated: 2026-10-18
+> Last updated: 2026-10-19
 > Source of truth: YES
 
 ## Initial real-device user story (historical foundation)
@@ -47,7 +47,7 @@ Weather reuse and refresh policy:
 - apply the policy at launch, on foreground activation and when an active screen crosses a boundary;
 - never run concurrent weather requests.
 
-Provider-supplied wind speed/gusts may be retained for diagnostics, but wind is not currently a direct recommendation input. Apparent temperature remains the approved temperature input that can reflect wind effects.
+For Leather Jacket, provider-supplied wind speed/gusts remain diagnostic-only; apparent temperature is the approved temperature input that can reflect wind effects. D-062 separately approves wind speed as a Raincoat modifier during forecast light rain. Phase 4 also needs hourly liquid-rain/chance inputs for Raincoat and daylight/sky conditions with optional hourly UV for Sunglasses. The detailed item rules are maintained in `WEATHER_LOGIC.md`; these additions do not alter jacket policy.
 
 ## Decision output
 
@@ -58,7 +58,17 @@ The app should communicate:
 
 The primary visual result should be understandable almost immediately.
 
-The Phase 3 single-item Home Screen follows D-046/D-047/D-051 and `UX.md`: a Leather Jacket hero with **YES / MAYBE / NO**, the existing most-protective remaining-day summary, a short data-derived weather reason, daypart cards, and raw hourly suitability with explicit uncertainty/grouping context. **Guided Home** is the default and adds the item-neutral purpose line, **When can I wear it?** context and a concise dismissible explanation. **Compact Home** omits this guidance and retains the denser presentation. These presentation modes do not change weather rules or decide the later multi-item screen.
+The implemented Phase 3 single-item Home Screen follows D-046/D-047/D-051 and `UX.md`: a Leather Jacket hero with **YES / MAYBE / NO**, the existing most-protective remaining-day summary, a short data-derived weather reason, daypart cards, and raw hourly suitability with explicit uncertainty/grouping context. **Guided Home** is the default and adds the item-neutral purpose line, **When can I wear it?** context and a concise dismissible explanation. **Compact Home** omits this guidance and retains the denser presentation. These presentation modes do not change weather rules. For Phase 4, D-060 replaces the universal daily YES/MAYBE/NO presentation with the explicit verdict and timing requirements below; the Phase 3 evidence is not evidence that this new presentation is implemented.
+
+### Phase 4 daily advice: meaning and time must be explicit (D-060)
+
+- Present an item-appropriate daily verdict, relevant times and a short weather reason. The answer must distinguish an item that is useful at some point today from an item that suits the entire evaluated window, and distinguish not needing an item from conditions making it unsuitable.
+- Do not present one universal daily YES/NO whose meaning silently changes between items. A positive usefulness verdict does not imply every hour is positive; a restriction verdict must make the affected times clear rather than implying every hour is unsuitable.
+- Keep hourly evaluations and meaningful periods available. Hourly answers can retain YES/MAYBE/NO; the new daily copy does not change the approved classification thresholds, time window, conservative missing-hour handling or jacket safety consolidation.
+- Use the item-specific daily policy, not a universal best-hour/worst-hour algorithm. Jacket hazards remain protective; sunglasses may be useful for a sunny interval even if unnecessary elsewhere. Policies for conflicting usefulness/unsuitability within the same item remain to be approved.
+- No visible item-group labels are required to interpret the predefined collection. Fixed-item behavior can be predefined while remaining separable from UI copy; exact grouping labels and the configuration explanation are deferred to custom items in Phase 8.1, not settled by D-059's historical wording.
+
+The presentation contract and representative verdicts are maintained in [UX.md](UX.md#phase-4-daily-verdicts-and-timing-d-060).
 
 ## Leather-jacket recommendation policy
 
@@ -122,9 +132,10 @@ Implementation details are secondary to these outcomes.
 
 ## First public release: multiple predefined items and widget (Phases 4–7)
 
-- Support a user-approved predefined collection of items in addition to the original leather jacket; exact set **TBD in Phase 4.1**.
-- Each item must have its own appropriate, testable weather recommendation rules; preserve all original leather-protection policy and provenance/cache guardrails.
-- Present multiple item recommendations clearly; **overview versus item switching TBD** in Phase 4.1.
+- The approved initial seven-item collection is Leather Jacket, Warm Coat, Sweater, Raincoat, Sunglasses, Shorts and Gloves (D-058).
+- Retain the shared weather-fit perspective “Is today a good day for [item]?”, expressed through explicit daily verdicts and timing (D-060), not a universal daily YES/MAYBE/NO label. Each item has its own appropriate, testable rules; preserve all original leather-protection policy and provenance/cache guardrails.
+- The approved main presentation is a compact overview showing item answers together, with item detail available on selection. Detailed layout remains subject to UX implementation review.
+- The approved initial temperature bands/input selection and the D-062 Raincoat/Sunglasses hourly conditions and optional-input fallbacks are in [WEATHER_LOGIC.md](WEATHER_LOGIC.md). Remaining item policies and unsupported cases are still gated in Phase 4.1; the explicit daily-verdict/timing approach is already approved.
 - Include an iOS home-screen widget; its form and content remain **TBD in Phase 5.1**.
 - Use current device location and today's relevant hours for first release. No user-created items, saved cities, notification feature or editable rules required for release.
 

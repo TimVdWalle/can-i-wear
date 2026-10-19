@@ -1,7 +1,7 @@
 # Can I Wear — Weather Logic
 
 > Status: ACTIVE
-> Last updated: 2026-10-18
+> Last updated: 2026-10-19
 > Source of truth: YES
 
 ## Goal
@@ -75,7 +75,7 @@ These examples express the product intent and should become automated tests.
 
 1. Evaluate only the forecast location's remaining current calendar day, from its current local hour through day end, using its timezone (including DST boundaries).
 2. Classify every relevant hour; an incomplete window follows the missing-hour rule below.
-3. The Home hero uses the most-protective hourly result: Avoid over Caution over OK, with the existing approved reason precedence. It is not a majority vote.
+3. The jacket's daily evaluation uses the most-protective hourly result: Avoid over Caution over OK, with the existing approved reason precedence. It is not a majority vote. D-060 changes the Phase 4 Home verdict wording/timing, not this evaluation.
 4. Group the hours into meaningful, non-overlapping periods; do not present noisy alternation as many tiny changes.
 
 Normal recommendation changes require 3 consecutive forecast hours to form a separate period. A one-hour Avoid result expands into a 2-hour safety period by including the preceding hour, or the following hour if it is at the start of the evaluated window. Short safer intervals do not override surrounding risk. Repeated hour-by-hour alternation is consolidated into one period using the most protective result in the noisy span. These parameters remain centralized and fixture-tested.
@@ -117,3 +117,63 @@ At minimum:
 ## Scope of existing rules and later items
 
 All rain, fog/mist, temperature, grouping and precedence thresholds above apply to the **leather jacket**, not automatically to other items. Introduce new weather factors only with approved item-specific policy, provider normalization and deterministic tests; wind remains diagnostic-only for leather unless separately changed. Future item rules and forecast-horizon scope are tracked in [ROADMAP.md](ROADMAP.md).
+
+## Approved Phase 4 temperature rules for other items (D-058)
+
+These rules apply only to the named items; they do not alter Leather Jacket behavior. Use apparent/feels-like temperature when available, otherwise actual temperature.
+
+| Item | YES — good fit | MAYBE — transitional | NO — poor fit |
+| --- | --- | --- | --- |
+| Warm Coat | ≤5°C | >5°C through 12°C | >12°C |
+| Sweater | ≤12°C | >12°C through 18°C | >18°C |
+| Gloves | ≤5°C | >5°C through 10°C | >10°C |
+| Shorts | ≥22°C | ≥17°C and <22°C | <17°C |
+
+The item-level decision is weather fit: “Is today a good day for [item]?” D-060 approves an explicit daily-verdict presentation, but does not settle how every item's changing hourly bands combine. Do not infer a daily algorithm from these hourly bands or from a proposed group label.
+
+Extend the approved D-024 isolated-gap rule to these items: at most one unusable/missing hour may be inferred, only when valid hours exist immediately before and after it. The inferred result must be conservative and no more favorable than MAYBE. Two or more gaps, or a gap at either edge, makes daily coverage incomplete and produces no daily answer. The exact conservative mapping must respect the item's approved behavior; jacket aggregation must not be assumed for other items.
+
+## Approved Raincoat hourly conditions (D-058/D-062)
+
+Use the forecast rain amount for the hour, forecast chance and optional wind speed. Evaluate in this order:
+
+| Conditions | Hourly advice |
+| --- | --- |
+| Rain ≥0.5 mm/hour | Useful |
+| Otherwise, rain >0 and <0.5 mm/hour, or rain chance ≥30% | Maybe useful |
+| No rain forecast and chance <30% | Not needed |
+
+Wind speed ≥30 km/h upgrades a light-rain Maybe useful result to Useful only when the rain amount is positive. Wind without rain, including chance-only uncertainty with no forecast amount, does not cause the upgrade. Missing wind leaves the base rain/chance evaluation unchanged. Rain protection takes priority over warmth; do not use a warm temperature to cancel this need.
+
+Boundary examples: 0.5 mm/hour is Useful; 0.49 mm/hour is Maybe useful without the wind upgrade; 0 mm and exactly 30% chance is Maybe useful; 0 mm and 29% chance is Not needed. Positive light rain with exactly 30 km/h wind is Useful. The previously proposed 2.5 mm/hour cutoff is not approved.
+
+These are rain rules: do not silently treat snow-water equivalent or every precipitation type as liquid rain. Handling other precipitation types is not established by these numeric thresholds.
+
+## Approved Sunglasses hourly conditions (D-058/D-062)
+
+During daylight, use forecast sky conditions as a practical proxy for brightness:
+
+| Sky condition | Hourly advice before UV override |
+| --- | --- |
+| Clear or mainly clear | Useful |
+| Partly cloudy | Maybe useful |
+| Overcast or fog | Not needed on the sunshine signal alone |
+
+UV Index ≥6 overrides the cloudiness-based result to Useful. Below 6, UV does not independently upgrade the sky-based advice. If UV is unavailable, use the sky signal alone; no UV value or UV reason may be fabricated. Exactly 6 qualifies; 5.9 does not trigger this override. A clear night is not a sunny interval; do not extend a daytime rule to night or use a whole-day UV maximum as an hourly value.
+
+Sky conditions are not a direct brightness measurement. Do not add humidity, visibility, mountain/snow-glare or altitude heuristics under this approval. Provider signal mappings/validity must be explicit, and missing or unrecognized required signals must not become an assumed overcast/dry/no-need result.
+
+## Phase 4 input gaps and remaining policy scope
+
+Wind is optional for the Raincoat; UV is optional for Sunglasses. Missing required signals follow the approved isolated-hour inference/coverage rule rather than becoming Not needed. The already approved apparent-temperature fallback remains unchanged for the temperature items. Missing-data handling must remain item-specific rather than requiring every item to have every other item's weather inputs.
+
+The initial predefined collection is Leather Jacket, Warm Coat, Sweater, Raincoat, Sunglasses, Shorts and Gloves. Remaining daily policies and unsupported signal/condition cases stay subject to Phase 4.1 approval. Do not apply the jacket's thresholds or rain/fog policies to other items by default.
+
+## Daily behavior versus daily wording (D-060)
+
+The daily presentation contract is maintained in [UX.md](UX.md#phase-4-daily-verdicts-and-timing-d-060). It does not replace item-specific evaluation with one universal level ordering:
+- **Leather Jacket:** Any hazardous hour retains its protective daily Avoid result under the existing rules. Describing the restriction and affected times does not remove the hazard, change the most-protective daily result or bypass period expansion/consolidation.
+- **Sunglasses:** A qualifying sunny/high-UV hour under D-062 can make them useful today even if other hours do not call for them. This is a usefulness claim with timing, not an all-day suitable/needed claim.
+- **Other items and combined conditions:** Their daily policy must be explicit and testable. The previous proposed item-to-group table is not approved. Which condition wins when an item is useful in some hours but unsuitable in others remains open; do not silently use a best-hour/worst-hour/majority algorithm to fill that gap.
+
+All-window suitability and no-need verdicts require the approved coverage/validity checks; missing data is not dry weather, no need, or suitability. The extended isolated-gap inference remains conservative. These decisions do not change existing jacket thresholds, hourly evaluation, reason precedence, cache validity or the remaining-local-day window.

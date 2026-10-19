@@ -1,7 +1,7 @@
 # Can I Wear — TODO
 
 > Status: ACTIVE
-> Last updated: 2026-10-18
+> Last updated: 2026-10-19
 > Source of truth: YES
 
 This is an execution list, not a source of product decisions.
@@ -13,7 +13,7 @@ The numbered review units and acceptance criteria are in [IMPLEMENTATION_PLAN.md
 ## Current focus
 
 - **Phase 3 is complete** by user acceptance on 2026-10-18. Validation items without recorded results are retained under [Unphased follow-up](#unphased-follow-up), not represented as passed.
-- **Next product gate:** 4.1 must approve the predefined items, their rules and multi-item UX before Phase 4 implementation. Widget form/refresh is still open at 5.1. Phases 6–7 are validation and release gates; Phases 8–19 are pending, with their scope in [ROADMAP.md](ROADMAP.md).
+- **Next product gate:** Phase 4.1 is partially decided by D-058/D-060/D-062: the collection, weather-fit perspective, compact overview, explicit daily verdicts/timing, temperature bands, Raincoat/Sunglasses hourly conditions, optional wind/UV fallbacks and isolated one-hour gap extension are approved. Remaining item-specific daily/conflict policies and unsupported cases still need resolution; provider normalization must support approved signals. Exact user-facing group labels/configuration explanation are deferred to 8.1, not Phase 4 blockers. Widget form/refresh is still open at 5.1. Phases 6–7 are validation and release gates; Phases 8–19 are pending, with their scope in [ROADMAP.md](ROADMAP.md).
 - **Other release blockers:** production weather provider/terms, final bundle identity and telemetry/privacy policy remain undecided. Do not infer approval from a planned phase; see the open decisions below and 7.1/7.3.
 
 ## Subphase status
@@ -88,7 +88,10 @@ These checks have no phase assignment and no specific result recorded here. They
 
 ### Phase 4 — Predefined multi-item support (before public release)
 
-- [ ] 4.1 Approve the predefined launch-item list, item-specific rules and main multi-item UX — **decision gate**
+- D-060 records the approved explicit daily-verdict + timing approach and supersedes D-059's group wording. The presentation contract/examples and acceptance cases are in `UX.md`; exact group naming/configuration is deferred to Phase 8.1. Actual remaining item policies are still open. Documentation only; no app implementation or test run. Explicit user permission is required before beginning implementation.
+- D-061 records “Can I wear items” / “Should I wear items” as internal working labels only, not user-facing copy or approval of catalog assignments/conflict policies.
+- D-062 records approved Raincoat/Sunglasses hourly conditions and optional-input fallback (documentation updated 2026-10-19). Read-only inspection found existing rain/showers/wind requests but no retained distinct liquid-rain/daylight/sky/UV fields in the normalized model. Open-Meteo documentation confirms rain/wind/sky/daylight variables; a live Brussels-coordinate sample returned hourly `is_day`, `cloud_cover` and `uv_index`. This verifies that sample's data availability, not app integration, global/provider reliability or production approval. No app code, build or test run from this work.
+- [ ] 4.1 Approve the predefined launch-item list, item-specific rules and main multi-item UX — **decision gate; partially decided in D-058/D-060/D-062, remaining choices listed above and in IMPLEMENTATION_PLAN.md**
 - [ ] 4.2 Implement and deterministically test multiple predefined items without changing jacket rules
 - [ ] 4.3 Implement approved multi-item UI and accessibility states
 - [ ] 4.4 Validate approved items on real iPhone
@@ -117,7 +120,7 @@ These checks have no phase assignment and no specific result recorded here. They
 
 ### Post-release phases 8–19 (all pending; do not implement before their gates)
 
-- [ ] 8.1 Approve minimal custom item model/defaults; 8.2 implement local basic custom items
+- [ ] 8.1 Approve minimal custom item model/defaults plus clear names/configuration explanation for different item behaviors (D-060); 8.2 implement local basic custom items
 - [ ] 9.1 Approve which item weather thresholds can be edited; 9.2 implement local overrides
 - [ ] 10.1 Approve city search, favorites, current-location and multi-city visibility UX; 10.2 implement city model/weather/cache; 10.3 validate clear overview
 - [ ] 11.1 Approve simple forecast lookahead; 11.2 implement it

@@ -5,6 +5,8 @@ description: Follow Can I Wear project truth files, decisions, issues, and valid
 
 # Can I Wear project workflow
 
+Start with the repository-root `AGENTS.md`. Working rules and the per-task quality standard live in `docs/AI_RULES.md`; this skill routes tasks to the relevant project documents rather than duplicating those rules. All paths below are relative to the repository root.
+
 Before changing code or product behavior:
 
 1. Read `docs/PROJECT.md` and `docs/AI_RULES.md`.
@@ -16,10 +18,8 @@ Before changing code or product behavior:
    - technical constraints: `docs/TECH_SPEC.md`
    - Home Screen UX: `docs/UX.md`
    - current status: `docs/TODO.md`
-4. Inspect the existing implementation before editing.
+4. Follow the implementation and validation workflow in `docs/AI_RULES.md` §1.2.
 
-Do not invent or silently change approved behavior. If the requested change conflicts with an approved decision, or expected behavior is undefined, ask the user first.
+For decisions or undefined/conflicting behavior, use the truth hierarchy in `docs/PROJECT.md` and the decision-handling rules in `docs/AI_RULES.md` §§2–3, 13–14.
 
-For reported bugs, update the matching entry in `docs/ISSUES.md`, implement only behavior already supported by the truth files, add regression coverage where practical, and record validation. Do not mark an issue resolved without passing acceptance checks.
-
-Keep recommendation logic, thresholds, aggregation, caching, and provider behavior unchanged unless the user explicitly approves a change.
+For reported bugs, use `docs/ISSUES.md` and the issue/verification workflow in `docs/AI_RULES.md` §13.5.

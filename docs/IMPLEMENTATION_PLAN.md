@@ -1,7 +1,7 @@
 # Can I Wear — Complete Implementation Plan
 
 > Status: ACTIVE — agreed scope plus gated, sometimes provisional future execution
-> Last updated: 2026-10-18
+> Last updated: 2026-10-19
 > Source of truth: execution detail subordinate to the existing truth files
 
 ## Authority and execution rules
@@ -420,19 +420,23 @@ Goal: expand the already implemented jacket-only experience to a **small user-ap
 
 - **Type:** Product/UX decision gate.
 - **Objective:** Confirm which predefined items the first release supports, what each item's recommendation means and how users view several items.
-- **Exact scope:** Present a concise candidate list with rules/required weather factors, propose a low-friction layout (overview, item switching, or another design), and obtain approval. The optional “Can I?”/“Should I?” item category is not a mandatory data field without approval.
-- **Acceptance criteria:** Explicitly approved initial catalog, item-specific semantics and primary UI interaction; every required weather factor has an identified normalized input and testable behavior; jacket policy remains unchanged.
-- **Tests/validation:** Review sample forecasts, caution/avoid/OK and multi-item/no-data scenarios against proposed UI; approve sensible defaults for each new item.
+- **Exact scope:** Approve the collection, item-specific hourly/daily policies and required weather factors, plus the low-friction multi-item presentation. D-060 approves explicit daily verdicts/timing without requiring a user-facing group taxonomy; exact group labels and configuration explanation are deferred to 8.1.
+- **Acceptance criteria:** Explicitly approved initial catalog, item-specific semantics/daily policies and primary UI interaction; every required weather factor has an identified normalized input and testable behavior; jacket policy remains unchanged. Mixed-day advice must state whether it describes usefulness, unsuitability or suitability throughout the evaluated window, without requiring knowledge of an item group.
+- **Tests/validation:** Review sample forecasts and multi-item/no-data scenarios against the explicit-verdict contract in `UX.md`, including a useful sunny interval, a single jacket hazard, all-window suitability and an item useful in some hours but unsuitable in others; approve sensible defaults for each new item.
 - **Dependencies:** Phase 3.1/3.5 presentation foundation and Phase 2 domain outputs.
 - **Non-goals:** Custom items, user-editable thresholds, saved cities, accounts, notifications, adding unapproved item types.
-- **Blocking TBDs:** Specific first-release items, their appropriate rules/thresholds, and main multi-item UX.
+- **Blocking TBDs:** Remaining item-specific daily/conflict policies, unsupported condition/signal cases and outstanding concrete presentation cases. D-062 resolves the initial Raincoat/Sunglasses numeric conditions and optional wind/UV fallback; provider mappings must faithfully support them. Group-label naming and the D-060 explicit-verdict/timing approach are not open Phase 4 choices.
+
+**Decision progress (2026-10-18, D-058/D-060):** The seven-item collection, weather-fit perspective, compact overview, initial temperature bands/input for Warm Coat, Sweater, Gloves and Shorts, and extension of the isolated one-hour gap rule are approved. High-level Raincoat and Sunglasses behavior is recorded. D-060 replaces a universal daily YES/MAYBE/NO with an explicit verdict and timing, supersedes D-059 and defers exact group labels to 8.1. The Phase 4.1 blockers above concern actual behavior and inputs, not group names. Do not begin implementation until the remaining decisions are approved/recorded and the user explicitly gives permission.
+
+**Decision progress (recorded 2026-10-19, D-062):** Initial Raincoat rain/chance/wind conditions and Sunglasses daylight/sky/UV conditions are approved, including optional wind/UV fallback. Their policy boundaries and examples are maintained in `WEATHER_LOGIC.md`, input-normalization constraints in `TECH_SPEC.md`. Do not reopen approved presentation or thresholds, or interpret policy approval as permission to implement. This update does not declare Phase 4.1 complete.
 
 ### 4.2 — Implement multi-item rule and domain support
 
 - **Type:** Domain/application implementation and deterministic tests.
 - **Objective:** Produce trustworthy recommendations for every approved predefined item for the same current-location weather.
 - **Exact scope:** Add only the catalog/model/rule-config abstraction needed; keep item-specific weather factors and default thresholds centralized; reuse normalized provider/time window/periods/cache contracts where appropriate, without cross-applying the jacket policy to other items.
-- **Acceptance criteria:** Each item gets correct independent recommendation/reasons and meaningful periods; missing inputs fail safely per approved item rules; the existing leather engine passes unchanged regression tests.
+- **Acceptance criteria:** Each item gets correct independent daily advice, supporting times/reasons and meaningful periods; policies do not depend on display-name or verdict-string matching. Missing inputs fail safely per approved item rules; the existing leather engine passes unchanged regression tests. Do not add a generic rules builder or future custom-item editor to satisfy extensibility.
 - **Tests/validation:** Item-specific boundary/precedence/coverage tests; regression suite covering rain/fog, cache and local-day periods; tests do not require network/GPS.
 - **Dependencies:** 4.1; original providers and Phase 2.
 - **Non-goals:** User-created items or threshold editing, advanced expression/rule engine, per-city caching.
@@ -443,8 +447,8 @@ Goal: expand the already implemented jacket-only experience to a **small user-ap
 - **Type:** App UX implementation and UI testing.
 - **Objective:** Make additional item recommendations clear without making the app a weather dashboard.
 - **Exact scope:** Implement the 4.1-approved screen behavior, explanations, period display and safe unavailable/stale states for multiple items; keep quick startup and current location.
-- **Acceptance criteria:** Recommendation meaning and item identity are immediately recognizable, including caution/avoid and weather age; accessible and not color-only; switching/overview performs without duplicate network requests.
-- **Tests/validation:** Deterministic multi-item UI scenarios with at least conflicting item recommendations and changing periods; large text/accessibility checks.
+- **Acceptance criteria:** Item identity, explicit daily-verdict meaning, relevant timing and weather reason are immediately recognizable without learning an item-group label. Usefulness during one interval must not read as all-day suitability; not-needed must not read as unsafe. Preserve caution/uncertainty and failure handling, accessible/non-color presentation, and D-057's omission of Home freshness status. Switching/overview performs without duplicate network requests.
+- **Tests/validation:** Deterministic multi-item UI scenarios with conflicting item recommendations and changing periods; cover the D-060 examples, uncertainty and incomplete coverage; large text/accessibility checks convey the same time scope and meaning.
 - **Dependencies:** 4.1–4.2, 3.5.
 - **Non-goals:** Widget, saved cities, custom items, broad settings.
 
@@ -616,7 +620,8 @@ Goal: deliver the validated **multi-item + widget** first public release through
 
 ### 8.1 — Approve minimal custom-item model and defaults
 - **Decision gate:** Decide minimum fields, how a user-created item gets a valid initial weather policy, edit/delete and persistence UX; do not assume arbitrary rule building, photos, item categorization or an owned-wardrobe inventory.
-- **Acceptance:** The user approves the simple local-first experience and error handling; custom items remain distinct from predefined defaults.
+- **Decision gate (D-060):** Resolve exact names and configuration wording for the different item behaviors, including combined behavior where supported. Users must understand what they are choosing and its effect on daily advice; D-059's historical labels are not approved defaults. This gate does not assume a mandatory group field or a particular editor.
+- **Acceptance:** The user approves the simple local-first experience, the behavior-choice explanation and error handling; custom items remain distinct from predefined defaults. Their Home advice follows the same explicit-verdict/timing contract, not a newly ambiguous universal daily YES/NO.
 - **Dependencies:** First public release / Phase 7, multi-item architecture from Phase 4.
 
 ### 8.2 — Implement and test basic custom-item management
