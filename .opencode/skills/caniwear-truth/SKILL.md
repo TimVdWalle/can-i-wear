@@ -20,6 +20,8 @@ Before changing code or product behavior:
    - current status: `docs/TODO.md`
 4. Follow the implementation and validation workflow in `docs/AI_RULES.md` §1.2.
 
+For item rules or daily advice, also follow `docs/AI_RULES.md` §5.1: read D-063, its D-064 amendment and D-065's launch-item assignments in `docs/DECISIONS.md` and “Two shared daily aggregation policies” in `docs/WEATHER_LOGIC.md`. The two algorithms, useful-hour minimum and all launch-item assignments are decided; unresolved weather inputs or wording do not reopen them. The earlier “best hour wins” trigger is superseded.
+
 For decisions or undefined/conflicting behavior, use the truth hierarchy in `docs/PROJECT.md` and the decision-handling rules in `docs/AI_RULES.md` §§2–3, 13–14.
 
 For reported bugs, use `docs/ISSUES.md` and the issue/verification workflow in `docs/AI_RULES.md` §13.5.

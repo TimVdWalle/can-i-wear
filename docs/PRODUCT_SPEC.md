@@ -65,7 +65,8 @@ The implemented Phase 3 single-item Home Screen follows D-046/D-047/D-051 and `U
 - Present an item-appropriate daily verdict, relevant times and a short weather reason. The answer must distinguish an item that is useful at some point today from an item that suits the entire evaluated window, and distinguish not needing an item from conditions making it unsuitable.
 - Do not present one universal daily YES/NO whose meaning silently changes between items. A positive usefulness verdict does not imply every hour is positive; a restriction verdict must make the affected times clear rather than implying every hour is unsuitable.
 - Keep hourly evaluations and meaningful periods available. Hourly answers can retain YES/MAYBE/NO; the new daily copy does not change the approved classification thresholds, time window, conservative missing-hour handling or jacket safety consolidation.
-- Use the item-specific daily policy, not a universal best-hour/worst-hour algorithm. Jacket hazards remain protective; sunglasses may be useful for a sunny interval even if unnecessary elsewhere. Policies for conflicting usefulness/unsuitability within the same item remain to be approved.
+- Use one of the **two approved shared daily aggregation policies (D-063/D-064)**: Can I wear items use the worst hour; Should I wear items need enough useful hours, not merely the best hour. All launch-item assignments are approved in D-065. Do not force one algorithm onto all items or invent a separate daily algorithm per item. The assignments, approved useful-hour threshold and qualified single-hour outcome are maintained in [WEATHER_LOGIC.md](WEATHER_LOGIC.md#two-shared-daily-aggregation-policies-d-063).
+- Streamline/reuse presentation wording across both behaviors where it remains clear. Common wording does not mean common aggregation: dayparts/hourly detail explain suitable/unsuitable or useful/not-needed intervals. A positive daily usefulness result is not an all-day suitability claim.
 - No visible item-group labels are required to interpret the predefined collection. Fixed-item behavior can be predefined while remaining separable from UI copy; exact grouping labels and the configuration explanation are deferred to custom items in Phase 8.1, not settled by D-059's historical wording.
 
 The presentation contract and representative verdicts are maintained in [UX.md](UX.md#phase-4-daily-verdicts-and-timing-d-060).
@@ -106,6 +107,8 @@ If weather cannot be obtained:
 
 Incomplete hourly coverage follows the conservative missing-hour policy in [WEATHER_LOGIC.md](WEATHER_LOGIC.md); beyond its single permitted inference, no daily recommendation may be shown.
 
+For multiple items, D-066 applies this validity check independently: missing required inputs for one item must not suppress another item's usable advice. The permitted inferred hour remains visibly uncertain and never contributes useful time.
+
 If location cannot be obtained:
 - a recent cached location may be used if it is still considered reliable;
 - otherwise do not pretend to know the local weather.
@@ -134,8 +137,8 @@ Implementation details are secondary to these outcomes.
 
 - The approved initial seven-item collection is Leather Jacket, Warm Coat, Sweater, Raincoat, Sunglasses, Shorts and Gloves (D-058).
 - Retain the shared weather-fit perspective “Is today a good day for [item]?”, expressed through explicit daily verdicts and timing (D-060), not a universal daily YES/MAYBE/NO label. Each item has its own appropriate, testable rules; preserve all original leather-protection policy and provenance/cache guardrails.
-- The approved main presentation is a compact overview showing item answers together, with item detail available on selection. Detailed layout remains subject to UX implementation review.
-- The approved initial temperature bands/input selection and the D-062 Raincoat/Sunglasses hourly conditions and optional-input fallbacks are in [WEATHER_LOGIC.md](WEATHER_LOGIC.md). Remaining item policies and unsupported cases are still gated in Phase 4.1; the explicit daily-verdict/timing approach is already approved.
+- D-067 adds first-launch item selection and a header gear reopening focused item configuration. One selected item uses the existing single-item Home layout and its presentation variants; multiple selected items use a new overview showing only those items, with item detail available on selection. Multi-item visuals must build on current Guided Home styling; detailed layout remains subject to prototype review.
+- The approved initial temperature bands/input selection, D-062 Raincoat/Sunglasses hourly conditions and optional-input fallbacks, and D-063–D-066 daily algorithms, useful-hour minimum, launch-item assignments and required-input/gap handling are in [WEATHER_LOGIC.md](WEATHER_LOGIC.md). Other unsupported condition/precipitation cases and non-jacket grouping remain gated in Phase 4.1; the algorithms, launch assignments, missing-input handling and explicit daily-verdict/timing approach are not undecided.
 - Include an iOS home-screen widget; its form and content remain **TBD in Phase 5.1**.
 - Use current device location and today's relevant hours for first release. No user-created items, saved cities, notification feature or editable rules required for release.
 

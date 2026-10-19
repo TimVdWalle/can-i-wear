@@ -129,9 +129,9 @@ These rules apply only to the named items; they do not alter Leather Jacket beha
 | Gloves | ≤5°C | >5°C through 10°C | >10°C |
 | Shorts | ≥22°C | ≥17°C and <22°C | <17°C |
 
-The item-level decision is weather fit: “Is today a good day for [item]?” D-060 approves an explicit daily-verdict presentation, but does not settle how every item's changing hourly bands combine. Do not infer a daily algorithm from these hourly bands or from a proposed group label.
+The item-level decision is weather fit: “Is today a good day for [item]?” D-060 approves explicit daily verdicts; D-063/D-064 settle the two shared daily algorithms below. D-065 assigns all four temperature items to Should I wear: enough useful hours makes the daily result positive even when other hours are a poor fit. Do not invent a separate daily algorithm for each.
 
-Extend the approved D-024 isolated-gap rule to these items: at most one unusable/missing hour may be inferred, only when valid hours exist immediately before and after it. The inferred result must be conservative and no more favorable than MAYBE. Two or more gaps, or a gap at either edge, makes daily coverage incomplete and produces no daily answer. The exact conservative mapping must respect the item's approved behavior; jacket aggregation must not be assumed for other items.
+Extend the approved D-024 isolated-gap rule to these items: at most one unusable/missing hour may be inferred, only when valid hours exist immediately before and after it. D-066 fixes this inferred result at uncertain/MAYBE for Should I wear items; it is never observed weather or a useful hour. Two or more gaps, or a gap at either edge, makes daily coverage incomplete and produces no daily answer. Leather Jacket retains its own existing conservative neighbor mapping.
 
 ## Approved Raincoat hourly conditions (D-058/D-062)
 
@@ -161,19 +161,79 @@ During daylight, use forecast sky conditions as a practical proxy for brightness
 
 UV Index ≥6 overrides the cloudiness-based result to Useful. Below 6, UV does not independently upgrade the sky-based advice. If UV is unavailable, use the sky signal alone; no UV value or UV reason may be fabricated. Exactly 6 qualifies; 5.9 does not trigger this override. A clear night is not a sunny interval; do not extend a daytime rule to night or use a whole-day UV maximum as an hourly value.
 
-Sky conditions are not a direct brightness measurement. Do not add humidity, visibility, mountain/snow-glare or altitude heuristics under this approval. Provider signal mappings/validity must be explicit, and missing or unrecognized required signals must not become an assumed overcast/dry/no-need result.
+Sky conditions are not a direct brightness measurement. Do not add humidity, visibility, mountain/snow-glare or altitude heuristics under this approval. Provider signal mappings/validity must be explicit, and missing or unrecognized required signals must not become an assumed overcast/dry/no-need result. D-066 requires valid daylight/sky signals before evaluation; available UV does not rescue an hour lacking those required signals.
 
 ## Phase 4 input gaps and remaining policy scope
 
-Wind is optional for the Raincoat; UV is optional for Sunglasses. Missing required signals follow the approved isolated-hour inference/coverage rule rather than becoming Not needed. The already approved apparent-temperature fallback remains unchanged for the temperature items. Missing-data handling must remain item-specific rather than requiring every item to have every other item's weather inputs.
+Wind is optional for the Raincoat; UV is optional for Sunglasses. Missing required signals follow the D-066 isolated-hour inference/coverage rule rather than becoming Not needed. The already approved apparent-temperature fallback remains unchanged for the temperature items. Missing-data handling remains item-specific: lack of one item's required signal must not prevent advice for another item with sufficient inputs.
 
-The initial predefined collection is Leather Jacket, Warm Coat, Sweater, Raincoat, Sunglasses, Shorts and Gloves. Remaining daily policies and unsupported signal/condition cases stay subject to Phase 4.1 approval. Do not apply the jacket's thresholds or rain/fog policies to other items by default.
+The initial predefined collection is Leather Jacket, Warm Coat, Sweater, Raincoat, Sunglasses, Shorts and Gloves. Other unsupported condition/precipitation cases and non-jacket period consolidation stay subject to Phase 4.1 approval. The two daily algorithms, useful-hour minimum, launch assignments and required-input/gap handling are already decided in D-063–D-066. Do not apply the jacket's thresholds or rain/fog policies to other items by default.
+
+## Two shared daily aggregation policies (D-063)
+
+**Approved future Phase 4 behavior; not yet implemented for multiple items. D-064 amends the Should I wear trigger below; “best hour wins” is superseded.** Classify hours using item-specific weather rules, then choose the daily result with one of two shared policies:
+
+| Behavior | Daily selection | Meaning |
+| --- | --- | --- |
+| **Can I wear** — worst hour wins | Any NO → NO; otherwise any MAYBE → MAYBE; otherwise YES. | Any unsuitable hour makes the overall day not OK. A wholly positive answer requires all evaluated hours to be suitable. |
+| **Should I wear** — enough useful hours (D-064) | At least 2 directly evaluated YES hours → positive daily advice; exactly 1 → qualified brief-usefulness advice; 0 YES with any MAYBE → MAYBE; otherwise NO. | Enough useful time makes the day a good day to use the item. A lone useful hour remains visible but does not yield the normal positive-day verdict. NO means not needed, not hazardous. |
+
+YES/MAYBE/NO here describe semantic levels, **not approved final daily UI strings**. Should I wear also retains the qualified single-hour outcome; do not flatten it into the normal positive or not-needed result. Leather Jacket retains its existing OK/Caution/Avoid domain levels and protective reason precedence; in this table they correspond to YES/MAYBE/NO respectively. Hourly Useful/Maybe useful/Not needed correspond to YES/MAYBE/NO for usefulness evaluation.
+
+**Approved launch-item assignments (D-065):**
+
+| Item | Daily algorithm |
+| --- | --- |
+| Leather Jacket | Can I wear |
+| Warm Coat | Should I wear |
+| Sweater | Should I wear |
+| Gloves | Should I wear |
+| Shorts | Should I wear |
+| Raincoat | Should I wear |
+| Sunglasses | Should I wear |
+
+All six Should I wear items use the same daily aggregation policy above, applied to their own hourly thresholds. No launch-item assignment remains open; the approved hourly thresholds stay unchanged.
+
+**Shared flow and safeguards:**
+- Use the same remaining-local-day window, validated normalized inputs and coverage checks before either aggregation. The useful-hour count never bypasses an incomplete forecast, even when the positive threshold has already been reached.
+- Missing/unusable data is not NO, not dry weather and not a positive qualifying hour. Under D-066, the single permitted isolated gap is always uncertain/MAYBE for Should I wear, regardless of neighboring levels. Valid immediate neighbors remain required. It never counts toward the useful-hour minimum; keep the missing-weather reason distinct from a directly evaluated borderline-weather reason. Leather Jacket's existing neighbor mapping remains unchanged.
+- For Should I wear, centralize the initial **2-useful-forecast-hour minimum** (D-064). Count distinct directly evaluated YES hours within the existing remaining-day window, whether consecutive or separated by NO/MAYBE hours. Do not count past hours, duplicate records, MAYBE or inferred hours toward the minimum, lower it when only one hour remains, or replace it with a majority/average/day-percentage rule. This counts forecast hours under the existing current-local-hour window, not a newly introduced minute-level duration calculation.
+- Exactly one qualifying hour produces qualified brief-usefulness advice with that time. With no qualifying hours, preserve the existing MAYBE-if-borderline / otherwise-not-needed distinction; the useful-hour threshold does not turn borderline hours into YES.
+- Do not invert hourly thresholds or raw weather values to implement the two algorithms. Item-specific hourly classification and shared daily aggregation are separate operations.
+- Keep daily aggregation separate from period grouping. Do not use jacket safety expansion/noise rules to erase a useful Sunglasses hour or automatically apply those rules to other items. Non-jacket grouping remains gated; jacket grouping is unchanged.
+- Dayparts/hourly output retain the actual changes: a negative protective day can contain suitable periods, and a positive usefulness day can contain not-needed periods. Neither daily result is an assertion that every hour has that level.
+
+### Acceptance examples for later implementation
+
+Assume complete, valid remaining-day coverage; these sequences are illustrative levels, not live forecasts or new weather thresholds.
+
+| Hourly sequence | Can I wear daily result | Should I wear daily result |
+| --- | --- | --- |
+| YES, YES, YES | YES | YES |
+| YES, NO, YES | NO | YES |
+| NO, NO, YES, NO | NO | Briefly useful — one useful hour is below the daily threshold |
+| NO, YES, NO, YES | NO | Positive — two useful hours need not be consecutive |
+| NO, YES, YES, NO | NO | Positive — exactly two consecutive useful hours qualify |
+| YES, MAYBE, NO | NO | Briefly useful — MAYBE does not count as a second useful hour |
+| YES, MAYBE, YES | MAYBE | YES |
+| NO, MAYBE, NO | NO | MAYBE |
+| MAYBE, MAYBE, MAYBE | MAYBE | MAYBE |
+| NO, NO, NO | NO | NO — not needed, not unsafe |
+| YES (only one hour remains) | YES | Briefly useful — do not lower the minimum at day end |
+| YES, inferred MAYBE, NO | NO | Briefly useful — inference is not a second useful hour |
+| YES, inferred MAYBE, YES | MAYBE | Positive — 2 confirmed useful hours; middle hour remains uncertain |
+| NO, inferred MAYBE, NO | NO | Qualified/uncertain MAYBE — do not assume the gap means no need |
+| Incomplete coverage beyond the permitted inference | No daily answer | No daily answer, even with 2 known YES hours |
+
+These are acceptance requirements for future deterministic tests, not a report that tests or implementation already exist. Apply the Can I wear column to Leather Jacket and the Should I wear column independently to each of the other six catalog items, using valid item-specific weather fixtures. In particular, mixed warm/cold temperature hours or alternating rain/dry hours must not silently switch a Should I wear item to jacket-style worst-hour aggregation.
+
+For D-066, additionally test missing required Sunglasses daylight/sky with available UV, unchanged optional wind/UV fallbacks, edge/multiple-gap rejection and independent item availability. These are defensive acceptance cases, not claims that live weather failures have been observed.
 
 ## Daily behavior versus daily wording (D-060)
 
-The daily presentation contract is maintained in [UX.md](UX.md#phase-4-daily-verdicts-and-timing-d-060). It does not replace item-specific evaluation with one universal level ordering:
+The daily presentation contract is maintained in [UX.md](UX.md#phase-4-daily-verdicts-and-timing-d-060). Shared wording/layout does not replace the two algorithms above with one universal ordering:
 - **Leather Jacket:** Any hazardous hour retains its protective daily Avoid result under the existing rules. Describing the restriction and affected times does not remove the hazard, change the most-protective daily result or bypass period expansion/consolidation.
-- **Sunglasses:** A qualifying sunny/high-UV hour under D-062 can make them useful today even if other hours do not call for them. This is a usefulness claim with timing, not an all-day suitable/needed claim.
-- **Other items and combined conditions:** Their daily policy must be explicit and testable. The previous proposed item-to-group table is not approved. Which condition wins when an item is useful in some hours but unsuitable in others remains open; do not silently use a best-hour/worst-hour/majority algorithm to fill that gap.
+- **Sunglasses:** At least 2 useful sunny/high-UV hours under D-062/D-064 support a positive daily usefulness result, even when other hours do not call for them. One useful hour gets brief-usefulness advice with its time. Neither is an all-day suitable/needed claim.
+- **Other items:** Use D-065's explicit assignments above. Mixed hours follow the shared enough-useful-hours policy for Warm Coat, Sweater, Gloves, Shorts and Raincoat; these assignments and algorithms are not open per-item choices to redesign. No third/combined algorithm or historical proposed “Both” assignment is approved.
 
 All-window suitability and no-need verdicts require the approved coverage/validity checks; missing data is not dry weather, no need, or suitability. The extended isolated-gap inference remains conservative. These decisions do not change existing jacket thresholds, hourly evaluation, reason precedence, cache validity or the remaining-local-day window.

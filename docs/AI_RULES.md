@@ -76,6 +76,10 @@ Do not add features because they are common in weather apps or technically easy.
 
 For the **leather-jacket recommendation**, rain/fog protection dominates and a comfortable temperature must not override a meaningful moisture risk. Other item types need **their own approved policies** rather than inheriting leather rules by default.
 
+## 5.1 Do not reopen the two approved daily aggregation behaviors
+
+For item/daily-advice work, read **D-063** in [DECISIONS.md](DECISIONS.md#d-063--two-shared-daily-aggregation-policies), its **D-064 amendment**, **D-065's launch-item assignments**, and the [current aggregation contract and acceptance examples](WEATHER_LOGIC.md#two-shared-daily-aggregation-policies-d-063) before proposing rules or implementation. The two algorithms, useful-hour minimum and all launch-item assignments are approved, not questions to ask again for every item. Do not restore the superseded “best hour wins” trigger. Do not confuse shared app wording with shared aggregation, or an unresolved input case with an unresolved algorithm/launch assignment. Ask only about genuinely missing choices. Do not invent separate per-item daily algorithms or a third combined behavior; follow the approved contract and keep presentation separate.
+
 ## 6. No scattered magic values
 
 All product-level thresholds and tunable behavior must be centralized.

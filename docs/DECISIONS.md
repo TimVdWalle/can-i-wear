@@ -273,7 +273,7 @@ Sunglasses: brightness/sunshine is the primary signal. Exceptionally high UV may
 
 Extend D-024's isolated one-hour missing/unusable-hour inference rule to every Phase 4 item: inference is allowed only for one isolated hour with valid immediate neighbors; infer conservatively and never more favorably than MAYBE; two or more gaps or a gap at either edge make coverage incomplete and do not produce a daily answer. For non-jacket items, the inferred recommendation must respect the item's approved behavior; do not assume the jacket's level ordering determines other items' daily aggregation.
 
-Remaining item-specific conditions, daily policies not settled by D-060, and missing-signal behavior beyond the approved one-hour inference remain TBD in Phase 4.1. Assigning user-facing group names is not a Phase 4 blocker. This decision does not authorize implementation before the Phase 4.1 gate is complete.
+Remaining item-specific conditions and missing-signal behavior beyond the approved one-hour inference remain TBD in Phase 4.1. D-063/D-064 subsequently settle the two shared daily algorithms and useful-hour minimum; D-065 settles every launch-item assignment. Assigning user-facing group names is not a Phase 4 blocker. This decision does not authorize implementation before the Phase 4.1 gate is complete.
 
 ### D-059 — Clear wording for the item distinction
 **Status:** Superseded by D-060. The wording below is historical, not the current configuration contract or approved final group labels.
@@ -292,11 +292,11 @@ This supersedes only the daily-label presentation requirements of D-047/D-051/D-
 
 The approved presentation direction is **“Useful today”** with the useful times, **“Not needed today”** when no need is forecast, **“Avoid during rain”** with the relevant avoidance times, and **“Good all day”** when the item suits the whole evaluated remaining-day window. These are representative verdicts, not an exhaustive state list or a mapping of every item to a fixed group. Detailed UX requirements and illustrative examples belong in `UX.md`.
 
-Different item behaviors are intentional: a disqualifying hour still makes the leather jacket's protective daily result Avoid; a qualifying sunny hour can make sunglasses useful today without making them useful every hour. Do not force either a worst-hour or a best-hour daily algorithm onto every item. “Not needed” is not equivalent to “unsafe/unsuitable,” and “useful today” is not an all-day suitability claim. Hourly answers can retain YES/MAYBE/NO. Existing jacket thresholds, reason precedence, conservative coverage, period consolidation and most-protective daily evaluation are unchanged; only their daily presentation changes under this decision.
+Different item behaviors are intentional: a disqualifying hour still makes the leather jacket's protective daily result Avoid; qualifying sunny intervals can make sunglasses useful without making them useful every hour. **D-064 subsequently sets the minimum useful-hour count and distinguishes a single briefly useful hour from a positive daily result.** Do not force one daily algorithm onto every item. “Not needed” is not equivalent to “unsafe/unsuitable,” and “useful today” is not an all-day suitability claim. Hourly answers can retain YES/MAYBE/NO. Existing jacket thresholds, reason precedence, conservative coverage, period consolidation and most-protective daily evaluation are unchanged; only their daily presentation changes under this decision.
 
 For the fixed collection, item-specific daily behavior may be explicitly defined in code/configuration; no user-facing group taxonomy or generic rule builder is required. Keep the behavior separable from item display names and UI wording so future custom items can use supported behaviors. Exact group labels and the configuration UX explaining the distinction are **deferred to Phase 8.1**, where users will need to understand their choice. D-059's labels are no longer locked. Do not implement custom-item creation or assume its data fields now.
 
-Per-item daily policies still need to be deterministic and approved before implementation. In particular, the policy when the same item is both needed and unsuitable at different times remains open; the proposed assignment of Warm Coat/Sweater/Gloves to “Both” was not approved. Raincoat/Sunglasses thresholds were not decided by this presentation approval; their subsequent approval is recorded in D-062. Remaining policies, missing-signal details and unsupported daily outcomes must not be silently invented. Implementation still requires explicit user permission.
+**Subsequent clarification (D-063/D-064/D-065):** Daily aggregation now uses two approved shared algorithms with explicit launch-item assignments, not a newly invented algorithm for each item. This supersedes the earlier open question about which hourly result wins within either behavior. The historical proposed assignment of Warm Coat/Sweater/Gloves to “Both” was not approved and is not a third algorithm; their approved assignment is now in D-065. Raincoat/Sunglasses thresholds were not decided by this presentation approval; their subsequent approval is recorded in D-062. Missing-signal details and unsupported outcomes must not be silently invented. Implementation still requires explicit user permission.
 
 ### D-061 — Internal working labels for different item behaviors
 **Decision:** Use **“Can I wear items”** and **“Should I wear items”** as internal working labels only, in project discussions/documentation and implementation terminology where useful.
@@ -304,7 +304,7 @@ Per-item daily policies still need to be deterministic and approved before imple
 - **Can I wear items:** Check whether conditions make wearing an item unsuitable; the leather jacket is the established example where a hazardous hour retains the protective daily Avoid result.
 - **Should I wear items:** Check whether conditions make an item useful/needed; sunglasses are the established example where a qualifying sunny interval can make them useful today without implying all-day need.
 
-These are not approved UI labels, Home headings, configuration choices or final names for users. D-060's explicit daily verdicts and timing remain the Home contract, and user-facing group naming/configuration remains deferred to Phase 8.1. This does not make the behaviors mutually exclusive, assign the rest of the catalog, or settle combined/conflicting-condition policies. No app implementation is authorized by this naming decision.
+These are not approved UI labels, Home headings, configuration choices or final names for users. D-060's explicit daily verdicts and timing remain the Home contract, and user-facing group naming/configuration remains deferred to Phase 8.1. **D-063 subsequently locks the two daily aggregation behaviors behind these internal names; D-065 explicitly assigns the launch catalog.** No third/combined algorithm is approved. No app implementation is authorized by this naming decision.
 
 ### D-062 — Initial Raincoat and Sunglasses conditions
 **Decision:** Approve the proposed hourly conditions for Raincoat and Sunglasses, with the D-060 explicit daily-verdict/timing presentation. These rules do not change the Leather Jacket policy.
@@ -317,13 +317,70 @@ Missing wind does not invalidate the Raincoat's base rain recommendation or just
 
 This records policy approval only, not implementation permission, a provider migration or a change to freshness/location/coverage rules. Phase 4.1 is not declared complete by this decision.
 
+### D-063 — Two shared daily aggregation policies
+**Decision (2026-10-19):** There are **two shared daily aggregation policies**, identified internally as **Can I wear items** and **Should I wear items**. The user explicitly reconfirmed this distinction and requested durable guidance so agents do not reopen it. It is **DECIDED**, not a proposal or an open question to revisit for each item.
+
+**Amendment (D-064, 2026-10-19):** The initial Should I wear rule was “best hour wins,” with one useful hour sufficient. The user explicitly replaced that trigger with a minimum useful-hour count. The table below reflects the current contract; the original one-hour positive-day trigger is superseded, not an alternative implementation.
+
+| Internal behavior | Shared daily rule | Established example |
+| --- | --- | --- |
+| Can I wear items | **Worst hour wins.** One bad hour makes the overall day not OK, even if other hours are OK. | Leather Jacket |
+| Should I wear items | **Enough useful hours.** A positive daily result requires the useful-hour count approved in D-064; a single useful hour gets qualified advice. | Sunglasses |
+
+Both use the same conceptual flow: validate weather/coverage → classify each hour with the item's own thresholds → apply the selected daily aggregation policy → present advice with dayparts/hourly detail. They are closely related rulesets, **not seven independent daily algorithms**, and not one universal algorithm forced onto all items. Per-item weather conditions remain different: rain can disqualify a jacket while making a raincoat useful. Different daily aggregation does **not** mean numerically inverting temperatures, precipitation thresholds or provider inputs.
+
+The exact daily selection, examples and validity safeguards are maintained in [WEATHER_LOGIC.md](WEATHER_LOGIC.md#two-shared-daily-aggregation-policies-d-063). Apply D-064's approved useful-hour threshold; do not invent a different minimum, majority vote, percentage-of-day score or third “Both”/combined daily algorithm. Missing data never counts as useful time.
+
+**Presentation is separate from aggregation.** The app can streamline/reuse wording and layout across both behaviors; shared text does not imply shared daily selection direction. D-060's explicit meaning, timing and reason remain required. A positive usefulness result does not mean good every hour; a negative protective result does not mean bad every hour. Dayparts/hourly detail explain when each result applies. This decision does not approve final common status strings, a bare ambiguous daily YES/NO, or public group labels.
+
+**Scope and supersession:** This resolves the daily-direction uncertainty left in D-058/D-060/D-061. Leather Jacket is Can I wear; Sunglasses is Should I wear, with all other launch-item assignments subsequently approved in D-065. Unsupported input/precipitation cases, non-jacket period consolidation and final presentation cases remain Phase 4.1 work; they do not make these two algorithms undecided again. Future combined behavior would require a separate decision, not an assumed third type. Existing jacket thresholds, reason precedence, period safety, day window, conservative coverage, caching and provider behavior remain unchanged. This is a documentation/policy decision, not permission to implement Phase 4 or a claim of implementation/test/device evidence.
+
+### D-064 — Minimum useful hours for Should I wear items
+**Decision (2026-10-19):** Approve **at least 2 useful forecast hours total in the remaining local day** for a positive daily result under the Should I wear algorithm. The hours **do not need to be consecutive**. Only directly evaluated genuinely good/useful (YES) hours count; MAYBE, missing/unusable and conservatively inferred hours do not.
+
+With exactly **1 useful hour**, show qualified advice such as **“Briefly useful”**, with its actual time, rather than the normal positive-day verdict or “Not needed.” This is a qualified outcome of the same Should I wear algorithm, not a third algorithm. Zero-useful-hour borderline/no-need handling remains as specified in `WEATHER_LOGIC.md`. The threshold is an initial centralized product constant, not a user-editable preference in Phase 4.
+
+**Supersession:** This replaces D-063's original “best hour wins” / one-useful-hour positive-day trigger and any earlier Sunglasses example implying that one hour yields the normal positive daily result. D-063's two-behavior structure, common evaluation/presentation flow and separation from per-item hourly thresholds remain approved. **Can I wear is unchanged: one bad hour makes the overall day not OK.** Existing coverage validity, remaining-day window, jacket safety/precedence, caching and provider policies remain unchanged; known useful hours never override incomplete coverage.
+
+This approval did not assign the remaining catalog items; D-065 subsequently resolves those assignments. It does not resolve unrelated precipitation/missing-signal cases or authorize app implementation. Detailed boundaries and future test examples belong in `WEATHER_LOGIC.md`; presentation semantics belong in `UX.md`.
+
+### D-065 — Approved daily algorithm assignments for all launch items
+**Decision (2026-10-19):** Approve Warm Coat, Sweater, Gloves, Shorts and Raincoat as **Should I wear items**, alongside the already established Sunglasses assignment. Leather Jacket retains **Can I wear** behavior. This completes the assignments for the seven-item launch collection:
+
+| Daily algorithm | Approved items |
+| --- | --- |
+| Can I wear — worst hour wins | Leather Jacket |
+| Should I wear — enough useful hours | Warm Coat, Sweater, Gloves, Shorts, Raincoat, Sunglasses |
+
+Every Should I wear item uses the **same D-064 daily aggregation policy**, including the centralized useful-hour minimum and qualified single-hour advice, applied to that item's own approved hourly weather classifications. Unsuitable/not-useful hours elsewhere in the day do not veto a positive result once enough useful hours exist, subject to valid coverage. Do not introduce a separate daily algorithm for a temperature item or Raincoat, revive the historical “Both” proposal, or silently move an item to the other behavior.
+
+**Scope:** This resolves the catalog-assignment gaps in D-058/D-060/D-061/D-063/D-064. It does not change hourly thresholds, the two algorithms, coverage, jacket protection, caching or provider policy. D-066 subsequently settles required-signal validity and non-jacket isolated-gap mapping. Other unsupported condition/precipitation cases, non-jacket period consolidation and concrete multi-item presentation remain Phase 4.1 work. This is policy approval only, not app implementation permission or completion of Phase 4.1.
+
+### D-066 — Missing required inputs and uncertain hours for Should I wear items
+**Decision (2026-10-19):** For all six Should I wear items, missing required weather inputs make an hour unusable. Apply the already approved coverage rule: only one isolated unusable hour with valid immediate neighbors can be inferred; mark it **uncertain/MAYBE**, never as observed conditions or a useful hour. This settles the previously open non-jacket gap mapping; Leather Jacket retains its existing conservative neighbor mapping.
+
+Missing/unrecognized required Sunglasses daylight/sky data makes the hour unusable even when UV is available. Optional wind/UV absence retains the D-062 base-rule fallbacks. Two or more gaps, or an edge gap without valid neighbors on both sides, still prevent a daily answer for the affected item. Other items with sufficient inputs remain independently evaluable. Detailed rules and acceptance examples belong in `WEATHER_LOGIC.md`.
+
+This is defensive handling, not evidence of an observed live-provider failure or a claim about its frequency. Existing nullable-field fixtures are not live observations. The approval does not authorize app implementation, change hourly weather thresholds or broaden into unrelated speculative safeguards; routine implementation details should follow the working rules without additional product approval rounds.
+
+### D-067 — Selected items, first-launch configuration and adaptive Home
+**Decision (2026-10-19):** Add a focused in-app configuration page where users select which predefined items they want recommendations for. Show item selection **before Home on first launch**. After setup, a **gear in the Home header** reopens configuration.
+
+- With **one selected item**, use the existing single-item Home layout, retaining Guided/Compact modes and the optional first-use explanation. Apply the selected item's own approved rules; do not make every item behave like Leather Jacket.
+- With **multiple selected items**, use a new multi-item Home based on the current Guided Home visual language. Only selected items appear in its recommendation overview.
+- Provide a resettable configuration flag so the first selection screen can be replayed during testing. Keep selection-setup completion separate from the Home explanation's acknowledgement/preferences; the planned key contract is in `TECH_SPEC.md`.
+
+This approves focused item selection, not broad settings, custom items or threshold editing. It supersedes D-046/UX's prohibition on a normal Home settings control **only for the approved header gear**, and refines D-058's overview to the selected items rather than always showing the full catalog. D-060's daily verdict/time semantics and D-063–D-066's item behavior remain unchanged. Keeping the current single-item Home means retaining its layout/presentation variants, not silently restoring superseded daily labels.
+
+**Current work:** Produce visual prototypes for review before app implementation. Exact selector styling, initial checked items, zero-selection handling, multi-item layout/detail treatment and proposed guidance copy are not approved merely by appearing in a prototype. This is not completion of Phase 4.1 or permission to implement the app flow.
+
 ## Not yet decided
 
 The following are intentionally NOT decisions:
 - detailed labels/palette/layout beyond the approved Home directions, including outcomes not specified by D-060;
 - analytics/telemetry;
 - final bundle identifiers;
-- remaining Phase 4.1 item-specific rules, daily summary behavior and data-signal details;
+- remaining Phase 4.1 unsupported condition/precipitation cases, non-jacket period consolidation and concrete daily presentation cases; algorithms, useful-hour minimum, launch assignments and missing-required-input/gap handling are decided in D-063–D-066;
 - exact first widget design;
 - specific creation/template mechanism for basic custom items;
 - exact user-facing item-group labels and the configuration UX explaining their different daily behaviors (Phase 8.1; D-060 supersedes D-059; D-061 approves internal working labels only);

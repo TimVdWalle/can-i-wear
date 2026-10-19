@@ -1,7 +1,7 @@
 # Can I Wear — Implementation Phases & Roadmap
 
 > Status: ACTIVE
-> Last updated: 2026-10-18
+> Last updated: 2026-10-19
 > Source of truth: YES
 
 ## Version and milestone rule
@@ -37,9 +37,10 @@ D-046 approves the reference-based single-item Home Screen for Phase 3 implement
 
 ## Phase 4 — Predefined multi-item support (required before first release)
 
-- The initial collection is approved in D-058; resolve remaining item-specific rules and daily policies at 4.1 rather than choosing them automatically.
+- The initial collection is approved in D-058, the two shared daily algorithms/useful-hour minimum in D-063/D-064, all launch-item assignments in D-065, and missing-input/gap handling in D-066. Resolve other unsupported condition/precipitation cases, non-jacket grouping and concrete presentation at 4.1 rather than reopening settled choices or inventing per-item daily algorithms. The detailed contract belongs in `WEATHER_LOGIC.md`.
 - Refactor the item/rules representation enough to support multiple predefined items with their own sensible rules and short explanations. Preserve all approved jacket-protection behavior; do **not** apply leather thresholds blindly to other items.
 - Support the existing current-location, remaining-day/meaningful-period recommendation for supported items.
+- D-067 adds focused item configuration before first Home and through a header gear thereafter. One selected item retains the existing Home layout/variants; several use the new Guided-Home-based overview. Prototype visuals and the setup reset contract must be reviewed before app implementation; this is not broad settings.
 - Design and validate the approved compact overview with explicit daily verdicts and timing (D-058/D-060). Fixed-item policies may be predefined; a user-facing group taxonomy is not required for Phase 4. Remaining behavior and concrete presentation cases stay gated in 4.1.
 - No user-created items, personalized thresholds, accounts, saved cities or notifications yet.
 

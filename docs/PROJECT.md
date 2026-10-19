@@ -1,7 +1,7 @@
 # Can I Wear — Project Truth
 
 > Status: ACTIVE
-> Last updated: 2026-10-18
+> Last updated: 2026-10-19
 > Source of truth: YES
 
 ## Purpose
@@ -45,6 +45,8 @@ The product should answer quickly and correctly:
 with a very short reason.
 
 For Phase 4 daily advice, D-060 replaces a universal daily Yes/Maybe/No label with an explicit verdict and time scope; hourly answers can retain those labels. See `PRODUCT_SPEC.md` and `UX.md` for the current presentation requirements.
+
+D-063 and its D-064 amendment lock the two shared daily algorithms and the useful-hour minimum. For item/daily-advice work, read those decisions and [WEATHER_LOGIC.md](WEATHER_LOGIC.md#two-shared-daily-aggregation-policies-d-063); shared wording must not be mistaken for one universal algorithm. Agent handling is in `AI_RULES.md` §5.1.
 
 ## Primary product rule
 

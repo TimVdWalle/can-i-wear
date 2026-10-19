@@ -1,0 +1,299 @@
+<!doctype html>
+<html lang="en">
+<head>
+  <meta charset="utf-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1">
+  <title>Can I Wear · Item selection & Home prototypes</title>
+  <style>
+    :root { color-scheme: light; --ink:#191a1d; --muted:#686a73; --canvas:#e9ebef; --surface:#f2f2f7; --green:#106d2c; --green-bg:#e2f2e5; --amber:#925000; --amber-bg:#fff0d5; --red:#bd1622; --red-bg:#fce5e6; --blue:#007aff; }
+    * { box-sizing:border-box; }
+    body { margin:0; color:var(--ink); background:var(--canvas); font-family:-apple-system,BlinkMacSystemFont,"Segoe UI",sans-serif; -webkit-font-smoothing:antialiased; }
+    button,select,input { font:inherit; }
+    button,select { cursor:pointer; }
+    button { color:inherit; }
+    button:focus-visible,a:focus-visible,input:focus-visible,select:focus-visible { outline:3px solid #007aff; outline-offset:4px; }
+    .board-header { padding:40px 40px 25px; max-width:1600px; margin:auto; }
+    .eyebrow { font-size:11px; font-weight:750; letter-spacing:1.7px; text-transform:uppercase; color:#5f646e; }
+    .board-header h1 { font-size:34px; letter-spacing:-1.2px; margin:10px 0; }
+    .board-header p { color:#595e68; line-height:1.5; margin:0; max-width:780px; font-size:15px; }
+    .review-tag { display:inline-flex; padding:7px 10px; border:1px solid #c6cbd3; border-radius:7px; font-size:11px; font-weight:650; margin-top:16px; }
+    .toolbar { display:flex; flex-wrap:wrap; align-items:center; gap:12px; padding:17px 0 0; font-size:13px; }
+    select,.review-button { border:1px solid #ccd0d7; border-radius:9px; background:#fff; color:var(--ink); padding:10px 12px; min-height:44px; }
+    .board { display:grid; grid-template-columns:repeat(4,minmax(0,1fr)); gap:24px; padding:0 40px 35px; max-width:1600px; margin:auto; }
+    .column-title { display:flex; align-items:center; gap:8px; font-size:13px; font-weight:700; margin:0 0 12px; }
+    .step { display:grid; place-items:center; width:24px; height:24px; border:1px solid #b9c0ca; border-radius:50%; font-size:11px; }
+    .column-note { color:#5f646e; font-size:12px; line-height:1.55; margin:15px 2px 0; }
+    .phone { position:relative; display:flex; flex-direction:column; width:100%; max-width:390px; height:775px; border:6px solid #22252b; border-radius:43px; overflow:hidden; background:var(--surface); box-shadow:0 18px 40px #19203015,0 2px 4px #19203016; margin:auto; }
+    .statusbar { flex-shrink:0; height:45px; display:flex; align-items:center; justify-content:space-between; padding:0 21px; font-size:13px; font-weight:700; }
+    .island { width:93px; height:25px; background:#191a1c; border-radius:20px; position:absolute; top:10px; left:50%; transform:translateX(-50%); }
+    .status-icons { display:flex; align-items:center; gap:4px; }
+    .status-icons svg { width:15px; height:13px; }
+    .battery { height:10px; width:21px; border:1px solid currentColor; border-radius:3px; padding:1px; }
+    .battery:after { content:""; display:block; height:100%; width:88%; background:currentColor; border-radius:1px; }
+    .phone-main { flex:1; min-height:0; overflow:auto; scrollbar-width:none; }
+    .phone-main::-webkit-scrollbar { display:none; }
+    .home-indicator { width:115px; height:4px; border-radius:5px; background:#202126; position:absolute; bottom:7px; left:50%; transform:translateX(-50%); pointer-events:none; }
+    .app { padding:15px 15px 26px; }
+    .app-header { margin-bottom:17px; }
+    .title-row { display:flex; align-items:center; justify-content:space-between; gap:6px; }
+    .app h2 { font-size:30px; line-height:1.12; letter-spacing:-1.15px; margin:0; font-weight:760; }
+    .icon-button { border:0; background:transparent; display:grid; place-items:center; min-width:44px; min-height:44px; border-radius:50%; }
+    .icon-button svg { width:23px; height:23px; }
+    .purpose { color:var(--muted); line-height:1.35; font-size:13px; margin:4px 0 10px; }
+    .location { display:flex; align-items:center; gap:6px; font-size:14px; font-weight:650; margin-top:7px; }
+    .location svg { width:15px; height:15px; color:#737781; }
+    .intro { background:white; border-radius:18px; padding:12px; margin-bottom:14px; }
+    .intro-top { display:flex; align-items:center; justify-content:space-between; gap:8px; }
+    .intro h3 { font-size:15px; margin:0; }
+    .intro button { background:var(--blue); border:0; color:white; border-radius:18px; padding:7px 14px; min-height:44px; font-size:13px; font-weight:650; }
+    .intro p { color:var(--muted); font-size:13px; line-height:1.4; margin:5px 0 0; }
+    .hero { display:flex; align-items:center; gap:14px; background:white; border-radius:22px; padding:17px 13px; min-height:174px; border:1px solid #00000005; }
+    .hero .art { width:91px; height:130px; flex-shrink:0; }
+    .hero h3 { font-size:17px; line-height:1.2; margin:0 0 7px; }
+    .verdict { font-size:26px; font-weight:780; line-height:1.08; letter-spacing:-.65px; margin:0; }
+    .reason { font-size:13px; color:var(--muted); margin:7px 0 0; line-height:1.35; }
+    .time-line { font-size:12px; margin:7px 0 0; color:#51555f; font-weight:600; font-variant-numeric:tabular-nums; }
+    .positive { color:var(--green); } .caution { color:var(--amber); } .negative { color:var(--red); } .neutral { color:#626672; }
+    .section-heading { font-size:17px; font-weight:750; margin:18px 0 10px; letter-spacing:-.25px; }
+    .periods { display:flex; gap:7px; margin-top:13px; }
+    .period { flex:1; min-width:0; text-align:center; border-radius:15px; padding:11px 5px 7px; }
+    .period.positive { background:var(--green-bg); } .period.negative { background:var(--red-bg); } .period.caution { background:var(--amber-bg); } .period.neutral { background:#e9eaee; }
+    .period svg { width:22px; height:22px; color:#74747d; margin-bottom:3px; }
+    .period-label { color:#24262c; font-size:12px; font-weight:600; margin:0; }
+    .period-time { font-size:10px; color:#6d6e76; margin:4px 0 7px; font-variant-numeric:tabular-nums; }
+    .period-status { display:block; font-size:12px; font-weight:750; padding:7px 3px; background:#ffffff91; border-radius:25px; }
+    .hourly { border-top:1px solid #d9d9df; margin-top:19px; padding-top:1px; }
+    .hour-bar { display:flex; gap:3px; height:24px; }
+    .hour-bar span { flex:1; display:grid; place-items:center; font-size:10px; font-weight:700; border-radius:4px; }
+    .hour-bar .positive { background:var(--green-bg); } .hour-bar .negative { background:var(--red-bg); } .hour-bar .neutral { background:#e5e7ec; } .hour-bar .caution { background:var(--amber-bg); }
+    .axis { display:flex; justify-content:space-between; color:var(--muted); font-size:10px; margin-top:6px; }
+    .hourly-note { color:var(--muted); font-size:11px; line-height:1.4; margin-top:9px; }
+    .attribution { display:block; color:#777a83; font-size:10px; text-align:center; margin-top:22px; text-decoration:none; padding:10px 0; }
+    .overview-heading { display:flex; align-items:baseline; justify-content:space-between; margin:16px 0 10px; }
+    .overview-heading h3 { font-size:17px; margin:0; letter-spacing:-.2px; }
+    .overview-heading span { font-size:11px; color:var(--muted); }
+    .item-card { width:100%; border:0; background:white; border-radius:20px; padding:14px; text-align:left; margin-bottom:11px; }
+    .item-card-top { display:flex; align-items:center; gap:11px; }
+    .item-card .art { width:48px; height:59px; flex-shrink:0; }
+    .item-card h4 { font-size:15px; margin:0 0 5px; }
+    .item-card .verdict { font-size:21px; line-height:1.16; }
+    .item-card .reason { margin-top:5px; font-size:12px; }
+    .chevron { margin-left:auto; color:#b1b3bd; font-size:21px; font-weight:400; }
+    .item-card .periods { margin-top:12px; gap:5px; }
+    .mini-period { flex:1; text-align:center; padding:7px 2px; border-radius:9px; font-size:10px; font-weight:650; }
+    .mini-period.positive { background:var(--green-bg); } .mini-period.negative { background:var(--red-bg); } .mini-period.caution { background:var(--amber-bg); } .mini-period.neutral { background:#eff0f3; }
+    .mini-period small { display:block; font-size:9px; font-weight:500; margin-top:3px; }
+    .dense .item-card { padding:14px 12px; }
+    .dense .item-card .art { width:39px; height:48px; }
+    .dense .item-card .verdict { font-size:18px; letter-spacing:-.35px; }
+    .dense .item-card h4 { font-size:13px; color:#5e626c; margin-bottom:4px; }
+    .dense .time-line { font-size:11px; margin-top:6px; }
+    .picker-brand { font-size:14px; font-weight:750; margin:4px 0 21px; }
+    .picker-title { font-size:29px!important; letter-spacing:-.9px!important; }
+    .picker-description { color:var(--muted); font-size:14px; line-height:1.4; margin:10px 0 22px; }
+    .picker-group { border-radius:20px; overflow:hidden; background:#fff; }
+    .selection-row { display:flex; align-items:center; gap:12px; padding:8px 13px; min-height:61px; cursor:pointer; position:relative; }
+    .selection-row:not(:last-child):after { content:""; height:1px; background:#eeeef2; position:absolute; left:59px; right:0; bottom:0; }
+    .selection-row .art { width:34px; height:40px; flex-shrink:0; }
+    .selection-row strong { font-size:14px; font-weight:600; }
+    .selection-row input { margin-left:auto; width:23px; height:23px; flex-shrink:0; accent-color:var(--blue); cursor:pointer; }
+    .picker-note { color:var(--muted); font-size:12px; line-height:1.45; margin:13px 3px 0; }
+    .picker-layout { display:flex; flex-direction:column; flex:1; min-height:0; }
+    .picker-layout .app { padding-top:21px; }
+    .picker-footer { padding:12px 15px 27px; background:var(--surface); margin-top:auto; }
+    .selection-count { font-size:12px; color:var(--muted); margin:0 0 9px; text-align:center; }
+    .primary-button { display:block; width:100%; min-height:49px; padding:12px; border:0; border-radius:15px; color:#fff; background:var(--blue); font-size:15px; font-weight:700; }
+    .primary-button:disabled { background:#d9dbe2; color:#878a94; cursor:not-allowed; }
+    .nav-back { display:flex; align-items:center; gap:4px; border:0; background:transparent; color:var(--blue); font-size:14px; padding:0 0 10px; min-height:44px; }
+    .nav-back svg { width:16px; height:16px; }
+    .detail-label { color:var(--muted); font-size:12px; margin:1px 0 12px; }
+    .flow-section { max-width:1300px; margin:15px auto 55px; border-top:1px solid #cbd0d9; padding:32px 35px 0; }
+    .flow-heading h2 { font-size:25px; letter-spacing:-.7px; margin:0 0 8px; }
+    .flow-heading p { color:#5f646e; font-size:14px; line-height:1.5; margin:0; }
+    .flow-grid { display:grid; grid-template-columns:minmax(320px,390px) 1fr; align-items:start; gap:65px; margin-top:26px; }
+    .flow-panel { background:#ffffff8a; border:1px solid #d7dbe3; border-radius:20px; padding:25px; }
+    .flow-panel h3 { font-size:17px; margin:0 0 16px; }
+    .flow-panel label { display:flex; flex-direction:column; gap:7px; margin-bottom:17px; font-size:13px; font-weight:600; }
+    .flow-panel code { display:inline-block; border-radius:6px; background:#e4e7ed; padding:4px 7px; font-size:12px; }
+    .flow-panel p,.flow-panel li { color:#606570; font-size:13px; line-height:1.65; }
+    .review-actions { display:flex; flex-wrap:wrap; gap:10px; margin-top:18px; }
+    .storage-status { display:block; color:#4e5665; font-size:12px; margin-top:14px; }
+    .legend { display:flex; flex-wrap:wrap; gap:12px; font-size:11px; margin-top:20px; }
+    .legend b { font-weight:650; }
+    .review-footer { text-align:center; color:#6c717c; font-size:12px; padding:0 20px 30px; }
+    @media(min-width:1600px) { .phone { height:812px; } }
+    @media(max-width:1200px) { .board { grid-template-columns:repeat(2,minmax(0,1fr)); gap:30px; max-width:850px; } .column-title,.column-note { max-width:390px; margin-left:auto; margin-right:auto; } }
+    @media(max-width:700px) { .board-header { padding:25px 20px; } .board-header h1 { font-size:29px; } .board { grid-template-columns:1fr; padding:0 16px 25px; } .flow-section { padding:28px 16px 0; } .flow-grid { grid-template-columns:1fr; gap:25px; } .phone { height:800px; } }
+    @media(prefers-reduced-motion:reduce) { * { scroll-behavior:auto!important; } }
+  </style>
+</head>
+<body>
+  <svg xmlns="http://www.w3.org/2000/svg" style="position:absolute;width:0;height:0;overflow:hidden" aria-hidden="true">
+    <defs>
+      <linearGradient id="jacket-body"><stop stop-color="#292522"/><stop offset=".4" stop-color="#514942"/><stop offset=".65" stop-color="#292522"/><stop offset="1" stop-color="#463e37"/></linearGradient>
+      <symbol id="art-jacket" viewBox="0 0 260 320">
+        <!-- Shapes adapted from the app's original bundled LeatherJacket SVG. -->
+        <g stroke="#171514" stroke-width="2" stroke-linejoin="round"><path d="M93 31 Q104 19 130 22 Q157 19 168 32 L185 49 219 65 Q232 97 235 133 L249 296 219 300 197 164 192 278 Q133 295 68 278 L64 164 42 300 11 296 25 133 Q28 98 41 65 L76 48Z" fill="url(#jacket-body)"/><path d="M105 26 Q130 35 155 26 L160 64 130 128 101 64Z" fill="#171615"/><path d="M95 29 L78 55 72 85 113 114 137 141 102 65 109 25Z M158 26 L172 45 187 86 154 112 136 143 151 70 149 27Z" fill="#51463a"/><path d="M69 269 Q129 283 192 268 L192 279 Q130 295 68 278Z" fill="#292420"/></g><g stroke="#b1a390" stroke-width="2" fill="none"><path d="M75 91 L112 118 137 143 134 278 M86 169 L78 235 M176 170 L181 235"/></g><g fill="#b5ada1"><circle cx="83" cy="80" r="4"/><circle cx="178" cy="81" r="4"/></g>
+      </symbol>
+      <symbol id="art-coat" viewBox="0 0 80 90"><path d="M27 11 39 7 51 11 63 20 74 67 63 71 55 43 59 84 21 84 25 43 17 71 6 67 17 20Z" fill="#b69b7c" stroke="#8b745e" stroke-width="2"/><path d="m28 11 12 21 12-21-6 29 6 11-12 12-12-12 6-11Z" fill="#d8c3a8"/><path d="M40 33v49" stroke="#8b745e" stroke-width="2"/><g fill="#6e5947"><circle cx="44" cy="49" r="2"/><circle cx="44" cy="61" r="2"/><circle cx="44" cy="73" r="2"/></g></symbol>
+      <symbol id="art-sweater" viewBox="0 0 80 90"><path d="m26 16 8-5q6 7 12 0l9 5 13 10 9 35-12 4-10-24 2 39H23l2-39-10 24L3 61l9-35Z" fill="#95a9b0" stroke="#6d858d" stroke-width="2"/><path d="M31 13q9 12 18 0M24 73h32M8 57l10-3M62 54l10 3" fill="none" stroke="#d3dce0" stroke-width="4"/><path d="M29 37h23M29 46h23M29 55h23M29 64h23" stroke="#8199a1" stroke-width="2"/></symbol>
+      <symbol id="art-raincoat" viewBox="0 0 80 90"><path d="M27 23Q25 4 40 4T53 23l12 7 12 37-13 5-9-28 3 41H22l3-41-9 28L3 67l12-37Z" fill="#eac15f" stroke="#bd9437" stroke-width="2"/><path d="M29 23Q31 11 40 11t11 12L40 34ZM40 34v49" fill="#f6d98e" stroke="#bd9437" stroke-width="2"/><path d="M25 61h10M46 61h10" stroke="#a37f31" stroke-width="3"/></symbol>
+      <symbol id="art-sunglasses" viewBox="0 0 80 90"><g fill="#44444a" stroke="#26262d" stroke-width="4"><path d="M6 34h27l-2 19q-10 13-21-1Z M47 34h27l-4 18q-11 14-21 1Z"/></g><path d="M33 38q7-6 14 0M3 33l-2-7M77 33l2-7" fill="none" stroke="#26262d" stroke-width="4"/><path d="m12 39 13 1-10 10M53 39l13 1-10 10" fill="#85818b" opacity=".6"/></symbol>
+      <symbol id="art-shorts" viewBox="0 0 80 90"><path d="M19 21h42l9 53H44l-4-27-4 27H10Z" fill="#b5b4a2" stroke="#858675" stroke-width="2"/><path d="M19 27h42M40 27v18M22 29q1 15-7 18M58 29q-1 15 7 18" fill="none" stroke="#858675" stroke-width="2"/><circle cx="40" cy="24" r="2" fill="#66675c"/></symbol>
+      <symbol id="art-gloves" viewBox="0 0 80 90"><g fill="#9b8175" stroke="#735d55" stroke-width="2" stroke-linejoin="round"><path d="M10 48V24q4-5 7 0v14-22q4-5 7 0v21-25q4-5 7 0v25-18q4-5 7 0v27l6-8q7-3 7 4L38 64v15H16V64Z"/><path d="M57 30q5-6 8 0v25l4-6q6-2 7 4L65 70v12H47V69l-5-13q-3-7 4-8l5 8V29q4-5 6 1Z" fill="#b49b8d"/></g></symbol>
+      <symbol id="icon-gear" viewBox="0 0 24 24"><path d="m9.5 3 .5-1h4l.5 3 2 .9 2.7-1 2 3.5-2.1 1.8v2.6l2.1 1.8-2 3.5-2.7-1-2 .9-.5 3h-4l-.5-3-2-.9-2.7 1-2-3.5 2.1-1.8v-2.6L2.3 8.4l2-3.5 2.7 1 2-.9Z" fill="none" stroke="currentColor" stroke-width="1.6" stroke-linejoin="round"/><circle cx="12" cy="11.5" r="3.3" fill="none" stroke="currentColor" stroke-width="1.6"/></symbol>
+      <symbol id="icon-pin" viewBox="0 0 24 24"><path d="M19 10c0 5-7 11-7 11S5 15 5 10a7 7 0 1 1 14 0Z" fill="none" stroke="currentColor" stroke-width="2"/><circle cx="12" cy="10" r="2.4" fill="currentColor"/></symbol>
+      <symbol id="icon-sun" viewBox="0 0 24 24"><circle cx="12" cy="12" r="4" fill="none" stroke="currentColor" stroke-width="1.5"/><path d="M12 1v3m0 16v3M1 12h3m16 0h3M4 4l2 2m12 12 2 2M4 20l2-2M18 6l2-2" stroke="currentColor" stroke-width="1.5"/></symbol>
+      <symbol id="icon-cloud" viewBox="0 0 24 24"><path d="M7 18a5 5 0 0 1-1-10 6.5 6.5 0 0 1 12-1 5.5 5.5 0 0 1 0 11Z" fill="none" stroke="currentColor" stroke-width="1.5"/></symbol>
+      <symbol id="icon-moon" viewBox="0 0 24 24"><path d="M19 16A9 9 0 0 1 8 4a9 9 0 1 0 11 12Z" fill="none" stroke="currentColor" stroke-width="1.5"/></symbol>
+      <symbol id="icon-back" viewBox="0 0 24 24"><path d="m15 4-8 8 8 8" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round"/></symbol>
+    </defs>
+  </svg>
+
+  <header class="board-header">
+    <div class="eyebrow">Can I Wear / Phase 4 / visual exploration</div>
+    <h1>Your items. The right Home.</h1>
+    <p>Choose what you want advice for. One item keeps the familiar Home; several items get a shared overview. Two multi-item directions, built from the current Guided Home.</p>
+    <span class="review-tag">PROPOSED VISUALS · MOCK WEATHER · NOT THE IOS APP</span>
+    <div class="toolbar"><label for="board-mode">Compare presentation:</label><select id="board-mode"><option value="intro">Guided + first-use explanation</option><option value="guided" selected>Guided · explanation dismissed</option><option value="compact">Compact</option></select><span>Scroll inside each phone. Gear and item cards are interactive.</span></div>
+  </header>
+  <main>
+    <section class="board" aria-label="Four visual prototypes">
+      <article><h2 class="column-title"><span class="step">01</span> Choose your items</h2><div class="phone" data-phone="picker"></div><p class="column-note">First launch, before weather advice. The same selector opens from the header gear. The unchecked default and minimum of one are proposed.</p></article>
+      <article><h2 class="column-title"><span class="step">02</span> One item · familiar Home</h2><div class="phone" data-phone="single"></div><p class="column-note">Same hero → dayparts → hourly hierarchy. Guided, Guided + introduction, and Compact. Daily wording follows the approved Phase 4 advice contract.</p></article>
+      <article><h2 class="column-title"><span class="step">A</span> Several items · daypart cards</h2><div class="phone" data-phone="multiA"></div><p class="column-note">More of the existing Guided Home on each card. Advice, a reason and daypart preview; tap for full hourly detail. Airier, but more scrolling.</p></article>
+      <article><h2 class="column-title"><span class="step">B</span> Several items · compact overview</h2><div class="phone" data-phone="multiB"></div><p class="column-note">Daily meaning, relevant times and reason together. Faster to scan several items; dayparts and hourly detail stay one tap away.</p></article>
+    </section>
+    <section class="flow-section" aria-labelledby="flow-title">
+      <div class="flow-heading"><h2 id="flow-title">Try the flow</h2><p>Start with item selection, then change the selection from the gear to switch between Home layouts.</p></div>
+      <div class="flow-grid">
+        <div class="phone" data-phone="flow"></div>
+        <aside class="flow-panel">
+          <h3>Prototype controls <span class="eyebrow">outside the app</span></h3>
+          <label for="flow-mode">Home presentation<select id="flow-mode"><option value="intro">Guided + first-use explanation</option><option value="guided">Guided · explanation dismissed</option><option value="compact">Compact</option></select></label>
+          <label for="flow-layout">Multi-item layout<select id="flow-layout"><option value="A">A · Cards with dayparts</option><option value="B">B · Compact overview</option></select></label>
+          <p><strong>One item:</strong> the familiar single-item hierarchy.<br><strong>Two or more:</strong> the chosen multi-item layout.<br><strong>Gear:</strong> reopen item configuration.</p>
+          <div class="review-actions"><button type="button" class="review-button" id="replay">Replay first selection</button><button type="button" class="review-button" id="reset">Reset prototype</button></div>
+          <span class="storage-status" id="setup-status" aria-live="polite"></span>
+          <p><code>item_selection_completed</code> is the planned app key. The replay button works in this browser prototype only; the Swift flag and item-selection flow are not implemented yet.</p>
+          <div class="legend"><b class="positive">✓ Good / useful</b><b class="caution">! Borderline</b><b class="negative">× Avoid</b><b class="neutral">— Not needed</b></div>
+          <p>All data is illustrative, not live weather or engine output. Period grouping, these visuals and introduction copy for multiple items are proposals for review. No custom items, threshold editor, weather dashboard or broader settings are included.</p>
+        </aside>
+      </div>
+    </section>
+  </main>
+  <footer class="review-footer">Based on the current SwiftUI Guided Home · Local, dependency-free design artifact · No location or weather requests</footer>
+
+  <script>
+    'use strict';
+    const storageKey = 'caniwear.prototype.item-selection.v1';
+    const catalog = [
+      { id:'jacket', name:'Leather Jacket', level:'negative', verdict:'Avoid during rain', reason:'Rain expected', times:'15:00–18:00', periods:[['09–15','YES','positive'],['15–18','NO','negative'],['18–24','YES','positive']] },
+      { id:'coat', name:'Warm Coat', level:'positive', verdict:'Useful today', reason:'Cold this morning', times:'09:00–12:00', periods:[['09–12','YES','positive'],['12–15','NO','neutral'],['15–24','MAYBE','caution']] },
+      { id:'sweater', name:'Sweater', level:'positive', verdict:'Useful today', reason:'Cool morning and evening', times:'09:00–12:00 · 15:00–24:00', periods:[['09–12','YES','positive'],['12–15','MAYBE','caution'],['15–24','YES','positive']] },
+      { id:'raincoat', name:'Raincoat', level:'positive', verdict:'Useful today', reason:'Afternoon rain', times:'15:00–18:00', periods:[['09–15','NO','neutral'],['15–18','YES','positive'],['18–24','NO','neutral']] },
+      { id:'sunglasses', name:'Sunglasses', level:'positive', verdict:'Useful today', reason:'Sunny around midday', times:'12:00–15:00', periods:[['09–12','NO','neutral'],['12–15','YES','positive'],['15–24','NO','neutral']] },
+      { id:'shorts', name:'Shorts', level:'neutral', verdict:'Not needed today', reason:'Too cool for shorts', times:'Throughout the remaining day', periods:[['09–15','NO','neutral'],['15–18','NO','neutral'],['18–24','NO','neutral']] },
+      { id:'gloves', name:'Gloves', level:'positive', verdict:'Useful today', reason:'Cold this morning', times:'09:00–12:00', periods:[['09–12','YES','positive'],['12–18','NO','neutral'],['18–24','NO','neutral']] }
+    ];
+    const byId = id => catalog.find(item => item.id === id);
+    const icon = (id, cls='') => `<svg class="${cls}" aria-hidden="true"><use href="#${id}"></use></svg>`;
+    const art = item => icon('art-' + item.id, 'art');
+    function initialState() { return { selected:[], item_selection_completed:false, mode:'guided', introduction:true, layout:'A', route:'picker', detail:null }; }
+    function loadState() {
+      try {
+        const saved = JSON.parse(localStorage.getItem(storageKey));
+        if (!saved || typeof saved !== 'object') return initialState();
+        const state = initialState();
+        state.selected = Array.isArray(saved.selected) ? [...new Set(saved.selected.filter(id => byId(id)))] : [];
+        state.mode = saved.mode === 'compact' ? 'compact' : 'guided';
+        state.introduction = saved.introduction !== false;
+        state.layout = saved.layout === 'B' ? 'B' : 'A';
+        state.item_selection_completed = saved.item_selection_completed === true && state.selected.length > 0;
+        state.route = state.item_selection_completed ? 'home' : 'picker';
+        return state;
+      } catch { return initialState(); }
+    }
+    const example = (selected, layout='A') => ({ ...initialState(), selected, layout, route:'home', item_selection_completed:true, introduction:false });
+    const states = { picker:initialState(), single:example(['jacket']), multiA:example(['jacket','sweater','sunglasses']), multiB:example(['jacket','sweater','sunglasses'],'B'), flow:loadState() };
+    function saveFlow() {
+      const { mode, introduction, layout, item_selection_completed } = states.flow;
+      const selected = states.flow.previousSelection ?? states.flow.selected;
+      try { localStorage.setItem(storageKey, JSON.stringify({ selected, mode, introduction, layout, item_selection_completed })); } catch { /* Preview still works when browser storage is unavailable. */ }
+    }
+    function statusbar() { return `<div class="statusbar" aria-hidden="true"><span>9:41</span><span class="island"></span><span class="status-icons"><svg viewBox="0 0 20 14"><path d="M1 13V9h3v4m2 0V6h3v7m2 0V3h3v10m2 0V0h3v13" fill="currentColor"/></svg><svg viewBox="0 0 20 14"><path d="M2 4q8-7 16 0M5 7q5-4 10 0M8 10q2-2 4 0" fill="none" stroke="currentColor" stroke-width="2"/><circle cx="10" cy="13" r="1"/></svg><span class="battery"></span></span></div>`; }
+    function header(state) { return `<header class="app-header"><div class="title-row"><h2>Can I Wear</h2><button type="button" class="icon-button" data-action="configure" aria-label="Configure items">${icon('icon-gear')}</button></div>${state.mode === 'guided' ? '<p class="purpose">Today’s weather, interpreted for each item.</p>' : ''}<div class="location">${icon('icon-pin')}<span>Ghent</span></div></header>`; }
+    function introduction(state, multiple) {
+      if (state.mode !== 'guided' || !state.introduction) return '';
+      return `<section class="intro"><div class="intro-top"><h3>How it works</h3><button type="button" data-action="dismiss">Got it</button></div><p>${multiple ? 'Each item has today’s advice and useful times. Open an item for dayparts and hourly details.' : 'The main result covers today. Dayparts show when it changes, and the reason explains why.'}</p></section>`;
+    }
+    const attribution = () => '<a class="attribution" href="https://open-meteo.com/" target="_blank" rel="noopener">Weather provided by Open-Meteo</a>';
+    function periods(item) { return `<div class="periods">${item.periods.map(([time, label, level], i) => `<div class="period ${level}">${icon(['icon-sun','icon-cloud','icon-moon'][i])}<p class="period-label">${time === '09–15' ? 'Before rain' : time === '15–18' ? 'Afternoon' : time === '18–24' ? 'Evening' : time === '09–12' ? 'Morning' : time === '12–15' ? 'Midday' : 'Later'}</p><p class="period-time">${time}</p><span class="period-status">${label}</span></div>`).join('')}</div>`; }
+    function hourly(item) {
+      const levels = Array.from({length:15}, (_, index) => {
+        const hour = index + 9;
+        const period = item.periods.find(([time]) => { const [start,end] = time.split('–').map(Number); return hour >= start && hour < end; });
+        return period ? period[2] : 'neutral';
+      });
+      return `<section class="hourly"><h3 class="section-heading">Hourly suitability</h3><div class="hour-bar">${levels.map((level,i) => `<span class="${level}" aria-label="${i+9}:00 ${level === 'positive' ? 'YES' : level === 'caution' ? 'MAYBE' : 'NO'}">${level === 'positive' ? '✓' : level === 'caution' ? '!' : level === 'negative' ? '×' : '–'}</span>`).join('')}</div><div class="axis"><span>09</span><span>12</span><span>15</span><span>18</span><span>21</span><span>24</span></div><p class="hourly-note">Hourly conditions shown; period advice groups brief changes${item.id === 'jacket' ? ' for safety' : ''}.</p></section>`;
+    }
+    function single(state, item, detail=false) { return `<div class="app">${detail ? `<button type="button" class="nav-back" data-action="back">${icon('icon-back')}All items</button>` : ''}${header(state)}${detail ? '' : introduction(state,false)}${detail ? '<p class="detail-label">Today · selected item</p>' : ''}<section class="hero">${art(item)}<div><h3>${item.name}</h3><p class="verdict ${item.level}">${item.verdict}</p><p class="reason">${item.reason}</p><p class="time-line">${item.times}</p></div></section>${state.mode === 'guided' ? '<h3 class="section-heading">When can I wear it?</h3>' : ''}${periods(item)}${hourly(item)}${attribution()}</div>`; }
+    function multiple(state) {
+      const items = catalog.filter(item => state.selected.includes(item.id));
+      return `<div class="app ${state.layout === 'B' ? 'dense' : ''}">${header(state)}${introduction(state,true)}<div class="overview-heading"><h3>Your items today</h3><span>${items.length} selected</span></div>${items.map(item => `<button type="button" class="item-card" data-action="detail" data-item="${item.id}" aria-label="${item.name}, ${item.verdict}. View details"><div class="item-card-top">${art(item)}<div><h4>${item.name}</h4><p class="verdict ${item.level}">${item.verdict}</p>${state.layout === 'B' ? `<p class="time-line">${item.times}</p>` : ''}<p class="reason">${item.reason}</p></div><span class="chevron" aria-hidden="true">›</span></div>${state.layout === 'A' ? `<div class="periods">${item.periods.map(([time,label,level]) => `<div class="mini-period ${level}">${label}<small>${time}</small></div>`).join('')}</div>` : ''}</button>`).join('')}${attribution()}</div>`;
+    }
+    function picker(state) { return `<div class="picker-layout"><div class="phone-main"><div class="app"><div class="title-row"><p class="picker-brand">Can I Wear</p>${state.item_selection_completed ? '<button type="button" class="icon-button" data-action="back" aria-label="Cancel item changes">×</button>' : ''}</div><h2 class="picker-title">Choose your items</h2><p class="picker-description">What would you like weather advice for?</p><div class="picker-group">${catalog.map(item => `<label class="selection-row">${art(item)}<strong>${item.name}</strong><input type="checkbox" data-item="${item.id}" aria-label="${item.name}" ${state.selected.includes(item.id) ? 'checked' : ''}></label>`).join('')}</div><p class="picker-note">You can change these anytime using the gear on Home.</p></div></div><div class="picker-footer"><p class="selection-count" aria-live="polite">${state.selected.length ? `${state.selected.length} item${state.selected.length === 1 ? '' : 's'} selected` : 'Select at least one item'}</p><button type="button" class="primary-button" data-action="continue" ${state.selected.length ? '' : 'disabled'}>${state.item_selection_completed ? 'Save selection' : 'Continue'}</button></div></div>`; }
+    function render(name) {
+      const state = states[name];
+      const phone = document.querySelector(`[data-phone="${name}"]`);
+      if (state.route === 'picker') {
+        phone.innerHTML = statusbar() + picker(state) + '<div class="home-indicator"></div>';
+      } else {
+        const item = state.detail ? byId(state.detail) : byId(state.selected[0]);
+        phone.innerHTML = statusbar() + `<div class="phone-main">${state.detail ? single(state,item,true) : state.selected.length === 1 ? single(state,item) : multiple(state)}</div><div class="home-indicator"></div>`;
+      }
+      if (name === 'flow') {
+        document.getElementById('flow-mode').value = state.mode === 'compact' ? 'compact' : state.introduction ? 'intro' : 'guided';
+        document.getElementById('flow-layout').value = state.layout;
+        document.getElementById('setup-status').textContent = `Prototype item_selection_completed = ${state.item_selection_completed} · ${state.selected.length} selected`;
+        saveFlow();
+      }
+    }
+    document.addEventListener('change', event => {
+      const phone = event.target.closest('.phone');
+      if (!phone || !event.target.matches('input[type="checkbox"]')) return;
+      const state = states[phone.dataset.phone];
+      const id = event.target.dataset.item;
+      if (event.target.checked) state.selected = [...new Set([...state.selected,id])];
+      else state.selected = state.selected.filter(value => value !== id);
+      phone.querySelector('.selection-count').textContent = state.selected.length ? `${state.selected.length} item${state.selected.length === 1 ? '' : 's'} selected` : 'Select at least one item';
+      phone.querySelector('[data-action="continue"]').disabled = state.selected.length === 0;
+      // Changes are draft until Continue / Save; cancelling restores saved selection.
+    });
+    document.addEventListener('click', event => {
+      const button = event.target.closest('[data-action]');
+      const phone = button?.closest('.phone');
+      if (!phone) return;
+      const name = phone.dataset.phone;
+      const state = states[name];
+      switch (button.dataset.action) {
+        case 'configure': state.previousSelection = [...state.selected]; state.route = 'picker'; state.detail = null; break;
+        case 'continue': if (!state.selected.length) return; state.item_selection_completed = true; state.route = 'home'; delete state.previousSelection; break;
+        case 'dismiss': state.introduction = false; break;
+        case 'detail': state.detail = button.dataset.item; break;
+        case 'back': if (state.route === 'picker' && state.previousSelection) { state.selected = state.previousSelection; delete state.previousSelection; } state.route = 'home'; state.detail = null; break;
+      }
+      render(name);
+    });
+    function setMode(state, value) { state.mode = value === 'compact' ? 'compact' : 'guided'; state.introduction = value === 'intro'; }
+    document.getElementById('board-mode').addEventListener('change', event => {
+      ['single','multiA','multiB'].forEach(name => { setMode(states[name],event.target.value); render(name); });
+    });
+    document.getElementById('flow-mode').addEventListener('change', event => { setMode(states.flow,event.target.value); render('flow'); });
+    document.getElementById('flow-layout').addEventListener('change', event => { states.flow.layout = event.target.value; render('flow'); });
+    document.getElementById('replay').addEventListener('click', () => { if (states.flow.previousSelection) states.flow.selected = states.flow.previousSelection; states.flow.item_selection_completed = false; states.flow.route = 'picker'; states.flow.detail = null; delete states.flow.previousSelection; render('flow'); });
+    document.getElementById('reset').addEventListener('click', () => { states.flow = initialState(); render('flow'); });
+    Object.keys(states).forEach(render);
+  </script>
+</body>
+</html>

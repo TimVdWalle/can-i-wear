@@ -7,6 +7,8 @@
 3. Before implementation, review relevant entries in `docs/ISSUES.md` and the task-relevant truth files. Use `.opencode/skills/caniwear-truth/SKILL.md` as the document-routing guide.
 4. Inspect the relevant implementation and existing tests before editing.
 
+For item/daily-advice work, follow `docs/AI_RULES.md` §5.1 and its links to the locked D-063/D-064 aggregation contract; do not treat the two behaviors as an unresolved product question.
+
 Preserve unrelated changes, including uncommitted work. Do not overwrite, revert, or discard them.
 
 ## Verification commands
