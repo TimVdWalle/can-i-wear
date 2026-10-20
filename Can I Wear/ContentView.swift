@@ -7,6 +7,9 @@ struct ContentView: View {
     @State private var isShowingDiagnostics = false
     @State private var guidedHomeEnabled: Bool
     @State private var showHomeIntroduction: Bool
+    @State private var selection: ItemSelectionStore
+    @State private var isShowingItemSelection = false
+    @State private var detailItem: PredefinedItem?
     private let homePresentationModeOverride: HomePresentationMode?
 
     init() {
@@ -20,17 +23,20 @@ struct ContentView: View {
         _guidedHomeEnabled = State(initialValue: preferences.guidedHomeEnabled)
         _showHomeIntroduction = State(initialValue: preferences.showHomeIntroduction)
         _model = State(initialValue: RecommendationViewModel())
+        _selection = State(initialValue: ItemSelectionStore())
     }
 
     init(
         model: RecommendationViewModel,
-        homePresentationModeOverride: HomePresentationMode? = nil
+        homePresentationModeOverride: HomePresentationMode? = nil,
+        selection: ItemSelectionStore? = nil
     ) {
         let preferences = AppConfiguration.currentHomePresentationPreferences()
         self.homePresentationModeOverride = homePresentationModeOverride
         _guidedHomeEnabled = State(initialValue: preferences.guidedHomeEnabled)
         _showHomeIntroduction = State(initialValue: preferences.showHomeIntroduction)
         _model = State(initialValue: model)
+        _selection = State(initialValue: selection ?? ItemSelectionStore())
     }
 
     private var homePresentationMode: HomePresentationMode {
@@ -41,6 +47,60 @@ struct ContentView: View {
     }
 
     var body: some View {
+        Group {
+            if selection.isCompleted {
+                home
+            } else {
+                ItemSelectionView(selected: selection.selectedItems, isEditing: false) { items in
+                    selection.save(items)
+                    model.updateSelectedItems(selection.selectedItems)
+                }
+            }
+        }
+        .task(id: selection.isCompleted && scenePhase == .active) {
+            guard scenePhase == .active else { return }
+            refreshHomePresentationPreference()
+            selection.refreshFromSettings()
+            if !selection.isCompleted {
+                isShowingItemSelection = false
+                detailItem = nil
+                isShowingDiagnostics = false
+            }
+            guard selection.isCompleted else { return }
+            model.updateSelectedItems(selection.selectedItems)
+            await model.appBecameActive()
+        }
+        .sheet(isPresented: $isShowingItemSelection) {
+            ItemSelectionView(selected: selection.selectedItems, isEditing: true) { items in
+                selection.save(items)
+                model.updateSelectedItems(selection.selectedItems)
+                isShowingItemSelection = false
+            } onCancel: {
+                isShowingItemSelection = false
+            }
+        }
+        .sheet(item: $detailItem) { item in
+            NavigationStack {
+                ScrollView {
+                    if case .result(let presentation) = model.state {
+                        itemDetail(itemPresentation(item, from: presentation), legacy: presentation, isDetail: true)
+                            .padding(16)
+                    } else {
+                        content.padding(16)
+                    }
+                }
+                .background(HomeStyle.background)
+                .navigationTitle(item.name)
+                .navigationBarTitleDisplayMode(.inline)
+                .toolbar {
+                    ToolbarItem(placement: .confirmationAction) { Button("Done") { detailItem = nil } }
+                }
+                .accessibilityIdentifier("item-detail")
+            }
+        }
+    }
+
+    private var home: some View {
         GeometryReader { geometry in
             ScrollView {
                 VStack(alignment: .leading, spacing: 14) {
@@ -64,11 +124,6 @@ struct ContentView: View {
             }
         }
         .background(HomeStyle.background)
-        .task(id: scenePhase) {
-            guard scenePhase == .active else { return }
-            refreshHomePresentationPreference()
-            await model.appBecameActive()
-        }
         .onChange(of: model.diagnostics.isEnabled) { _, enabled in
             if !enabled { isShowingDiagnostics = false }
         }
@@ -92,9 +147,18 @@ struct ContentView: View {
 
     private var header: some View {
         VStack(alignment: .leading, spacing: 8) {
-            Text("Can I Wear")
-                .font(.largeTitle.bold())
-                .accessibilityAddTraits(.isHeader)
+            HStack(alignment: .firstTextBaseline) {
+                Text("Can I Wear")
+                    .font(.largeTitle.bold())
+                    .accessibilityAddTraits(.isHeader)
+                Spacer(minLength: 8)
+                Button { isShowingItemSelection = true } label: {
+                    Image(systemName: "gearshape").font(.title2).frame(width: 44, height: 44)
+                }
+                .buttonStyle(.plain)
+                .accessibilityLabel("Configure items")
+                .accessibilityIdentifier("configure-items")
+            }
             if homePresentationMode == .guided {
                 Text("Today’s weather, interpreted for each item.")
                     .font(.subheadline)
@@ -182,24 +246,72 @@ struct ContentView: View {
     private func result(_ presentation: DailyRecommendationPresentation) -> some View {
         VStack(alignment: .leading, spacing: 14) {
             if homePresentationMode == .guided && showHomeIntroduction {
-                HomeIntroductionCard(onGotIt: dismissHomeIntroduction)
+                HomeIntroductionCard(
+                    onGotIt: dismissHomeIntroduction,
+                    explanation: selection.selectedItems.count > 1
+                        ? "Each item has today’s advice and relevant times. Open an item for periods and hourly details."
+                        : "The main result covers today. Dayparts show when it changes, and the reason explains why."
+                )
             }
-            if let summary = presentation.summary {
-                RecommendationHeroView(recommendation: summary)
+            if selection.selectedItems.count == 1, let item = selection.selectedItems.first {
+                itemDetail(itemPresentation(item, from: presentation), legacy: presentation)
+            } else {
+                Text("Your items today").font(.title3.bold()).accessibilityAddTraits(.isHeader)
+                ForEach(selection.selectedItems, id: \.self) { item in
+                    let itemPresentation = itemPresentation(item, from: presentation)
+                    Button { detailItem = item } label: {
+                        VStack(alignment: .leading, spacing: 12) {
+                            ItemSummaryView(presentation: itemPresentation, isOverview: true)
+                            if let evaluation = itemPresentation.evaluation { ItemPeriodsView(evaluation: evaluation) }
+                        }
+                        .padding(14)
+                        .background(HomeStyle.card, in: RoundedRectangle(cornerRadius: HomeStyle.cardRadius))
+                        .accessibilityElement(children: .ignore)
+                        .accessibilityLabel(itemPresentation.accessibilityLabel)
+                    }
+                    .buttonStyle(.plain)
+                    .accessibilityHint("View periods and hourly details")
+                    .accessibilityIdentifier("item-card-\(item.rawValue)")
+                }
             }
-            if homePresentationMode == .guided {
-                Text("When can I wear it?")
-                    .font(.title3.bold())
-                    .accessibilityAddTraits(.isHeader)
-                    .accessibilityIdentifier("day-parts-heading")
-            }
-            DayPartsView(dayParts: presentation.dayParts)
-            Divider().padding(.vertical, 2)
-            HourlySuitabilityView(presentation: presentation)
         }
         .task(id: scenePhase == .active ? presentation.weatherFetchedAt : nil) {
             guard scenePhase == .active else { return }
             await model.monitorAutomaticRefreshes()
+        }
+    }
+
+    private func itemPresentation(_ item: PredefinedItem, from presentation: DailyRecommendationPresentation) -> ItemHomePresentation {
+        ItemHomePresentation(result: presentation.itemResults.first { $0.item == item }
+            ?? ItemForecastResult(item: item, evaluation: nil))
+    }
+
+    @ViewBuilder
+    private func itemDetail(
+        _ item: ItemHomePresentation, legacy: DailyRecommendationPresentation, isDetail: Bool = false
+    ) -> some View {
+        VStack(alignment: .leading, spacing: 14) {
+            ItemSummaryView(presentation: item)
+                .padding(16)
+                .background(HomeStyle.card, in: RoundedRectangle(cornerRadius: HomeStyle.cardRadius))
+                .accessibilityElement(children: .ignore)
+                .accessibilityLabel(item.accessibilityLabel)
+                .accessibilityIdentifier("recommendation-hero")
+            if let evaluation = item.evaluation {
+                if homePresentationMode == .guided {
+                    Text("Advice through the day").font(.title3.bold()).accessibilityAddTraits(.isHeader)
+                        .accessibilityIdentifier("day-parts-heading")
+                }
+                if item.id == .leatherJacket, !legacy.hours.isEmpty {
+                    if isDetail { ItemPeriodsView(evaluation: evaluation) } else { DayPartsView(dayParts: legacy.dayParts) }
+                    Divider().padding(.vertical, 2)
+                    HourlySuitabilityView(presentation: legacy)
+                } else {
+                    ItemPeriodsView(evaluation: evaluation)
+                    Divider().padding(.vertical, 2)
+                    ItemHourlyAdviceView(evaluation: evaluation)
+                }
+            }
         }
     }
 
@@ -307,7 +419,7 @@ private struct DiagnosticsView: View {
                     }
                 }
 
-                Section("Final periods") {
+                Section("Leather Jacket · final periods") {
                     if diagnostics.periodDetails.isEmpty {
                         Text("No periods yet.")
                     } else {
@@ -317,7 +429,7 @@ private struct DiagnosticsView: View {
                     }
                 }
 
-                Section("Remaining hourly inputs") {
+                Section("Leather Jacket · remaining hourly inputs") {
                     if diagnostics.hourlyDetails.isEmpty {
                         Text("No evaluated hours yet.")
                     } else {
@@ -469,7 +581,7 @@ private struct DiagnosticsView: View {
                 )
             }
 
-            diagnosticGroup("Wind · informational only") {
+            diagnosticGroup("Wind · informational for Leather Jacket") {
                 diagnosticValue("Speed", measurement(hour.windSpeedKilometersPerHour, unit: "km/h"))
                 diagnosticValue("Gust", measurement(hour.windGustKilometersPerHour, unit: "km/h"))
             }

@@ -73,6 +73,9 @@ nonisolated struct OpenMeteoProvider: WeatherProvider {
                     "showers",
                     "snowfall",
                     "weather_code",
+                    "is_day",
+                    "cloud_cover",
+                    "uv_index",
                     "wind_speed_10m",
                     "wind_gusts_10m"
                 ].joined(separator: ",")
@@ -97,32 +100,81 @@ nonisolated private struct OpenMeteoResponse: Decodable {
     let hourly: Hourly
 
     var normalizedHours: [HourlyWeather] {
-        hourly.time.enumerated().map { index, timestamp in
-            let precipitation = hourly.precipitation?[safe: index] ?? nil
-            let rain = (hourly.rain?[safe: index] ?? nil) ?? 0
-            let showers = (hourly.showers?[safe: index] ?? nil) ?? 0
-            let snowfall = (hourly.snowfall?[safe: index] ?? nil) ?? 0
-            let weatherCode = hourly.weatherCode?[safe: index] ?? nil
+        let indicesByTimestamp = Dictionary(grouping: hourly.time.indices, by: { hourly.time[$0] })
+        return hourly.time.indices.map { index in
+            // Open-Meteo stamps sums/probability/gust maxima at the END of their hour.
+            // Match exact UTC timestamps, not neighboring array positions or local clock labels.
+            let accumulationIndices = indicesByTimestamp[hourly.time[index] + 3_600] ?? []
+            let accumulationIndex = accumulationIndices.count == 1 ? accumulationIndices.first : nil
+            return normalizedHour(at: index, accumulationIndex: accumulationIndex)
+        }
+    }
 
-            return HourlyWeather(
-                timestamp: Date(timeIntervalSince1970: TimeInterval(timestamp)),
-                timezoneIdentifier: timezone,
-                actualTemperatureCelsius: hourly.temperature?[safe: index] ?? nil,
-                apparentTemperatureCelsius: hourly.apparentTemperature?[safe: index] ?? nil,
-                precipitationAmountMillimeters: precipitation,
-                precipitationType: Self.precipitationType(
-                    amount: precipitation,
-                    rain: rain,
-                    showers: showers,
-                    snowfall: snowfall,
-                    weatherCode: weatherCode
-                ),
-                precipitationChanceFraction: (hourly.precipitationProbability?[safe: index] ?? nil)
-                    .map { $0 / 100 },
-                fogOrMistCondition: Self.fogOrMistCondition(weatherCode: weatherCode),
-                windSpeedKilometersPerHour: hourly.windSpeed?[safe: index] ?? nil,
-                windGustKilometersPerHour: hourly.windGusts?[safe: index] ?? nil
-            )
+    private func normalizedHour(at index: Int, accumulationIndex: Int?) -> HourlyWeather {
+        let weatherCode = hourly.weatherCode?[safe: index] ?? nil
+        let precipitation = accumulatedValue(hourly.precipitation, at: accumulationIndex)
+        return HourlyWeather(
+            timestamp: Date(timeIntervalSince1970: TimeInterval(hourly.time[index])),
+            timezoneIdentifier: timezone,
+            actualTemperatureCelsius: hourly.temperature?[safe: index] ?? nil,
+            apparentTemperatureCelsius: hourly.apparentTemperature?[safe: index] ?? nil,
+            precipitationAmountMillimeters: precipitation,
+            precipitationType: accumulationIndex == nil ? nil : Self.precipitationType(
+                amount: precipitation,
+                rain: accumulatedValue(hourly.rain, at: accumulationIndex) ?? 0,
+                showers: accumulatedValue(hourly.showers, at: accumulationIndex) ?? 0,
+                snowfall: accumulatedValue(hourly.snowfall, at: accumulationIndex) ?? 0,
+                weatherCode: weatherCode
+            ),
+            precipitationChanceFraction: accumulatedValue(hourly.precipitationProbability, at: accumulationIndex)
+                .map { $0 / 100 },
+            fogOrMistCondition: Self.fogOrMistCondition(weatherCode: weatherCode),
+            windSpeedKilometersPerHour: hourly.windSpeed?[safe: index] ?? nil,
+            windGustKilometersPerHour: accumulatedValue(hourly.windGusts, at: accumulationIndex),
+            isDaylight: Self.daylight(hourly.isDay?[safe: index] ?? nil),
+            skyCondition: Self.skyCondition(
+                weatherCode: weatherCode,
+                cloudCover: hourly.cloudCover?[safe: index] ?? nil
+            ),
+            uvIndex: Self.validUVIndex(hourly.uvIndex?[safe: index] ?? nil)
+        )
+    }
+
+    private func accumulatedValue(_ values: [Double?]?, at index: Int?) -> Double? {
+        guard let index else { return nil }
+        return values?[safe: index] ?? nil
+    }
+
+    private static func daylight(_ value: Int?) -> Bool? {
+        switch value {
+        case 0: false
+        case 1: true
+        default: nil
+        }
+    }
+
+    private static func validUVIndex(_ value: Double?) -> Double? {
+        guard let value, value.isFinite, value >= 0 else { return nil }
+        return value
+    }
+
+    private static func skyCondition(weatherCode: Int?, cloudCover: Double?) -> SkyCondition? {
+        switch weatherCode {
+        case 0: return .clear
+        case 1: return .mainlyClear
+        case 2: return .partlyCloudy
+        case 3: return .overcast
+        case 45, 48: return .fogOrMist
+        default: break
+        }
+        // Rain/snow codes describe precipitation, not sky cover. Use the provider's own
+        // cloud categories, without inventing cloudiness or visibility-based fog.
+        guard let cloudCover, cloudCover.isFinite, (0...100).contains(cloudCover) else { return nil }
+        switch cloudCover {
+        case ..<AppConfiguration.openMeteoClearSkyUpperCloudCoverPercent: return .clear
+        case ..<AppConfiguration.openMeteoMainlyClearUpperCloudCoverPercent: return .mainlyClear
+        case ..<AppConfiguration.openMeteoPartlyCloudyUpperCloudCoverPercent: return .partlyCloudy
+        default: return .overcast
         }
     }
 
@@ -176,6 +228,9 @@ nonisolated private struct OpenMeteoResponse: Decodable {
         let showers: [Double?]?
         let snowfall: [Double?]?
         let weatherCode: [Int?]?
+        let isDay: [Int?]?
+        let cloudCover: [Double?]?
+        let uvIndex: [Double?]?
         let windSpeed: [Double?]?
         let windGusts: [Double?]?
 
@@ -189,6 +244,9 @@ nonisolated private struct OpenMeteoResponse: Decodable {
             case showers
             case snowfall
             case weatherCode = "weather_code"
+            case isDay = "is_day"
+            case cloudCover = "cloud_cover"
+            case uvIndex = "uv_index"
             case windSpeed = "wind_speed_10m"
             case windGusts = "wind_gusts_10m"
         }

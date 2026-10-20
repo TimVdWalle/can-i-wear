@@ -21,10 +21,24 @@ enum UITestScenario {
 
         let scenario = arguments[flagIndex + 1]
         UserDefaults.standard.set(scenario == "diagnostics", forKey: DebugSettings.enabledKey)
+        if arguments.contains("-ui-test-reset-selection") {
+            UserDefaults.standard.removeObject(forKey: AppConfiguration.selectedItemIDsKey)
+            UserDefaults.standard.set(false, forKey: AppConfiguration.itemSelectionCompletedKey)
+        } else if !arguments.contains("-ui-test-preserve-selection") {
+            let selected: Set<PredefinedItem>
+            if let index = arguments.firstIndex(of: "-ui-test-items"), arguments.indices.contains(index + 1) {
+                selected = Set(arguments[index + 1].split(separator: ",").compactMap { PredefinedItem(rawValue: String($0)) })
+            } else {
+                selected = scenario.hasPrefix("items-") ? [.leatherJacket, .sunglasses, .raincoat] : [.leatherJacket]
+            }
+            ItemSelectionStore().save(selected)
+        }
         if arguments.contains("-ui-test-reset-home-introduction") {
             UserDefaults.standard.removeObject(forKey: AppConfiguration.homeIntroductionAcknowledgedKey)
             UserDefaults.standard.set(true, forKey: AppConfiguration.showHomeIntroductionKey)
         }
+
+        if scenario.hasPrefix("items-") { return itemModel(scenario: scenario) }
 
         let state: RecommendationViewModel.State
         switch scenario {
@@ -112,8 +126,86 @@ enum UITestScenario {
                     timezoneIdentifier: evaluation.timezoneIdentifier,
                     isPast: false
                 )
-            }
+            },
+            itemResults: [jacketResult(evaluation)]
         )
     }
+
+    private static func jacketResult(_ evaluation: DailyEvaluation) -> ItemForecastResult {
+        let hours = evaluation.hours.map { evaluated in
+            let recommendation = evaluated.recommendation
+            return HourlyWeather(
+                timestamp: evaluated.timestamp, timezoneIdentifier: evaluation.timezoneIdentifier,
+                actualTemperatureCelsius: recommendation.reason == .excessiveHeat ? 24 : recommendation.level == .caution ? 18 : 12,
+                apparentTemperatureCelsius: nil,
+                precipitationAmountMillimeters: recommendation.reason == .precipitation ? 1 : 0,
+                precipitationType: PrecipitationType.none,
+                precipitationChanceFraction: recommendation.reason == .precipitationRisk ? 0.10 : 0,
+                fogOrMistCondition: recommendation.reason == .fogOrMist ? .fog : FogOrMistCondition.none
+            )
+        }
+        let forecast = NormalizedForecast(
+            hours: hours,
+            metadata: ForecastMetadata(fetchedAt: evaluation.interval.start, location: LocationIdentity(latitude: 50.85, longitude: 4.35))
+        )
+        return ItemForecastResult(item: .leatherJacket, evaluation: MultiItemRecommendationEngine().evaluate(
+            forecast, for: .leatherJacket, now: evaluation.interval.start
+        ))
+    }
+
+    private static func itemModel(scenario: String) -> RecommendationViewModel {
+        let start = ISO8601DateFormatter().date(from: "2026-10-13T09:00:00Z")!
+        let now = start.addingTimeInterval(1_800)
+        let location = LocationIdentity(latitude: 50.85, longitude: 4.35)
+        let hours = (9..<24).map { hour -> HourlyWeather in
+            let sun: Bool
+            switch scenario {
+            case "items-brief": sun = hour == 12
+            case "items-separated": sun = hour == 12 || hour == 14
+            case "items-borderline", "items-uncertain", "items-unavailable": sun = false
+            default: sun = (12..<15).contains(hour)
+            }
+            let amount: Double = scenario == "items-borderline"
+                ? ((14..<16).contains(hour) ? 0.1 : 0)
+                : (["items-uncertain", "items-unavailable", "items-brief"].contains(scenario) ? 0 : ((15..<18).contains(hour) ? 1 : 0))
+            let missingSky = scenario == "items-unavailable" || (scenario == "items-uncertain" && hour == 14)
+            return HourlyWeather(
+                timestamp: start.addingTimeInterval(Double(hour - 9) * 3_600), timezoneIdentifier: "UTC",
+                actualTemperatureCelsius: scenario == "items-no-jacket" ? nil : 12,
+                apparentTemperatureCelsius: nil, precipitationAmountMillimeters: amount,
+                precipitationType: PrecipitationType.none, precipitationChanceFraction: 0,
+                isDaylight: hour < 19, skyCondition: missingSky ? nil : sun ? .clear : .overcast
+            )
+        }
+        let forecast = NormalizedForecast(hours: hours, metadata: ForecastMetadata(fetchedAt: now, location: location))
+        let store = UITestCacheStore()
+        return RecommendationViewModel(
+            locationProvider: UITestLocationProvider(reading: LocationReading(identity: location, accuracyMeters: 10, timestamp: now)),
+            weatherProvider: UITestWeatherProvider(forecast: forecast),
+            locationCache: LocationCache(store: store), weatherCache: WeatherCache(store: store),
+            localityResolver: UITestLocalityResolver(), now: { now },
+            initialState: scenario == "items-expired" ? .weatherDataExpired : .idle
+        )
+    }
+}
+
+private actor UITestCacheStore: CacheDataStore {
+    private var values: [String: Data] = [:]
+    func data(forKey key: String) -> Data? { values[key] }
+    func set(_ data: Data?, forKey key: String) { values[key] = data }
+}
+
+private struct UITestLocationProvider: LocationProvider {
+    let reading: LocationReading
+    func currentLocation() async throws -> LocationReading { reading }
+}
+
+private struct UITestWeatherProvider: WeatherProvider {
+    let forecast: NormalizedForecast
+    func hourlyForecast(for location: LocationIdentity) async throws -> NormalizedForecast { forecast }
+}
+
+private struct UITestLocalityResolver: LocalityResolving {
+    func locality(for location: LocationIdentity) async -> String? { "Ghent" }
 }
 #endif

@@ -20,12 +20,14 @@ final class RecommendationViewModel {
     private(set) var state: State
     private(set) var locality: String?
     private(set) var retryAvailableAt: Date?
+    private(set) var selectedItems: [PredefinedItem] = [.leatherJacket]
     let diagnostics: DebugDiagnostics
 
     private let locationProvider: any LocationProvider
     private let weatherProvider: any WeatherProvider
     private let dailyEngine: DailyRecommendationEngine
     private let periodEngine: DayPeriodEngine
+    private let itemEngine = MultiItemRecommendationEngine()
     private let locationCache: LocationCache
     private let weatherCache: WeatherCache
     private let reuseConfig: ReusePolicyConfig
@@ -110,6 +112,26 @@ final class RecommendationViewModel {
     func loadIfNeeded() async {
         guard state == .idle else { return }
         await performLoad(trigger: .initial, forceLiveWeather: false)
+    }
+
+    /// Selection is local presentation/evaluation work, never a location or weather request.
+    func updateSelectedItems(_ items: [PredefinedItem]) {
+        let selected = PredefinedItem.allCases.filter { items.contains($0) }
+        guard !selected.isEmpty, selected != selectedItems else { return }
+        selectedItems = selected
+        guard let current = state.result, let forecast = latestForecast else { return }
+        guard now().timeIntervalSince(forecast.metadata.fetchedAt) <= reuseConfig.weatherFreshness else {
+            state = .weatherDataExpired
+            return
+        }
+        if let updated = makePresentation(
+            from: forecast, at: now(), isUsingSavedWeather: current.isUsingSavedWeather,
+            isRefreshing: current.isRefreshing, refreshFailed: current.refreshFailed
+        ) {
+            state = .result(updated)
+        } else {
+            state = .forecastIncomplete
+        }
     }
 
     func appBecameActive() async {
@@ -217,22 +239,7 @@ final class RecommendationViewModel {
         isRequestInFlight = true
         defer { isRequestInFlight = false }
 
-        if let current = state.result,
-           now().timeIntervalSince(current.weatherFetchedAt) <= reuseConfig.weatherFreshness {
-            state = .result(DailyRecommendationPresentation(
-                periods: current.periods,
-                hours: current.hours,
-                weatherFetchedAt: current.weatherFetchedAt,
-                isUsingSavedWeather: true,
-                isRefreshing: true,
-                refreshFailed: false,
-                refreshAvailableAt: current.refreshAvailableAt,
-                dayParts: current.dayParts,
-                displayHours: current.displayHours
-            ))
-        } else {
-            state = .loading
-        }
+        showLoadingPresentation()
         diagnostics.record(
             category: .session,
             outcome: .started,
@@ -378,6 +385,17 @@ final class RecommendationViewModel {
             return
         }
 
+        if shouldRetainFallback(insteadOf: presentation, fallback: fallback, at: now()) {
+            diagnostics.record(
+                category: .evaluation, outcome: .failed, title: "Selected-item forecast unavailable",
+                detail: "The live response cannot advise on any selected item; retaining still-usable saved advice."
+            )
+            finishWeatherFailure(
+                fallback: fallback, otherwise: .forecastIncomplete, whenExpired: .forecastIncomplete, trigger: trigger
+            )
+            return
+        }
+
         await weatherCache.save(liveForecast)
         diagnostics.record(
             category: .cache,
@@ -385,7 +403,46 @@ final class RecommendationViewModel {
             title: "Weather cache save",
             detail: "Saved the valid normalized forecast after evaluation."
         )
-        state = .result(presentation)
+        finishSuccessfulLoad(presentation, forecast: liveForecast)
+    }
+
+    private func showLoadingPresentation() {
+        if let current = state.result,
+           now().timeIntervalSince(current.weatherFetchedAt) <= reuseConfig.weatherFreshness {
+            state = .result(DailyRecommendationPresentation(
+                periods: current.periods, hours: current.hours, weatherFetchedAt: current.weatherFetchedAt,
+                isUsingSavedWeather: true, isRefreshing: true, refreshFailed: false,
+                refreshAvailableAt: current.refreshAvailableAt, dayParts: current.dayParts,
+                displayHours: current.displayHours, itemResults: current.itemResults, evaluationHour: current.evaluationHour
+            ))
+        } else {
+            state = .loading
+        }
+    }
+
+    private func finishSuccessfulLoad(_ presentation: DailyRecommendationPresentation, forecast: NormalizedForecast) {
+        guard now().timeIntervalSince(forecast.metadata.fetchedAt) <= reuseConfig.weatherFreshness else {
+            state = .weatherDataExpired
+            return
+        }
+        if presentation.itemResults.map(\.item) == selectedItems {
+            state = .result(presentation)
+        } else if let updated = makePresentation(
+            from: forecast, at: now(), isUsingSavedWeather: false, isRefreshing: false, refreshFailed: false
+        ) {
+            state = .result(updated)
+        } else {
+            state = .forecastIncomplete
+        }
+    }
+
+    private func shouldRetainFallback(
+        insteadOf presentation: DailyRecommendationPresentation, fallback: CachedWeather?, at date: Date
+    ) -> Bool {
+        guard presentation.itemResults.allSatisfy({ $0.evaluation == nil }),
+              let fallback,
+              date.timeIntervalSince(fallback.forecast.metadata.fetchedAt) <= reuseConfig.weatherFreshness else { return false }
+        return itemEngine.evaluate(fallback.forecast, for: selectedItems, now: date).contains { $0.evaluation != nil }
     }
 
     func refreshDebugSetting() {
@@ -636,7 +693,7 @@ final class RecommendationViewModel {
         isRefreshing: Bool,
         refreshFailed: Bool
     ) -> DailyRecommendationPresentation? {
-        guard let evaluation = dailyEngine.evaluateHours(forecast, now: currentTime) else {
+        guard let window = ForecastEvaluationWindow(forecast: forecast, now: currentTime) else {
             diagnostics.record(
                 category: .evaluation,
                 outcome: .failed,
@@ -645,30 +702,27 @@ final class RecommendationViewModel {
             )
             return nil
         }
-        let periods = periodEngine.periods(for: evaluation)
-        guard !periods.isEmpty else {
-            diagnostics.record(
-                category: .evaluation,
-                outcome: .failed,
-                title: "Period generation",
-                detail: "No displayable periods were produced."
-            )
-            return nil
+        let itemResults = itemEngine.evaluate(forecast, for: selectedItems, now: currentTime)
+        let evaluation = dailyEngine.evaluateHours(forecast, now: currentTime)
+        let periods = evaluation.map { periodEngine.periods(for: $0) } ?? []
+        if let evaluation {
+            diagnostics.updateEvaluation(forecast: forecast, evaluation: evaluation, periods: periods)
+        } else {
+            diagnostics.clearEvaluation()
         }
-        diagnostics.updateEvaluation(forecast: forecast, evaluation: evaluation, periods: periods)
         diagnostics.record(
             category: .evaluation,
             outcome: .success,
             title: "Recommendation periods",
-            detail: "Evaluated \(evaluation.hours.count) remaining hours into \(periods.count) period(s)."
+            detail: "Evaluated \(window.slots.count) remaining hours; \(itemResults.filter { $0.evaluation != nil }.count) of \(itemResults.count) selected items have daily advice. Jacket diagnostics retain their own protective policy."
         )
 
         let displayEvaluation = dailyEngine.evaluateDisplayHours(forecast, now: currentTime)
             ?? evaluation
-        let displayHours = displayEvaluation.hours.map {
+        let displayHours = (displayEvaluation?.hours ?? []).map {
             HourlySuitabilityPresentation(
                 hour: $0,
-                timezoneIdentifier: displayEvaluation.timezoneIdentifier,
+                timezoneIdentifier: window.timezoneIdentifier,
                 isPast: $0.timestamp.addingTimeInterval(3_600) <= currentTime
             )
         }
@@ -681,8 +735,8 @@ final class RecommendationViewModel {
                     recommendation: RecommendationPresentation(recommendation: $0.recommendation)
                 )
             },
-            hours: evaluation.hours.map {
-                HourlySuitabilityPresentation(hour: $0, timezoneIdentifier: evaluation.timezoneIdentifier)
+            hours: (evaluation?.hours ?? []).map {
+                HourlySuitabilityPresentation(hour: $0, timezoneIdentifier: window.timezoneIdentifier)
             },
             weatherFetchedAt: forecast.metadata.fetchedAt,
             isUsingSavedWeather: isUsingSavedWeather,
@@ -692,15 +746,27 @@ final class RecommendationViewModel {
                 forecast.metadata.fetchedAt.addingTimeInterval(reuseConfig.weatherRefreshInterval),
                 refreshFailureCooldownUntil ?? .distantPast
             ),
-            dayParts: FixedDayPartPresentation.make(from: displayEvaluation, at: currentTime),
-            displayHours: displayHours
+            dayParts: displayEvaluation.map { FixedDayPartPresentation.make(from: $0, at: currentTime) } ?? [],
+            displayHours: displayHours,
+            itemResults: itemResults,
+            evaluationHour: window.interval.start
         )
     }
 
     private func automaticRefreshIfNeeded() async {
-        guard !isRequestInFlight, let forecast = latestForecast else { return }
+        guard let forecast = latestForecast else { return }
         let currentTime = now()
         let age = max(0, currentTime.timeIntervalSince(forecast.metadata.fetchedAt))
+        if age <= reuseConfig.weatherFreshness, let current = state.result,
+           let window = ForecastEvaluationWindow(forecast: forecast, now: currentTime),
+           current.evaluationHour != window.interval.start,
+           let updated = makePresentation(
+                from: forecast, at: currentTime, isUsingSavedWeather: current.isUsingSavedWeather,
+                isRefreshing: current.isRefreshing, refreshFailed: current.refreshFailed
+           ) {
+            state = .result(updated)
+        }
+        guard !isRequestInFlight else { return }
         guard age >= reuseConfig.weatherRefreshInterval else { return }
         if let cooldown = refreshFailureCooldownUntil, cooldown > currentTime, age < reuseConfig.weatherFreshness {
             return
@@ -726,6 +792,12 @@ final class RecommendationViewModel {
     }
 
     private var nextAutomaticActionDate: Date? {
+        guard let weatherDate = nextWeatherActionDate else { return nil }
+        guard let evaluatedHour = state.result?.evaluationHour else { return weatherDate }
+        return min(weatherDate, evaluatedHour.addingTimeInterval(3_600))
+    }
+
+    private var nextWeatherActionDate: Date? {
         guard let forecast = latestForecast, state.result != nil else { return nil }
         let fetchedAt = forecast.metadata.fetchedAt
         let currentTime = now()
@@ -777,7 +849,9 @@ final class RecommendationViewModel {
             refreshFailed: true,
             refreshAvailableAt: refreshFailureCooldownUntil ?? current.refreshAvailableAt,
             dayParts: current.dayParts,
-            displayHours: current.displayHours
+            displayHours: current.displayHours,
+            itemResults: current.itemResults,
+            evaluationHour: current.evaluationHour
         ))
     }
 

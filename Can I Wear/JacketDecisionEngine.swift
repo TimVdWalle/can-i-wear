@@ -161,91 +161,22 @@ nonisolated struct DailyRecommendationEngine: Sendable {
     /// Returns an ordered classification for every hour in the remaining local
     /// day. Nil means the timezone or approved coverage policy cannot be met.
     func evaluateHours(_ forecast: NormalizedForecast, now: Date) -> DailyEvaluation? {
-        let timezoneIdentifiers = Set(forecast.hours.compactMap(\.timezoneIdentifier))
-        guard
-            timezoneIdentifiers.count == 1,
-            let timezoneIdentifier = timezoneIdentifiers.first,
-            let timezone = TimeZone(identifier: timezoneIdentifier)
-        else { return nil }
-
-        var calendar = Calendar(identifier: .gregorian)
-        calendar.timeZone = timezone
-
-        guard
-            let day = calendar.dateInterval(of: .day, for: now),
-            let currentHour = calendar.dateInterval(of: .hour, for: now)?.start,
-            currentHour < day.end
-        else {
-            return nil
-        }
-
-        return evaluateHours(
-            forecast,
-            interval: DateInterval(start: currentHour, end: day.end),
-            timezoneIdentifier: timezoneIdentifier
-        )
+        guard let window = ForecastEvaluationWindow(forecast: forecast, now: now) else { return nil }
+        return evaluateHours(in: window)
     }
 
     /// Evaluates the complete planning timeline shown on the home screen.
     /// The visual day starts at 06:00 to match the day-part cards.
     func evaluateDisplayHours(_ forecast: NormalizedForecast, now: Date) -> DailyEvaluation? {
-        let timezoneIdentifiers = Set(forecast.hours.compactMap(\.timezoneIdentifier))
-        guard
-            timezoneIdentifiers.count == 1,
-            let timezoneIdentifier = timezoneIdentifiers.first,
-            let timezone = TimeZone(identifier: timezoneIdentifier)
-        else { return nil }
-
-        var calendar = Calendar(identifier: .gregorian)
-        calendar.timeZone = timezone
-        guard
-            let day = calendar.dateInterval(of: .day, for: now),
-            let start = calendar.date(
-                bySettingHour: 6,
-                minute: 0,
-                second: 0,
-                of: day.start
-            ),
-            start < day.end
-        else { return nil }
-
-        return evaluateHours(
-            forecast,
-            interval: DateInterval(start: start, end: day.end),
-            timezoneIdentifier: timezoneIdentifier
-        )
+        guard let window = ForecastEvaluationWindow(
+            forecast: forecast, now: now, includesPlanningMorning: true
+        ) else { return nil }
+        return evaluateHours(in: window)
     }
 
-    private func evaluateHours(
-        _ forecast: NormalizedForecast,
-        interval: DateInterval,
-        timezoneIdentifier: String
-    ) -> DailyEvaluation? {
-        var expectedTimestamps: [Date] = []
-        var timestamp = interval.start
-        while timestamp < interval.end {
-            expectedTimestamps.append(timestamp)
-            timestamp = timestamp.addingTimeInterval(3_600)
-        }
-
-        var hoursByTimestamp: [Date: HourlyWeather] = [:]
-        for hour in forecast.hours where hour.timestamp >= interval.start && hour.timestamp < interval.end {
-            guard hoursByTimestamp.updateValue(hour, forKey: hour.timestamp) == nil else {
-                return nil
-            }
-        }
-
-        var recommendations: [HourlyRecommendation?] = []
-        for expectedTimestamp in expectedTimestamps {
-            guard
-                let hour = hoursByTimestamp[expectedTimestamp],
-                hour.timezoneIdentifier == timezoneIdentifier
-            else {
-                recommendations.append(nil)
-                continue
-            }
-            recommendations.append(hourlyEngine.evaluate(hour))
-        }
+    private func evaluateHours(in window: ForecastEvaluationWindow) -> DailyEvaluation? {
+        let expectedTimestamps = window.slots.map(\.timestamp)
+        var recommendations = window.slots.map { $0.weather.flatMap(hourlyEngine.evaluate) }
 
         let missingIndices = recommendations.indices.filter { recommendations[$0] == nil }
         if missingIndices.count == 1, let missingIndex = missingIndices.first {
@@ -276,8 +207,8 @@ nonisolated struct DailyRecommendationEngine: Sendable {
         }
 
         return DailyEvaluation(
-            interval: interval,
-            timezoneIdentifier: timezoneIdentifier,
+            interval: window.interval,
+            timezoneIdentifier: window.timezoneIdentifier,
             hours: evaluatedHours
         )
     }

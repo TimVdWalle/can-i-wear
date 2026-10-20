@@ -1,7 +1,7 @@
 # Can I Wear — Product Specification
 
 > Status: ACTIVE
-> Last updated: 2026-10-19
+> Last updated: 2026-10-20
 > Source of truth: YES
 
 ## Initial real-device user story (historical foundation)
@@ -47,7 +47,7 @@ Weather reuse and refresh policy:
 - apply the policy at launch, on foreground activation and when an active screen crosses a boundary;
 - never run concurrent weather requests.
 
-For Leather Jacket, provider-supplied wind speed/gusts remain diagnostic-only; apparent temperature is the approved temperature input that can reflect wind effects. D-062 separately approves wind speed as a Raincoat modifier during forecast light rain. Phase 4 also needs hourly liquid-rain/chance inputs for Raincoat and daylight/sky conditions with optional hourly UV for Sunglasses. The detailed item rules are maintained in `WEATHER_LOGIC.md`; these additions do not alter jacket policy.
+For Leather Jacket, provider-supplied wind speed/gusts remain diagnostic-only; apparent temperature is the approved temperature input that can reflect wind effects. D-062/D-071 approve wind speed as a Raincoat modifier during positive light total precipitation. Raincoat uses hourly total-precipitation amount/chance, including solid/mixed precipitation in water-equivalent millimetres; no separate liquid-rain input is required. Sunglasses additionally needs daylight/sky conditions with optional hourly UV. Detailed item rules are maintained in `WEATHER_LOGIC.md`; these additions do not alter jacket policy.
 
 ## Decision output
 
@@ -58,7 +58,7 @@ The app should communicate:
 
 The primary visual result should be understandable almost immediately.
 
-The implemented Phase 3 single-item Home Screen follows D-046/D-047/D-051 and `UX.md`: a Leather Jacket hero with **YES / MAYBE / NO**, the existing most-protective remaining-day summary, a short data-derived weather reason, daypart cards, and raw hourly suitability with explicit uncertainty/grouping context. **Guided Home** is the default and adds the item-neutral purpose line, **When can I wear it?** context and a concise dismissible explanation. **Compact Home** omits this guidance and retains the denser presentation. These presentation modes do not change weather rules. For Phase 4, D-060 replaces the universal daily YES/MAYBE/NO presentation with the explicit verdict and timing requirements below; the Phase 3 evidence is not evidence that this new presentation is implemented.
+The Phase 3 single-item Home foundation follows D-046/D-047/D-051 and `UX.md`: a Leather Jacket hero, the most-protective remaining-day summary, a short data-derived weather reason, daypart cards, and raw hourly suitability with explicit uncertainty/grouping context. **Guided Home** is the default and adds the item-neutral purpose line, daypart context and a concise dismissible explanation. **Compact Home** omits this guidance and retains the denser presentation. These modes do not change weather rules. Phase 4 keeps that one-item hierarchy while replacing the old universal daily YES/MAYBE/NO with D-060's explicit verdict/timing and adding selected-item Home routing; hourly jacket labels remain unchanged. Actual implementation/verification progress is in `TODO.md`, not inferred from historical Phase 3 evidence.
 
 ### Phase 4 daily advice: meaning and time must be explicit (D-060)
 
@@ -84,6 +84,8 @@ The approved temporary Phase 2 fog reason is **“Fog is expected.”** Final re
 No personal recommendation settings in the original first-release core. Adjustable item thresholds come **after release**, once basic custom items work (Phase 9).
 
 The Apple system Settings page contains default-on **Guided Home** and **Show How It Works** presentation switches plus an off-by-default **Debug Enabled** technical switch. Guided Home changes explanation density, Show How It Works controls the Guided introduction card and Debug Enabled only reveals local diagnostics. None changes recommendation rules or weather handling.
+
+**Reset Item Setup** in Apple system Settings clears the selected items and replays first-launch item selection when the app next opens or becomes active. Start with no checked items and Continue disabled. This one-shot testing control preserves Home preferences and weather/location caches (D-067's reset selection amendment).
 
 ## Local debug diagnostics
 
@@ -137,8 +139,9 @@ Implementation details are secondary to these outcomes.
 
 - The approved initial seven-item collection is Leather Jacket, Warm Coat, Sweater, Raincoat, Sunglasses, Shorts and Gloves (D-058).
 - Retain the shared weather-fit perspective “Is today a good day for [item]?”, expressed through explicit daily verdicts and timing (D-060), not a universal daily YES/MAYBE/NO label. Each item has its own appropriate, testable rules; preserve all original leather-protection policy and provenance/cache guardrails.
-- D-067 adds first-launch item selection and a header gear reopening focused item configuration. One selected item uses the existing single-item Home layout and its presentation variants; multiple selected items use a new overview showing only those items, with item detail available on selection. Multi-item visuals must build on current Guided Home styling; detailed layout remains subject to prototype review.
-- The approved initial temperature bands/input selection, D-062 Raincoat/Sunglasses hourly conditions and optional-input fallbacks, and D-063–D-066 daily algorithms, useful-hour minimum, launch-item assignments and required-input/gap handling are in [WEATHER_LOGIC.md](WEATHER_LOGIC.md). Other unsupported condition/precipitation cases and non-jacket grouping remain gated in Phase 4.1; the algorithms, launch assignments, missing-input handling and explicit daily-verdict/timing approach are not undecided.
+- D-067 adds first-launch item selection and a header gear reopening focused item configuration. One selected item uses the existing single-item Home layout and its presentation variants; multiple selected items use D-068's approved **A: cards with daypart previews**, showing only selected items. Select a card for full item detail. Use current Guided Home styling; sample copy/defaults and unresolved presentation cases are not automatically approved by this direction choice.
+- D-070 starts a fresh first launch with no items preselected. Enable Continue only with at least one selected item; the later configuration page also requires at least one selected item before saving. An empty selection cannot be saved.
+- The approved hourly rules, daily algorithms, useful-hour minimum, launch assignments, required-input/gap handling, D-069 grouping and D-071 Raincoat total-precipitation scope are in [WEATHER_LOGIC.md](WEATHER_LOGIC.md). Remaining concrete presentation review and faithful signal mapping/validation stay at Phase 4.1; settled rules and D-070 selector behavior are not open choices.
 - Include an iOS home-screen widget; its form and content remain **TBD in Phase 5.1**.
 - Use current device location and today's relevant hours for first release. No user-created items, saved cities, notification feature or editable rules required for release.
 

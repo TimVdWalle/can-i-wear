@@ -1,7 +1,7 @@
 # Can I Wear — Complete Implementation Plan
 
 > Status: ACTIVE — agreed scope plus gated, sometimes provisional future execution
-> Last updated: 2026-10-19
+> Last updated: 2026-10-20
 > Source of truth: execution detail subordinate to the existing truth files
 
 ## Authority and execution rules
@@ -420,12 +420,12 @@ Goal: expand the already implemented jacket-only experience to a **small user-ap
 
 - **Type:** Product/UX decision gate.
 - **Objective:** Confirm which predefined items the first release supports, what each item's recommendation means and how users view several items.
-- **Exact scope:** Finish remaining unsupported condition/precipitation cases, non-jacket period consolidation and concrete selection/single-item/multi-item presentation. D-067 approves first-launch item selection, configuration access through a header gear, count-based Home layout and a resettable setup flag; review visual prototypes before app implementation. D-063–D-066 settle algorithms, useful-hour minimum, launch assignments and missing-required-input/gap handling; do not reopen these or design a new daily algorithm per item. D-060 approves explicit daily verdicts/timing without requiring a user-facing taxonomy; exact group labels/configuration explanation are deferred to 8.1.
+- **Exact scope:** Finish concrete presentation review and identify/validate faithful provider-signal mappings. D-067 approves selection/configuration flow, D-068 chooses layout A, D-069 settles grouping, D-070 settles initial/minimum selection and D-071 applies unchanged Raincoat thresholds to total precipitation. D-063–D-066 settle daily algorithms, useful-hour minimum, launch assignments and missing-input/gap handling; do not reopen these or invent per-item daily algorithms. D-060 approves explicit verdicts/timing without a user-facing taxonomy; exact group labels/configuration explanation remain deferred to 8.1.
 - **Acceptance criteria:** Apply D-065's approved catalog assignments with complete hourly/input policies and primary UI interaction; every required weather factor has an identified normalized input and testable behavior; jacket policy remains unchanged. Review the current aggregation examples in `WEATHER_LOGIC.md` for every assigned item, including separated useful hours and qualified single-hour advice. Mixed-day advice must convey its meaning and time scope without requiring knowledge of an item group; streamlined wording must not change aggregation.
 - **Tests/validation:** Review sample forecasts and multi-item/no-data scenarios against the explicit-verdict contract in `UX.md`, including a useful sunny interval, a single jacket hazard, all-window suitability and an item useful in some hours but unsuitable in others; approve sensible defaults for each new item.
 - **Dependencies:** Phase 3.1/3.5 presentation foundation and Phase 2 domain outputs.
 - **Non-goals:** Custom items, user-editable thresholds, saved cities, accounts, notifications, adding unapproved item types.
-- **Blocking TBDs:** Other unsupported condition/precipitation cases, non-jacket period consolidation and concrete presentation cases. D-062/D-066 resolve initial Raincoat/Sunglasses conditions, optional fallbacks and missing-required-input/gap behavior; provider mappings must faithfully support approved signals. D-063–D-066's algorithms/useful-hour minimum/launch assignments/missing-input rules, group-label deferral and D-060's explicit-verdict/timing approach are not open Phase 4 choices.
+- **Remaining gate work:** Concrete presentation cases and faithful required-signal mappings/validation. D-071 closes Raincoat solid/mixed-precipitation scope; do not retain it as an unsupported-condition blocker. D-062/D-066 resolve base conditions, optional fallbacks and missing-required-input/gap behavior. D-063–D-071 settle algorithms, useful-hour minimum, assignments, input handling, layout/grouping, initial/minimum selection and Raincoat precipitation scope. Ask only about genuinely undefined material behavior discovered during review, not routine mapping/implementation details. Group-label deferral and D-060's verdict/timing approach are unchanged.
 
 **Decision progress (2026-10-18, D-058/D-060):** The seven-item collection, weather-fit perspective, compact overview, initial temperature bands/input for Warm Coat, Sweater, Gloves and Shorts, and extension of the isolated one-hour gap rule are approved. High-level Raincoat and Sunglasses behavior is recorded. D-060 replaces a universal daily YES/MAYBE/NO with an explicit verdict and timing, supersedes D-059 and defers exact group labels to 8.1. The Phase 4.1 blockers above concern actual behavior and inputs, not group names. Do not begin implementation until the remaining decisions are approved/recorded and the user explicitly gives permission.
 
@@ -441,14 +441,26 @@ Goal: expand the already implemented jacket-only experience to a **small user-ap
 
 **Decision progress (2026-10-19, D-067):** User requested visual prototypes based on the current Guided Home, with item configuration first, header-gear access later and the existing single-item variants for one selection. The prototype is a review artifact, not app implementation or approval of its illustrative defaults, zero-selection rule, final copy or alternative multi-item layouts. Setup flag constraints are in `TECH_SPEC.md`.
 
+**Decision progress (2026-10-20, D-068):** User selected multi-item direction A, the cards with daypart previews and item detail on selection. Do not reopen the A/B choice or implement B as an additional layout. Acceptance includes selected-item cards with meaningful time previews, scalable/non-color advice and full detail access. Illustrative defaults/copy, non-jacket period consolidation and other unresolved Phase 4.1 choices remain separate; app implementation still requires permission.
+
+**Decision progress (2026-10-20, D-069):** User approved contiguous same-advice grouping for all six Should I wear items, preserving short useful intervals without jacket-style expansion/smoothing. Count useful hours from directly evaluated hours, not displayed periods. `WEATHER_LOGIC.md` owns exact rules and future acceptance examples. This closes non-jacket grouping, not remaining precipitation/selector choices or the implementation-permission gate.
+
+**Decision progress (2026-10-20, D-070):** User approved no preselected items on fresh first launch and a minimum of one item to enable Continue or Save selection. These selector behaviors are no longer open choices. Future implementation acceptance must cover the initial disabled button, one-item enablement and inability to save an empty edited selection; prototype behavior already demonstrates these interactions, but no Swift implementation or new app test run is claimed.
+
+**Decision progress (2026-10-20, D-071):** User approved unchanged Raincoat numeric thresholds for all precipitation, using total water-equivalent amount rather than snow depth. Current rules/examples are in `WEATHER_LOGIC.md` and normalized units in `TECH_SPEC.md`. This removes the rain-only/distinct-liquid-input restriction; no provider migration, app implementation or live validation is claimed.
+
+**Provider evidence review (2026-10-20):** Source/docs inspection and a fixed-coordinate live probe confirm the required fields are available in the sampled Open-Meteo response. Sunglasses needs daylight/cloud/UV normalization; source-backed category mapping and references are in `TECH_SPEC.md`. The existing accumulated-precipitation interval mismatch is tracked as **ISS-001**, not an undefined product choice. Provider contract/mapping work is independent of remaining Home copy review, but code work still needs explicit user permission; do not mark 4.1 complete from this read-only check.
+
+**Authorized provider implementation (2026-10-20):** User directed continuation after the explicit implementation offer. The normalized optional signals, interval-alignment fix and cache-compatibility change are implemented; validation status/evidence are maintained in `TODO.md` and ISS-001. No new item decision engine, selector, Home layout or broad Phase 4 implementation is authorized/completed by this focused work. Remaining presentation review and Phase 4.1 closure are separate.
+
 ### 4.2 — Implement multi-item rule and domain support
 
 - **Type:** Domain/application implementation and deterministic tests.
 - **Objective:** Produce trustworthy recommendations for every approved predefined item for the same current-location weather.
 - **Exact scope:** Add only the catalog/model/rule-config support needed; centralize item-specific hourly factors/thresholds, the D-064 useful-hour minimum and D-065's explicit assignments to the two shared algorithms. Share validated evaluation/time-window/cache flow where appropriate, without duplicating end-to-end engines, inverting raw weather thresholds or cross-applying jacket safety grouping.
 - **Acceptance criteria:** Each item gets correct independent daily advice, supporting times/reasons and meaningful periods; policies do not depend on display-name or verdict-string matching. Missing inputs fail safely per approved item rules; the existing leather engine passes unchanged regression tests. Do not add a generic rules builder or future custom-item editor to satisfy extensibility.
-- **Tests/validation:** The current D-063/D-064 acceptance matrix in `WEATHER_LOGIC.md`, applied to every D-065 catalog assignment: one bad hour; exactly one versus two useful hours; consecutive versus separated useful hours; MAYBE/inferred hours not qualifying; short remaining-day windows; and incomplete coverage rejection even when the useful-hour minimum is met. Verify that mixed temperature or rain/dry hours do not switch a Should I wear item to worst-hour aggregation. Add item-specific boundary/precedence/coverage tests and rain/fog, cache and local-day period regressions; tests do not require network/GPS.
-- **Dependencies:** 4.1; original providers and Phase 2.
+- **Tests/validation:** The D-063/D-064 daily matrix, D-069 period examples and D-071 Raincoat all-precipitation boundaries in `WEATHER_LOGIC.md`, applied to approved assignments. Verify faithful contiguous periods, preserved one-hour useful intervals, no jacket-style expansion and daily-count independence from period display. For Raincoat, equal water-equivalent amounts must classify identically across precipitation types; cover wind upgrade/non-upgrade and missing-wind fallback. Add item-specific boundary/precedence/coverage tests and unchanged jacket rain/fog/cache/local-day period regressions; tests do not require network/GPS.
+- **Dependencies:** Approved 4.1 rules/input contracts; original providers and Phase 2. After the in-context prototype review, the user's continuation on 2026-10-20 authorizes focused domain implementation/testing. Routine copy refinement and remaining screen approval do not change those rules or imply that Phase 4.3 is implemented/approved in full.
 - **Non-goals:** User-created items or threshold editing, advanced expression/rule engine, per-city caching.
 - **Blocking TBDs:** None once 4.1 decisions are recorded.
 
@@ -456,11 +468,14 @@ Goal: expand the already implemented jacket-only experience to a **small user-ap
 
 - **Type:** App UX implementation and UI testing.
 - **Objective:** Make additional item recommendations clear without making the app a weather dashboard.
-- **Exact scope:** Implement the reviewed D-067 item selector, persisted setup flag/reset contract, header gear and automatic single-/multi-item Home choice alongside the 4.1-approved explanations, period display and safe unavailable/stale states. Preserve current single-item presentation variants, quick startup and current location. Implement only after the remaining gate/prototype approvals and explicit implementation permission.
+- **Exact scope:** Implement the reviewed D-067 item selector, persisted setup flag/reset contract, header gear and automatic single-/multi-item Home choice, using D-068's direction A for multiple items, alongside the 4.1-approved explanations, period display and safe unavailable/stale states. Preserve current single-item presentation variants, quick startup and current location. Do not add B as a second app layout. Implement only after the remaining gate/prototype approvals and explicit implementation permission.
 - **Acceptance criteria:** Item identity, explicit daily-verdict meaning, relevant timing and weather reason are immediately recognizable without learning an item-group label. Usefulness during one interval must not read as all-day suitability; not-needed must not read as unsafe. Preserve caution/uncertainty and failure handling, accessible/non-color presentation, and D-057's omission of Home freshness status. Switching/overview performs without duplicate network requests.
 - **Tests/validation:** Deterministic multi-item UI scenarios with conflicting item recommendations and changing periods; cover the D-060 examples, uncertainty and incomplete coverage; large text/accessibility checks convey the same time scope and meaning.
+- **Setup-reset regression:** Exercise the actual Apple Settings control on foreground return (including an open configuration sheet) and cold launch; verify cleared selected items, disabled Continue until a new selection, one-shot consumption, preserved Home preferences/caches and successful confirmation/relaunch without a reset loop. See ISS-002 for current verification state.
 - **Dependencies:** 4.1–4.2, 3.5.
 - **Non-goals:** Widget, saved cities, custom items, broad settings.
+
+**Implementation authorization (2026-10-20):** After the completed domain step, the user directed continuation into item selection and Home integration. Implement the approved D-060/D-063–D-071 behaviors and direction A, handling routine wording in screen context as delegated. This authorizes the focused Phase 4.3 work, not new rules, thresholds, broad settings, alternative layouts or final artwork approval. Run full verification and inspect actual simulator screens; retain physical-iPhone acceptance as 4.4.
 
 ### 4.4 — Verify multi-item experience on real iPhone
 
@@ -470,6 +485,8 @@ Goal: expand the already implemented jacket-only experience to a **small user-ap
 - **Acceptance criteria:** Real-device multi-item recommendation is trustworthy, appropriately fast and regression-tested; Phase 5 can safely share its data.
 - **Dependencies:** 4.3.
 - **Non-goals:** First public release itself, post-release features.
+
+**Closure scope (2026-10-20):** The user accepted 4.4 on the recorded live-flow, all-item detail, selection persistence and cached-offline device checks, and explicitly moved the unperformed failed-fetch/recovery observation to the 6.3 TODO. This permits proceeding to 5.1; it does not represent that observation as passed. Evidence and the deferred checkbox are maintained in `TODO.md`.
 
 ## Phase 5 — First-release iOS widget
 

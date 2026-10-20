@@ -1,7 +1,7 @@
 # Can I Wear — Decisions
 
 > Status: ACTIVE
-> Last updated: 2026-10-19
+> Last updated: 2026-10-20
 > Source of truth: YES
 
 This file records decisions that AI and developers must not casually reopen.
@@ -267,7 +267,7 @@ For Warm Coat, Sweater, Gloves and Shorts, use apparent/feels-like temperature w
 | Gloves | ≤5°C | >5°C through 10°C | >10°C |
 | Shorts | ≥22°C | ≥17°C and <22°C | <17°C |
 
-Raincoat: rain takes priority; light rain alone does not necessarily make it needed, more substantial rain does. Wind strengthens the Raincoat recommendation only when rain is expected; wind alone does not. D-062 settles the initial rain/chance/wind thresholds.
+Raincoat: precipitation takes priority; light precipitation alone does not necessarily make it needed, more substantial precipitation does. Wind strengthens the recommendation only with positive precipitation, not wind alone. D-062 settles the initial thresholds; D-071 subsequently extends them unchanged from rain to all precipitation.
 
 Sunglasses: brightness/sunshine is the primary signal. Exceptionally high UV may make them a good fit even without bright conditions. If UV data is unavailable, use brightness alone. D-062 settles the initial sky-condition proxy, daylight scope and UV threshold; provider normalization must preserve these signals.
 
@@ -311,6 +311,8 @@ These are not approved UI labels, Home headings, configuration choices or final 
 
 **Raincoat:** Rain at or above **0.5 mm/hour** makes it Useful. Below that, positive rain or a forecast rain chance at or above **30%** makes it Maybe useful. With no rain forecast and chance below **30%**, it is Not needed. Wind speed at or above **30 km/h** upgrades light-rain advice (positive rain below 0.5 mm/hour) from Maybe useful to Useful; wind alone or wind with chance-only uncertainty does not. Rain protection takes priority over warmth. These are initial product thresholds, not a universal meteorological boundary for needing a coat; the earlier 2.5 mm/hour draft is not the approved cutoff.
 
+**Scope amendment (D-071):** The preceding paragraph records the original rain-only policy. D-071 replaces its rain-only input scope with total precipitation (water-equivalent amount for snow/sleet/hail), retaining every numeric threshold, precedence and optional-wind fallback. Use the current rules in `WEATHER_LOGIC.md`, not a rain-only filter.
+
 **Sunglasses:** During daylight, clear/mainly-clear conditions make them Useful, partly-cloudy conditions make them Maybe useful, and overcast/fog conditions mean Not needed on the sunshine signal alone. **UV Index ≥6** makes them Useful regardless of cloudiness. Forecast sky conditions are the approved practical brightness proxy, not a direct measurement of brightness. UV is optional: when unavailable, use the sky-condition signal alone. Do not apply the daytime sky rule to a clear night or spread a daily UV maximum across all hours.
 
 Missing wind does not invalidate the Raincoat's base rain recommendation or justify a wind upgrade. Missing UV does not invalidate the Sunglasses' sky-based recommendation. Missing required signals follow the already approved conservative coverage/gap policy; they must not be converted into “Not needed.” Detailed rules, precedence and boundary examples are maintained in `WEATHER_LOGIC.md`; normalized-input constraints belong in `TECH_SPEC.md`.
@@ -333,7 +335,7 @@ The exact daily selection, examples and validity safeguards are maintained in [W
 
 **Presentation is separate from aggregation.** The app can streamline/reuse wording and layout across both behaviors; shared text does not imply shared daily selection direction. D-060's explicit meaning, timing and reason remain required. A positive usefulness result does not mean good every hour; a negative protective result does not mean bad every hour. Dayparts/hourly detail explain when each result applies. This decision does not approve final common status strings, a bare ambiguous daily YES/NO, or public group labels.
 
-**Scope and supersession:** This resolves the daily-direction uncertainty left in D-058/D-060/D-061. Leather Jacket is Can I wear; Sunglasses is Should I wear, with all other launch-item assignments subsequently approved in D-065. Unsupported input/precipitation cases, non-jacket period consolidation and final presentation cases remain Phase 4.1 work; they do not make these two algorithms undecided again. Future combined behavior would require a separate decision, not an assumed third type. Existing jacket thresholds, reason precedence, period safety, day window, conservative coverage, caching and provider behavior remain unchanged. This is a documentation/policy decision, not permission to implement Phase 4 or a claim of implementation/test/device evidence.
+**Scope and supersession:** This resolves the daily-direction uncertainty left in D-058/D-060/D-061. Leather Jacket is Can I wear; Sunglasses is Should I wear, with all other launch-item assignments subsequently approved in D-065 and non-jacket grouping subsequently settled in D-069. Unsupported input/precipitation and remaining presentation cases stay Phase 4.1 work; they do not make these two algorithms undecided again. Future combined behavior would require a separate decision, not an assumed third type. Existing jacket thresholds, reason precedence, period safety, day window, conservative coverage, caching and provider behavior remain unchanged. This is a documentation/policy decision, not permission to implement Phase 4 or a claim of implementation/test/device evidence.
 
 ### D-064 — Minimum useful hours for Should I wear items
 **Decision (2026-10-19):** Approve **at least 2 useful forecast hours total in the remaining local day** for a positive daily result under the Should I wear algorithm. The hours **do not need to be consecutive**. Only directly evaluated genuinely good/useful (YES) hours count; MAYBE, missing/unusable and conservatively inferred hours do not.
@@ -354,7 +356,7 @@ This approval did not assign the remaining catalog items; D-065 subsequently res
 
 Every Should I wear item uses the **same D-064 daily aggregation policy**, including the centralized useful-hour minimum and qualified single-hour advice, applied to that item's own approved hourly weather classifications. Unsuitable/not-useful hours elsewhere in the day do not veto a positive result once enough useful hours exist, subject to valid coverage. Do not introduce a separate daily algorithm for a temperature item or Raincoat, revive the historical “Both” proposal, or silently move an item to the other behavior.
 
-**Scope:** This resolves the catalog-assignment gaps in D-058/D-060/D-061/D-063/D-064. It does not change hourly thresholds, the two algorithms, coverage, jacket protection, caching or provider policy. D-066 subsequently settles required-signal validity and non-jacket isolated-gap mapping. Other unsupported condition/precipitation cases, non-jacket period consolidation and concrete multi-item presentation remain Phase 4.1 work. This is policy approval only, not app implementation permission or completion of Phase 4.1.
+**Scope:** This resolves the catalog-assignment gaps in D-058/D-060/D-061/D-063/D-064. It does not change hourly thresholds, the two algorithms, coverage, jacket protection, caching or provider policy. D-066 subsequently settles required-signal validity and non-jacket isolated-gap mapping; D-069 subsequently settles non-jacket grouping. Other unsupported condition/precipitation and remaining presentation cases stay Phase 4.1 work. This is policy approval only, not app implementation permission or completion of Phase 4.1.
 
 ### D-066 — Missing required inputs and uncertain hours for Should I wear items
 **Decision (2026-10-19):** For all six Should I wear items, missing required weather inputs make an hour unusable. Apply the already approved coverage rule: only one isolated unusable hour with valid immediate neighbors can be inferred; mark it **uncertain/MAYBE**, never as observed conditions or a useful hour. This settles the previously open non-jacket gap mapping; Leather Jacket retains its existing conservative neighbor mapping.
@@ -370,9 +372,40 @@ This is defensive handling, not evidence of an observed live-provider failure or
 - With **multiple selected items**, use a new multi-item Home based on the current Guided Home visual language. Only selected items appear in its recommendation overview.
 - Provide a resettable configuration flag so the first selection screen can be replayed during testing. Keep selection-setup completion separate from the Home explanation's acknowledgement/preferences; the planned key contract is in `TECH_SPEC.md`.
 
+**Reset access clarification (2026-10-20):** The user reconfirmed that this must be an accessible config setting, not only a code method or launch argument. Expose **Reset Item Setup** in Apple system Settings; consume it once on launch/return to the app to replay setup, preserving saved items, Home preferences and weather/location caches.
+
+**Reset selection amendment (2026-10-20):** The user explicitly requested that switching this setting also reset the items themselves. **Reset Item Setup clears saved selected items as well as setup completion**, returning to an empty first selector with Continue disabled until an item is chosen. This supersedes the saved-item preservation in the preceding clarification; preserve Home preferences and weather/location caches, and keep the switch one-shot.
+
 This approves focused item selection, not broad settings, custom items or threshold editing. It supersedes D-046/UX's prohibition on a normal Home settings control **only for the approved header gear**, and refines D-058's overview to the selected items rather than always showing the full catalog. D-060's daily verdict/time semantics and D-063–D-066's item behavior remain unchanged. Keeping the current single-item Home means retaining its layout/presentation variants, not silently restoring superseded daily labels.
 
-**Current work:** Produce visual prototypes for review before app implementation. Exact selector styling, initial checked items, zero-selection handling, multi-item layout/detail treatment and proposed guidance copy are not approved merely by appearing in a prototype. This is not completion of Phase 4.1 or permission to implement the app flow.
+**Prototype review:** Visual prototypes were produced before app implementation; D-068 subsequently approves multi-item direction A and D-070 approves the initial selection/minimum-selection behavior. Exact selector styling and proposed guidance copy are not approved merely by appearing in a prototype. This is not completion of Phase 4.1 or permission to implement the app flow.
+
+### D-068 — Multi-item Home direction A: cards with daypart previews
+**Decision (2026-10-20):** Choose **A — daypart-preview cards** from `docs/prototypes/item-selection/` for the multi-item Home. Each selected item's card shows item identity/artwork, an explicit daily verdict, a short weather reason and a preview of the relevant dayparts/time ranges. Selecting a card opens the item's full daypart/hourly detail. Retain the current Guided Home visual language and D-067's configuration/single-item flow.
+
+**B — compact overview** is retained as a historical comparison, not an approved alternative to implement or a choice to ask again. The prototype's three-card/three-period examples are illustrative, not fixed counts or new grouping rules. Existing approved algorithms, selected-item filtering, daily meaning/timing and presentation variants remain unchanged.
+
+This selects the multi-item layout direction, not every sample string or mock forecast. Non-jacket grouping and selector defaults/zero-selection behavior were subsequently approved in D-069/D-070, not by the visual sample alone. Other still-open Phase 4.1 choices remain separate. No app implementation is authorized by this selection alone.
+
+### D-069 — Faithful contiguous periods for Should I wear items
+**Decision (2026-10-20):** For Warm Coat, Sweater, Gloves, Shorts, Raincoat and Sunglasses, merge consecutive hours with the same advice into one period. Keep short useful intervals visible; do not apply Leather Jacket's protective period expansion or noise/short-interval consolidation to these items. The daily useful-hour count comes from directly evaluated hourly results, never expanded or grouped periods.
+
+This approves the shared grouping approach for all six Should I wear items, not a new daily algorithm or a per-item duration threshold. Leather Jacket retains its approved protective grouping unchanged. Exact rules and acceptance examples belong in `WEATHER_LOGIC.md`; presentation remains the selected A layout. This resolves non-jacket grouping as a Phase 4.1 decision, without approving remaining selector/precipitation choices or authorizing app implementation.
+
+### D-070 — Empty initial item selection; at least one item to continue or save
+**Decision (2026-10-20):** Approve the item-selector behavior shown in the prototype:
+- On a fresh first launch, no items are preselected.
+- **Continue** is disabled until the user selects at least one item.
+- When configuration is reopened later, at least one item must be selected before **Save selection** is available; an empty selection cannot be saved.
+
+This closes the initial-selection and zero-selection choices. It does not change D-067's one-/multi-item Home routing, reset-flag contract or the existing saved selection when configuration is reopened. Exact remaining styling/copy is separate. This approves behavior only; it does not authorize app implementation or declare Phase 4.1 complete.
+
+### D-071 — Raincoat uses total precipitation with unchanged thresholds
+**Decision (2026-10-20):** Apply the existing Raincoat amount/chance/wind rules to **all forecast precipitation**, including rain, snow, sleet, hail and mixed precipitation. Use total precipitation in **water-equivalent millimetres**, not snow depth. The existing **0.5 mm/hour**, **30% chance** and **30 km/h wind** thresholds remain unchanged.
+
+The optional wind upgrade now applies to positive light total precipitation, not only liquid rain; wind alone or chance-only uncertainty with zero amount still cannot trigger that upgrade. Missing wind retains the base evaluation. Required-input validity, conservative coverage, the Should I wear daily algorithm/grouping and all Leather Jacket rules remain unchanged.
+
+This explicitly supersedes D-062's rain-only scope and closes the Raincoat non-liquid-precipitation decision. It does not approve invented snow-depth conversion ratios, a provider migration or app implementation. Exact rules/examples belong in `WEATHER_LOGIC.md`; normalized units belong in `TECH_SPEC.md`.
 
 ## Not yet decided
 
@@ -380,7 +413,7 @@ The following are intentionally NOT decisions:
 - detailed labels/palette/layout beyond the approved Home directions, including outcomes not specified by D-060;
 - analytics/telemetry;
 - final bundle identifiers;
-- remaining Phase 4.1 unsupported condition/precipitation cases, non-jacket period consolidation and concrete daily presentation cases; algorithms, useful-hour minimum, launch assignments and missing-required-input/gap handling are decided in D-063–D-066;
+- remaining concrete Phase 4.1 presentation cases and faithful provider-signal mapping/validation; algorithms, useful-hour minimum, launch assignments, missing-input handling, layout A, grouping, initial/minimum selection and Raincoat precipitation scope are decided in D-063–D-071;
 - exact first widget design;
 - specific creation/template mechanism for basic custom items;
 - exact user-facing item-group labels and the configuration UX explaining their different daily behaviors (Phase 8.1; D-060 supersedes D-059; D-061 approves internal working labels only);

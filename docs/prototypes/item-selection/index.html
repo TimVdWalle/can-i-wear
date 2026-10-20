@@ -53,11 +53,11 @@
     .verdict { font-size:26px; font-weight:780; line-height:1.08; letter-spacing:-.65px; margin:0; }
     .reason { font-size:13px; color:var(--muted); margin:7px 0 0; line-height:1.35; }
     .time-line { font-size:12px; margin:7px 0 0; color:#51555f; font-weight:600; font-variant-numeric:tabular-nums; }
-    .positive { color:var(--green); } .caution { color:var(--amber); } .negative { color:var(--red); } .neutral { color:#626672; }
+    .positive { color:var(--green); } .caution,.uncertain { color:var(--amber); } .negative { color:var(--red); } .neutral { color:#626672; }
     .section-heading { font-size:17px; font-weight:750; margin:18px 0 10px; letter-spacing:-.25px; }
-    .periods { display:flex; gap:7px; margin-top:13px; }
-    .period { flex:1; min-width:0; text-align:center; border-radius:15px; padding:11px 5px 7px; }
-    .period.positive { background:var(--green-bg); } .period.negative { background:var(--red-bg); } .period.caution { background:var(--amber-bg); } .period.neutral { background:#e9eaee; }
+    .periods { display:flex; flex-wrap:wrap; gap:7px; margin-top:13px; }
+    .period { flex:1 1 80px; min-width:0; text-align:center; border-radius:15px; padding:11px 5px 7px; }
+    .period.positive { background:var(--green-bg); } .period.negative { background:var(--red-bg); } .period.caution,.period.uncertain { background:var(--amber-bg); } .period.neutral { background:#e9eaee; }
     .period svg { width:22px; height:22px; color:#74747d; margin-bottom:3px; }
     .period-label { color:#24262c; font-size:12px; font-weight:600; margin:0; }
     .period-time { font-size:10px; color:#6d6e76; margin:4px 0 7px; font-variant-numeric:tabular-nums; }
@@ -65,7 +65,7 @@
     .hourly { border-top:1px solid #d9d9df; margin-top:19px; padding-top:1px; }
     .hour-bar { display:flex; gap:3px; height:24px; }
     .hour-bar span { flex:1; display:grid; place-items:center; font-size:10px; font-weight:700; border-radius:4px; }
-    .hour-bar .positive { background:var(--green-bg); } .hour-bar .negative { background:var(--red-bg); } .hour-bar .neutral { background:#e5e7ec; } .hour-bar .caution { background:var(--amber-bg); }
+    .hour-bar .positive { background:var(--green-bg); } .hour-bar .negative { background:var(--red-bg); } .hour-bar .neutral { background:#e5e7ec; } .hour-bar .caution,.hour-bar .uncertain { background:var(--amber-bg); }
     .axis { display:flex; justify-content:space-between; color:var(--muted); font-size:10px; margin-top:6px; }
     .hourly-note { color:var(--muted); font-size:11px; line-height:1.4; margin-top:9px; }
     .attribution { display:block; color:#777a83; font-size:10px; text-align:center; margin-top:22px; text-decoration:none; padding:10px 0; }
@@ -74,14 +74,15 @@
     .overview-heading span { font-size:11px; color:var(--muted); }
     .item-card { width:100%; border:0; background:white; border-radius:20px; padding:14px; text-align:left; margin-bottom:11px; }
     .item-card-top { display:flex; align-items:center; gap:11px; }
+    .item-card-top > div { flex:1; min-width:0; }
     .item-card .art { width:48px; height:59px; flex-shrink:0; }
     .item-card h4 { font-size:15px; margin:0 0 5px; }
     .item-card .verdict { font-size:21px; line-height:1.16; }
     .item-card .reason { margin-top:5px; font-size:12px; }
     .chevron { margin-left:auto; color:#b1b3bd; font-size:21px; font-weight:400; }
     .item-card .periods { margin-top:12px; gap:5px; }
-    .mini-period { flex:1; text-align:center; padding:7px 2px; border-radius:9px; font-size:10px; font-weight:650; }
-    .mini-period.positive { background:var(--green-bg); } .mini-period.negative { background:var(--red-bg); } .mini-period.caution { background:var(--amber-bg); } .mini-period.neutral { background:#eff0f3; }
+    .mini-period { flex:1 1 65px; text-align:center; padding:7px 2px; border-radius:9px; font-size:10px; font-weight:650; }
+    .mini-period.positive { background:var(--green-bg); } .mini-period.negative { background:var(--red-bg); } .mini-period.caution,.mini-period.uncertain { background:var(--amber-bg); } .mini-period.neutral { background:#eff0f3; }
     .mini-period small { display:block; font-size:9px; font-weight:500; margin-top:3px; }
     .dense .item-card { padding:14px 12px; }
     .dense .item-card .art { width:39px; height:48px; }
@@ -153,16 +154,37 @@
   <header class="board-header">
     <div class="eyebrow">Can I Wear / Phase 4 / visual exploration</div>
     <h1>Your items. The right Home.</h1>
-    <p>Choose what you want advice for. One item keeps the familiar Home; several items get a shared overview. Two multi-item directions, built from the current Guided Home.</p>
-    <span class="review-tag">PROPOSED VISUALS · MOCK WEATHER · NOT THE IOS APP</span>
+    <p>Choose what you want advice for. One item keeps the familiar Home; several items use direction A, selected on 20 October 2026. B is retained for comparison.</p>
+    <span class="review-tag">A SELECTED · REMAINING DETAILS PROPOSED · MOCK WEATHER · NOT THE IOS APP</span>
     <div class="toolbar"><label for="board-mode">Compare presentation:</label><select id="board-mode"><option value="intro">Guided + first-use explanation</option><option value="guided" selected>Guided · explanation dismissed</option><option value="compact">Compact</option></select><span>Scroll inside each phone. Gear and item cards are interactive.</span></div>
   </header>
   <main>
     <section class="board" aria-label="Four visual prototypes">
-      <article><h2 class="column-title"><span class="step">01</span> Choose your items</h2><div class="phone" data-phone="picker"></div><p class="column-note">First launch, before weather advice. The same selector opens from the header gear. The unchecked default and minimum of one are proposed.</p></article>
+      <article><h2 class="column-title"><span class="step">01</span> Choose your items</h2><div class="phone" data-phone="picker"></div><p class="column-note">First launch, before weather advice. The same selector opens from the header gear. D-070 approves no preselected items and at least one item to continue or save.</p></article>
       <article><h2 class="column-title"><span class="step">02</span> One item · familiar Home</h2><div class="phone" data-phone="single"></div><p class="column-note">Same hero → dayparts → hourly hierarchy. Guided, Guided + introduction, and Compact. Daily wording follows the approved Phase 4 advice contract.</p></article>
-      <article><h2 class="column-title"><span class="step">A</span> Several items · daypart cards</h2><div class="phone" data-phone="multiA"></div><p class="column-note">More of the existing Guided Home on each card. Advice, a reason and daypart preview; tap for full hourly detail. Airier, but more scrolling.</p></article>
-      <article><h2 class="column-title"><span class="step">B</span> Several items · compact overview</h2><div class="phone" data-phone="multiB"></div><p class="column-note">Daily meaning, relevant times and reason together. Faster to scan several items; dayparts and hourly detail stay one tap away.</p></article>
+      <article><h2 class="column-title"><span class="step">A</span> Selected · daypart cards</h2><div class="phone" data-phone="multiA"></div><p class="column-note">Chosen direction (D-068). More of the existing Guided Home on each card. Advice, a reason and daypart preview; tap for full hourly detail.</p></article>
+      <article><h2 class="column-title"><span class="step">B</span> Comparison only · compact overview</h2><div class="phone" data-phone="multiB"></div><p class="column-note">Not selected for implementation. Kept to document the comparison: daily meaning, relevant times and reason, with detail one tap away.</p></article>
+    </section>
+    <section class="flow-section" id="advice-review" aria-labelledby="advice-title">
+      <div class="flow-heading"><h2 id="advice-title">Home advice · in context</h2><p>The chosen A layout, with illustrative advice states. Tap a card for detail. Wording is proposed; weather rules are unchanged.</p></div>
+      <div class="flow-grid">
+        <div class="phone" data-phone="review"></div>
+        <aside class="flow-panel">
+          <h3>Review examples <span class="eyebrow">outside the app</span></h3>
+          <label for="review-case">Forecast example<select id="review-case">
+            <option value="mixed">Mixed day · jacket restriction and useful sun</option>
+            <option value="brief">Exactly one useful hour</option>
+            <option value="separated">Two separate useful hours</option>
+            <option value="borderline">Borderline weather · no useful hours</option>
+            <option value="uncertain">One permitted missing hour</option>
+            <option value="unavailable">Insufficient data for one item</option>
+            <option value="allWindow">Suitable throughout / not needed</option>
+          </select></label>
+          <p id="review-context" aria-live="polite"></p>
+          <p>Examples cover the remaining day from 09:00. Times and reasons are mock data, not output from the iOS engines. Missing data is never shown as “not needed.”</p>
+          <p>One useful hour stays “Briefly useful”; two separated useful hours qualify for “Useful today.” A jacket restriction still applies even when the rest of the day is suitable.</p>
+        </aside>
+      </div>
     </section>
     <section class="flow-section" aria-labelledby="flow-title">
       <div class="flow-heading"><h2 id="flow-title">Try the flow</h2><p>Start with item selection, then change the selection from the gear to switch between Home layouts.</p></div>
@@ -175,9 +197,9 @@
           <p><strong>One item:</strong> the familiar single-item hierarchy.<br><strong>Two or more:</strong> the chosen multi-item layout.<br><strong>Gear:</strong> reopen item configuration.</p>
           <div class="review-actions"><button type="button" class="review-button" id="replay">Replay first selection</button><button type="button" class="review-button" id="reset">Reset prototype</button></div>
           <span class="storage-status" id="setup-status" aria-live="polite"></span>
-          <p><code>item_selection_completed</code> is the planned app key. The replay button works in this browser prototype only; the Swift flag and item-selection flow are not implemented yet.</p>
+          <p><code>item_selection_completed</code> is also the app setup key. This replay button changes only the browser prototype; Swift integration/verification is tracked separately in the project documents.</p>
           <div class="legend"><b class="positive">✓ Good / useful</b><b class="caution">! Borderline</b><b class="negative">× Avoid</b><b class="neutral">— Not needed</b></div>
-          <p>All data is illustrative, not live weather or engine output. Period grouping, these visuals and introduction copy for multiple items are proposals for review. No custom items, threshold editor, weather dashboard or broader settings are included.</p>
+          <p>All data is illustrative, not live weather or engine output. A is the chosen layout; D-069 defines grouping and D-070 approves the empty initial selection and minimum of one item to continue/save. Sample periods are not engine output; remaining copy/styling is proposed. No custom items, threshold editor, weather dashboard or broader settings are included.</p>
         </aside>
       </div>
     </section>
@@ -197,6 +219,17 @@
       { id:'gloves', name:'Gloves', level:'positive', verdict:'Useful today', reason:'Cold this morning', times:'09:00–12:00', periods:[['09–12','YES','positive'],['12–18','NO','neutral'],['18–24','NO','neutral']] }
     ];
     const byId = id => catalog.find(item => item.id === id);
+    const sample = (id, overrides={}) => ({ ...byId(id), ...overrides });
+    const reviewCases = {
+      mixed: { context:'A negative jacket day can still contain suitable periods. Useful sunglasses advice does not mean useful all day.', items:[sample('jacket'), sample('sunglasses')] },
+      brief: { context:'Only 12:00–13:00 is useful for Sunglasses. The short interval is neither hidden nor expanded.', items:[sample('sunglasses', { level:'caution', verdict:'Briefly useful', times:'12:00–13:00', reason:'Sunny for one hour', periods:[['09–12','NO','neutral'],['12–13','YES','positive'],['13–24','NO','neutral']] }), sample('jacket', { level:'positive', verdict:'Good for the rest of today', reason:'Dry, mild forecast', times:'09:00–24:00', periods:[['09–24','YES','positive']] })] },
+      separated: { context:'Two directly evaluated useful hours qualify even when separated. The intervening not-needed hour stays visible.', items:[sample('sunglasses', { times:'12:00–13:00 · 14:00–15:00', reason:'Two sunny intervals', periods:[['09–12','NO','neutral'],['12–13','YES','positive'],['13–14','NO','neutral'],['14–15','YES','positive'],['15–24','NO','neutral']] }), sample('jacket')] },
+      borderline: { context:'The Raincoat has borderline weather, not missing data. No confirmed useful hour is being counted.', items:[sample('raincoat', { level:'caution', verdict:'May be useful', reason:'Light rain possible', times:'14:00–16:00', periods:[['09–14','NO','neutral'],['14–16','MAYBE','caution'],['16–24','NO','neutral']] }), sample('sunglasses', { level:'neutral', verdict:'Not needed today', reason:'Overcast during daylight', times:'Throughout the remaining day', periods:[['09–24','NO','neutral']] })] },
+      uncertain: { context:'Sunglasses has one isolated missing sky-input hour with valid neighbors. It remains uncertain, not a useful hour or observed borderline weather.', items:[sample('sunglasses', { level:'uncertain', verdict:'Forecast uncertain', reason:'Sky data missing for one hour', times:'14:00–15:00', periods:[['09–14','NO','neutral'],['14–15','UNCERTAIN','uncertain'],['15–24','NO','neutral']] }), sample('jacket')] },
+      unavailable: { context:'Missing Sunglasses coverage prevents its daily answer. Leather Jacket still has sufficient inputs and keeps its own advice.', items:[sample('sunglasses', { level:'neutral', verdict:'Not enough forecast data', reason:'Cannot assess the remaining day', times:'Daylight or sky data unavailable', periods:[], unavailable:true }), sample('jacket')] },
+      allWindow: { context:'All-window suitability is limited explicitly to the remaining day. Not needed is neutral, not a warning about damage or danger.', items:[sample('jacket', { level:'positive', verdict:'Good for the rest of today', reason:'Dry, mild forecast', times:'09:00–24:00', periods:[['09–24','YES','positive']] }), sample('raincoat', { level:'neutral', verdict:'Not needed today', reason:'Dry forecast', times:'Throughout the remaining day', periods:[['09–24','NO','neutral']] })] }
+    };
+    const itemForState = (state, id) => state.reviewItems?.find(item => item.id === id) ?? byId(id);
     const icon = (id, cls='') => `<svg class="${cls}" aria-hidden="true"><use href="#${id}"></use></svg>`;
     const art = item => icon('art-' + item.id, 'art');
     function initialState() { return { selected:[], item_selection_completed:false, mode:'guided', introduction:true, layout:'A', route:'picker', detail:null }; }
@@ -216,6 +249,12 @@
     }
     const example = (selected, layout='A') => ({ ...initialState(), selected, layout, route:'home', item_selection_completed:true, introduction:false });
     const states = { picker:initialState(), single:example(['jacket']), multiA:example(['jacket','sweater','sunglasses']), multiB:example(['jacket','sweater','sunglasses'],'B'), flow:loadState() };
+    function showReview(key) {
+      const scenario = reviewCases[key];
+      states.review = { ...example(scenario.items.map(item => item.id)), reviewItems:scenario.items };
+      document.getElementById('review-context').textContent = scenario.context;
+    }
+    showReview('mixed');
     function saveFlow() {
       const { mode, introduction, layout, item_selection_completed } = states.flow;
       const selected = states.flow.previousSelection ?? states.flow.selected;
@@ -228,19 +267,19 @@
       return `<section class="intro"><div class="intro-top"><h3>How it works</h3><button type="button" data-action="dismiss">Got it</button></div><p>${multiple ? 'Each item has today’s advice and useful times. Open an item for dayparts and hourly details.' : 'The main result covers today. Dayparts show when it changes, and the reason explains why.'}</p></section>`;
     }
     const attribution = () => '<a class="attribution" href="https://open-meteo.com/" target="_blank" rel="noopener">Weather provided by Open-Meteo</a>';
-    function periods(item) { return `<div class="periods">${item.periods.map(([time, label, level], i) => `<div class="period ${level}">${icon(['icon-sun','icon-cloud','icon-moon'][i])}<p class="period-label">${time === '09–15' ? 'Before rain' : time === '15–18' ? 'Afternoon' : time === '18–24' ? 'Evening' : time === '09–12' ? 'Morning' : time === '12–15' ? 'Midday' : 'Later'}</p><p class="period-time">${time}</p><span class="period-status">${label}</span></div>`).join('')}</div>`; }
+    function periods(item) { return `<div class="periods">${item.periods.map(([time, label, level]) => `<div class="period ${level}"><p class="period-label">${time === '09–15' ? 'Daytime' : time === '15–18' ? 'Afternoon' : time === '18–24' ? 'Evening' : time === '09–12' ? 'Morning' : time === '12–15' ? 'Midday' : 'Advice'}</p><p class="period-time">${time}</p><span class="period-status">${label}</span></div>`).join('')}</div>`; }
     function hourly(item) {
-      const levels = Array.from({length:15}, (_, index) => {
+      const hours = Array.from({length:15}, (_, index) => {
         const hour = index + 9;
         const period = item.periods.find(([time]) => { const [start,end] = time.split('–').map(Number); return hour >= start && hour < end; });
-        return period ? period[2] : 'neutral';
+        return period ? { label:period[1], level:period[2] } : { label:'UNAVAILABLE', level:'neutral' };
       });
-      return `<section class="hourly"><h3 class="section-heading">Hourly suitability</h3><div class="hour-bar">${levels.map((level,i) => `<span class="${level}" aria-label="${i+9}:00 ${level === 'positive' ? 'YES' : level === 'caution' ? 'MAYBE' : 'NO'}">${level === 'positive' ? '✓' : level === 'caution' ? '!' : level === 'negative' ? '×' : '–'}</span>`).join('')}</div><div class="axis"><span>09</span><span>12</span><span>15</span><span>18</span><span>21</span><span>24</span></div><p class="hourly-note">Hourly conditions shown; period advice groups brief changes${item.id === 'jacket' ? ' for safety' : ''}.</p></section>`;
+      return `<section class="hourly"><h3 class="section-heading">Hourly advice</h3><div class="hour-bar">${hours.map(({label,level},i) => `<span class="${level}" aria-label="${i+9}:00 ${label}">${level === 'uncertain' ? '?' : level === 'positive' ? '✓' : level === 'caution' ? '!' : level === 'negative' ? '×' : '–'}</span>`).join('')}</div><div class="axis"><span>09</span><span>12</span><span>15</span><span>18</span><span>21</span><span>24</span></div><p class="hourly-note">${item.id === 'jacket' ? 'Hourly conditions shown; period advice may group brief changes for safety.' : 'Consecutive hours with the same advice are grouped; short useful intervals stay visible.'}${item.periods.some(period => period[2] === 'uncertain') ? ' ? means missing forecast data, not observed weather.' : ''}</p></section>`;
     }
-    function single(state, item, detail=false) { return `<div class="app">${detail ? `<button type="button" class="nav-back" data-action="back">${icon('icon-back')}All items</button>` : ''}${header(state)}${detail ? '' : introduction(state,false)}${detail ? '<p class="detail-label">Today · selected item</p>' : ''}<section class="hero">${art(item)}<div><h3>${item.name}</h3><p class="verdict ${item.level}">${item.verdict}</p><p class="reason">${item.reason}</p><p class="time-line">${item.times}</p></div></section>${state.mode === 'guided' ? '<h3 class="section-heading">When can I wear it?</h3>' : ''}${periods(item)}${hourly(item)}${attribution()}</div>`; }
+    function single(state, item, detail=false) { return `<div class="app">${detail ? `<button type="button" class="nav-back" data-action="back">${icon('icon-back')}All items</button>` : ''}${header(state)}${detail ? '' : introduction(state,false)}${detail ? '<p class="detail-label">Today · selected item</p>' : ''}<section class="hero">${art(item)}<div><h3>${item.name}</h3><p class="verdict ${item.level}">${item.verdict}</p><p class="reason">${item.reason}</p><p class="time-line">${item.times}</p></div></section>${item.unavailable ? '<p class="hourly-note">Daily, period and hourly advice are unavailable for this item.</p>' : `${state.mode === 'guided' ? '<h3 class="section-heading">Advice through the day</h3>' : ''}${periods(item)}${hourly(item)}`}${attribution()}</div>`; }
     function multiple(state) {
-      const items = catalog.filter(item => state.selected.includes(item.id));
-      return `<div class="app ${state.layout === 'B' ? 'dense' : ''}">${header(state)}${introduction(state,true)}<div class="overview-heading"><h3>Your items today</h3><span>${items.length} selected</span></div>${items.map(item => `<button type="button" class="item-card" data-action="detail" data-item="${item.id}" aria-label="${item.name}, ${item.verdict}. View details"><div class="item-card-top">${art(item)}<div><h4>${item.name}</h4><p class="verdict ${item.level}">${item.verdict}</p>${state.layout === 'B' ? `<p class="time-line">${item.times}</p>` : ''}<p class="reason">${item.reason}</p></div><span class="chevron" aria-hidden="true">›</span></div>${state.layout === 'A' ? `<div class="periods">${item.periods.map(([time,label,level]) => `<div class="mini-period ${level}">${label}<small>${time}</small></div>`).join('')}</div>` : ''}</button>`).join('')}${attribution()}</div>`;
+      const items = state.selected.map(id => itemForState(state,id));
+      return `<div class="app ${state.layout === 'B' ? 'dense' : ''}">${header(state)}${introduction(state,true)}<div class="overview-heading"><h3>Your items today</h3><span>${items.length} selected</span></div>${items.map(item => `<button type="button" class="item-card" data-action="detail" data-item="${item.id}" aria-label="${item.name}, ${item.verdict}. ${item.reason}. ${item.times}. View details"><div class="item-card-top">${art(item)}<div><h4>${item.name}</h4><p class="verdict ${item.level}">${item.verdict}</p><p class="time-line">${item.times}</p><p class="reason">${item.reason}</p></div><span class="chevron" aria-hidden="true">›</span></div>${state.layout === 'A' && !item.unavailable ? `<div class="periods">${item.periods.map(([time,label,level]) => `<div class="mini-period ${level}">${label}<small>${time}</small></div>`).join('')}</div>` : ''}</button>`).join('')}${attribution()}</div>`;
     }
     function picker(state) { return `<div class="picker-layout"><div class="phone-main"><div class="app"><div class="title-row"><p class="picker-brand">Can I Wear</p>${state.item_selection_completed ? '<button type="button" class="icon-button" data-action="back" aria-label="Cancel item changes">×</button>' : ''}</div><h2 class="picker-title">Choose your items</h2><p class="picker-description">What would you like weather advice for?</p><div class="picker-group">${catalog.map(item => `<label class="selection-row">${art(item)}<strong>${item.name}</strong><input type="checkbox" data-item="${item.id}" aria-label="${item.name}" ${state.selected.includes(item.id) ? 'checked' : ''}></label>`).join('')}</div><p class="picker-note">You can change these anytime using the gear on Home.</p></div></div><div class="picker-footer"><p class="selection-count" aria-live="polite">${state.selected.length ? `${state.selected.length} item${state.selected.length === 1 ? '' : 's'} selected` : 'Select at least one item'}</p><button type="button" class="primary-button" data-action="continue" ${state.selected.length ? '' : 'disabled'}>${state.item_selection_completed ? 'Save selection' : 'Continue'}</button></div></div>`; }
     function render(name) {
@@ -249,7 +288,7 @@
       if (state.route === 'picker') {
         phone.innerHTML = statusbar() + picker(state) + '<div class="home-indicator"></div>';
       } else {
-        const item = state.detail ? byId(state.detail) : byId(state.selected[0]);
+        const item = itemForState(state, state.detail ?? state.selected[0]);
         phone.innerHTML = statusbar() + `<div class="phone-main">${state.detail ? single(state,item,true) : state.selected.length === 1 ? single(state,item) : multiple(state)}</div><div class="home-indicator"></div>`;
       }
       if (name === 'flow') {
@@ -291,6 +330,7 @@
     });
     document.getElementById('flow-mode').addEventListener('change', event => { setMode(states.flow,event.target.value); render('flow'); });
     document.getElementById('flow-layout').addEventListener('change', event => { states.flow.layout = event.target.value; render('flow'); });
+    document.getElementById('review-case').addEventListener('change', event => { showReview(event.target.value); render('review'); });
     document.getElementById('replay').addEventListener('click', () => { if (states.flow.previousSelection) states.flow.selected = states.flow.previousSelection; states.flow.item_selection_completed = false; states.flow.route = 'picker'; states.flow.detail = null; delete states.flow.previousSelection; render('flow'); });
     document.getElementById('reset').addEventListener('click', () => { states.flow = initialState(); render('flow'); });
     Object.keys(states).forEach(render);

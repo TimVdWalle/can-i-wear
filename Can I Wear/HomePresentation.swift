@@ -219,6 +219,8 @@ nonisolated struct DailyRecommendationPresentation: Equatable, Sendable {
     let isRefreshing: Bool
     let refreshFailed: Bool
     let refreshAvailableAt: Date
+    let itemResults: [ItemForecastResult]
+    let evaluationHour: Date?
 
     init(
         periods: [PeriodPresentation],
@@ -229,7 +231,9 @@ nonisolated struct DailyRecommendationPresentation: Equatable, Sendable {
         refreshFailed: Bool,
         refreshAvailableAt: Date,
         dayParts: [FixedDayPartPresentation] = [],
-        displayHours: [HourlySuitabilityPresentation]? = nil
+        displayHours: [HourlySuitabilityPresentation]? = nil,
+        itemResults: [ItemForecastResult] = [],
+        evaluationHour: Date? = nil
     ) {
         self.periods = periods
         self.hours = hours
@@ -240,6 +244,8 @@ nonisolated struct DailyRecommendationPresentation: Equatable, Sendable {
         self.isRefreshing = isRefreshing
         self.refreshFailed = refreshFailed
         self.refreshAvailableAt = refreshAvailableAt
+        self.itemResults = itemResults
+        self.evaluationHour = evaluationHour
     }
 
     var summary: RecommendationPresentation? {
@@ -263,7 +269,7 @@ nonisolated struct DailyRecommendationPresentation: Equatable, Sendable {
     }
 }
 
-nonisolated private enum HomeTime {
+nonisolated enum HomeTime {
     static func label(_ date: Date, timezone: String, offset: Bool = false) -> String {
         let formatter = DateFormatter()
         formatter.locale = Locale(identifier: "en_US_POSIX")

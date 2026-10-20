@@ -1,7 +1,7 @@
 # Can I Wear — AI Working Rules
 
 > Status: ACTIVE
-> Last updated: 2026-10-19
+> Last updated: 2026-10-20
 > Source of truth: YES
 
 ## 1. Optimize for the final product
@@ -94,9 +94,7 @@ Do not introduce opaque machine-learning scoring unless explicitly approved.
 
 ## 8. Dynamic periods must remain human-meaningful
 
-Do not produce a timeline full of tiny alternating Wear/Avoid periods.
-
-If hourly data is noisy, consolidate it into a meaningful period using conservative rain protection.
+For **Leather Jacket**, preserve the approved conservative noise consolidation and safety expansion rather than producing tiny alternating Wear/Avoid periods. For the six **Should I wear** items, follow D-069's [contiguous-period contract](WEATHER_LOGIC.md#should-i-wear-period-grouping-d-069): do not apply jacket smoothing to hide or expand useful intervals. Shared visual components do not imply shared grouping policy.
 
 ## 9. Respect battery
 

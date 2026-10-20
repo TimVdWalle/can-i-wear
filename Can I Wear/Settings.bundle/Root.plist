@@ -60,6 +60,28 @@
 			<key>FalseValue</key>
 			<false/>
 		</dict>
+		<dict>
+			<key>Type</key>
+			<string>PSGroupSpecifier</string>
+			<key>Title</key>
+			<string>Item Setup</string>
+			<key>FooterText</key>
+			<string>Clear selected items and replay the first item-selection screen when you return to Can I Wear. Home preferences and weather data are kept. This switch turns off after the reset.</string>
+		</dict>
+		<dict>
+			<key>Type</key>
+			<string>PSToggleSwitchSpecifier</string>
+			<key>Title</key>
+			<string>Reset Item Setup</string>
+			<key>Key</key>
+			<string>reset_item_setup</string>
+			<key>DefaultValue</key>
+			<false/>
+			<key>TrueValue</key>
+			<true/>
+			<key>FalseValue</key>
+			<false/>
+		</dict>
 	</array>
 	<key>StringsTable</key>
 	<string>Root</string>

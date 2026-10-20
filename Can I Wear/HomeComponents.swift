@@ -112,6 +112,7 @@ struct RecommendationHeroView: View {
 
 struct HomeIntroductionCard: View {
     let onGotIt: () -> Void
+    var explanation = "The main result covers today. Dayparts show when it changes, and the reason explains why."
 
     var body: some View {
         VStack(alignment: .leading, spacing: 8) {
@@ -124,7 +125,7 @@ struct HomeIntroductionCard: View {
                     .frame(minHeight: 44)
                     .accessibilityIdentifier("home-introduction-got-it")
             }
-            Text("The main result covers today. Dayparts show when it changes, and the reason explains why.")
+            Text(explanation)
                 .foregroundStyle(.secondary)
         }
         .padding(14)

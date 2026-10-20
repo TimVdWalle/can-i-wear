@@ -24,7 +24,7 @@ final class Can_I_WearUITests: XCTestCase {
         XCTAssertTrue(wear.label.contains("YES"))
         XCTAssertTrue(caution.label.contains("MAYBE"))
         let hero = app.descendants(matching: .any)["recommendation-hero"]
-        XCTAssertTrue(hero.label.contains("Leather Jacket, today: NO"))
+        XCTAssertTrue(hero.label.contains("Leather Jacket. Avoid during wet weather"))
         XCTAssertTrue(hero.label.contains("Wet weather is expected and could damage leather."))
         XCTAssertTrue(app.descendants(matching: .any)["hour-0"].label.contains("06:00"))
         XCTAssertTrue(app.descendants(matching: .any)["hour-17"].label.contains("NO"))
@@ -71,7 +71,7 @@ final class Can_I_WearUITests: XCTestCase {
 
         let hero = app.descendants(matching: .any)["recommendation-hero"]
         XCTAssertTrue(hero.waitForExistence(timeout: 3))
-        XCTAssertTrue(hero.label.contains("NO"))
+        XCTAssertTrue(hero.label.contains("Avoid during fog or mist"))
         XCTAssertTrue(hero.label.contains("Fog is expected."))
     }
 
@@ -207,6 +207,62 @@ final class Can_I_WearUITests: XCTestCase {
         expectation(for: disappeared, evaluatedWith: diagnostics)
         waitForExpectations(timeout: 5)
         XCTAssertTrue(app.staticTexts["day-parts-heading"].waitForExistence(timeout: 5))
+        verifyItemSetupReset(app: app, settings: settings)
+    }
+
+    @MainActor
+    private func verifyItemSetupReset(app: XCUIApplication, settings: XCUIApplication) {
+        app.buttons["configure-items"].tap()
+        XCTAssertTrue(app.buttons["Cancel"].waitForExistence(timeout: 5))
+        settings.activate()
+        let reset = settings.switches["Reset Item Setup"]
+        for _ in 0..<5 where !reset.isHittable { settings.swipeUp() }
+        XCTAssertTrue(reset.isHittable)
+        XCTAssertFalse(switchIsOn(reset))
+        toggle(reset)
+        XCTAssertTrue(switchIsOn(reset))
+
+        app.activate()
+        let confirm = app.buttons["confirm-item-selection"]
+        XCTAssertTrue(confirm.waitForExistence(timeout: 5))
+        XCTAssertEqual(confirm.label, "Continue")
+        XCTAssertFalse(app.buttons["Cancel"].exists)
+        XCTAssertFalse(confirm.isEnabled)
+        XCTAssertEqual(app.buttons["select-item-leatherJacket"].value as? String, "Not selected")
+        let replay = XCTAttachment(screenshot: app.screenshot())
+        replay.name = "Settings reset — first item setup"
+        replay.lifetime = .keepAlways
+        add(replay)
+        app.buttons["select-item-leatherJacket"].tap()
+        XCTAssertTrue(confirm.isEnabled)
+        confirm.tap()
+        XCTAssertTrue(app.buttons["configure-items"].waitForExistence(timeout: 5))
+
+        settings.activate()
+        XCTAssertTrue(reset.waitForExistence(timeout: 5))
+        XCTAssertFalse(switchIsOn(reset))
+        app.activate()
+        XCTAssertTrue(app.buttons["configure-items"].waitForExistence(timeout: 5))
+        XCTAssertFalse(confirm.exists)
+
+        app.terminate()
+        settings.activate()
+        toggle(reset)
+        XCTAssertTrue(switchIsOn(reset))
+        app.launchArguments += ["-ui-test-preserve-selection"]
+        app.launch()
+        XCTAssertTrue(confirm.waitForExistence(timeout: 5))
+        XCTAssertEqual(confirm.label, "Continue")
+        XCTAssertFalse(confirm.isEnabled)
+        XCTAssertEqual(app.buttons["select-item-leatherJacket"].value as? String, "Not selected")
+        app.buttons["select-item-leatherJacket"].tap()
+        XCTAssertTrue(confirm.isEnabled)
+        confirm.tap()
+        XCTAssertTrue(app.buttons["configure-items"].waitForExistence(timeout: 5))
+        app.terminate()
+        app.launch()
+        XCTAssertTrue(app.buttons["configure-items"].waitForExistence(timeout: 5))
+        XCTAssertFalse(confirm.exists)
     }
 
     private func switchIsOn(_ element: XCUIElement) -> Bool {
@@ -240,7 +296,7 @@ final class Can_I_WearUITests: XCTestCase {
     @MainActor
     func testThreeDayPartsAndHourlyStatusesHaveNonColorMeaning() {
         let app = launch(scenario: "okay")
-        XCTAssertTrue(app.descendants(matching: .any)["recommendation-hero"].label.contains("today: YES"))
+        XCTAssertTrue(app.descendants(matching: .any)["recommendation-hero"].label.contains("Good for the rest of today"))
         XCTAssertTrue(app.descendants(matching: .any)["period-0"].label.contains("YES"))
         XCTAssertTrue(app.descendants(matching: .any)["period-2"].label.contains("YES"))
         XCTAssertTrue(app.descendants(matching: .any)["hour-0"].label.contains("YES. Dry weather and suitable temperatures."))

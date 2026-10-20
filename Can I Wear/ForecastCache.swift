@@ -89,6 +89,8 @@ nonisolated struct LocationCache: Sendable {
 }
 
 nonisolated struct WeatherCache: Sendable {
+    // V2 uses interval-start-aligned accumulations. Pre-fix cached hours cannot be reused safely.
+    static let storageKey = "latestNormalizedForecastV2"
     private let store: any CacheDataStore
     private let config: ReusePolicyConfig
     private let key: String
@@ -96,7 +98,7 @@ nonisolated struct WeatherCache: Sendable {
     init(
         store: any CacheDataStore = UserDefaultsCacheDataStore.shared,
         config: ReusePolicyConfig = AppConfiguration.reusePolicy,
-        key: String = "latestNormalizedForecast"
+        key: String = WeatherCache.storageKey
     ) {
         self.store = store
         self.config = config
@@ -163,6 +165,9 @@ nonisolated struct WeatherCache: Sendable {
             isStructurallyValid(forecast),
             let data = try? JSONEncoder().encode(forecast)
         else { return }
+        if key == Self.storageKey {
+            await store.set(nil, forKey: "latestNormalizedForecast")
+        }
         await store.set(data, forKey: key)
     }
 

@@ -346,6 +346,11 @@ final class DebugDiagnostics {
         )
     }
 
+    func clearEvaluation() {
+        hourlyDetails = []
+        periodDetails = []
+    }
+
     func updateEvaluation(
         forecast: NormalizedForecast,
         evaluation: DailyEvaluation,

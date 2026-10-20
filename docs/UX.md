@@ -1,7 +1,7 @@
 # Can I Wear — UX
 
 > Status: ACTIVE
-> Last updated: 2026-10-18
+> Last updated: 2026-10-20
 > Source of truth: YES
 
 ## Core UX goal
@@ -139,16 +139,24 @@ In every configuration, the primary goal is to tell the user **at a very fast gl
 
 The **one-item/one-location** reference layout is approved. The multiple-item/one-location direction is approved to the extent of D-058/D-060, not as a finished mockup. The two multi-location configurations remain design scenarios rather than approved layouts or commitments to display all combinations simultaneously. Outstanding design choices remain at their Phase 4.1 and Phase 10.1 gates; this principle does not change phase ordering or weather rules.
 
-## First-release multi-item and widget UX (not yet implemented)
+## First-release multi-item and widget UX
 
-- The current Phase 3 single-jacket screen is the foundation, not a final multiple-item design.
+Selected-item Home integration is tracked in `TODO.md` Phase 4.3; widget implementation remains pending. The following requirements are not evidence of physical-device validation.
+
+- The Phase 3 single-jacket screen is the visual foundation; it does not define every multi-item state or override D-060's explicit daily advice.
 - **D-067 selection flow:** Show item selection before first Home; use a header gear to reopen configuration. One selected item retains the existing single-item layout, Guided/Compact modes and optional first-use card. Multiple selected items use the new Guided-Home-based overview showing only selected items. Selection completion and Home explanation acknowledgement are separate. This does not override D-060's daily-verdict semantics or move the existing display switches into app configuration.
+- **D-070 selector behavior:** No items are preselected on a fresh first launch. Disable Continue until at least one item is selected. When editing the saved selection, disable Save selection while no items are checked; do not save an empty selection. Keep the selected-item count and disabled action clear without relying on color alone.
+- **Selector sizing (2026-10-20 user correction):** Keep item artwork and row sizing consistent. At standard text size in portrait on iPhone 13, show all seven choices, guidance, selection count and Continue without scrolling. Retain scrolling for larger text and shorter/landscape viewports, readable text and at least 44-point touch targets. See ISS-003 for validation status.
+- **Replay setup for testing:** Enable **Reset Item Setup** under **Item Setup** in Apple system Settings, then return to the app. Clear selected items and show the empty first selector with Continue disabled, not the editing sheet; preserve unrelated Home preferences/caches. The switch turns itself off after being applied so confirming setup does not cause a reset loop.
 - The approved Phase 4 collection and compact overview direction are recorded in D-058, refined by D-067: show selected-item answers together, with item detail available on selection.
 - Keep the weather-fit perspective **“Is today a good day for [item]?”**, but express the daily answer through the explicit verdict/timing contract below. Do not require that question to be repeated as a heading on every item.
 - Exact user-facing group labels and the UX explaining the different item behaviors are deferred to custom-item configuration in Phase 8.1. D-059 is superseded; predefined-item Home advice must be understandable without learning a category taxonomy. D-061's “Can I wear items” / “Should I wear items” are internal working labels only, not UI copy.
 - In Phase 5.1, select a widget direction. Possibilities expressed by the user: separate item widgets plus an overall widget, **or** a smart combined overview of items and relevant wearing times. Do not assume both are required.
 - Detailed multi-item layout, visual hierarchy, and daily aggregation must follow approved rules; do not invent them during implementation.
-- Visual review artifacts live under `docs/prototypes/item-selection/`; their mock forecasts, selector defaults, minimum-selection behavior and alternative layouts are explicitly proposed, not live data or app implementation. The current source components in `Can I Wear/HomeComponents.swift` are the visual baseline when the historical reference image is unavailable.
+- **D-068 chosen multi-item layout:** Use direction A: a vertically scrolling set of selected-item cards, each with item identity/artwork, explicit daily advice, short reason and daypart/time-range previews. Tap an item for full daypart/hourly detail. Retain Guided/Compact and optional introduction behavior; no fixed number of item cards or periods is implied by the sample. Direction B is comparison history, not a second app layout to implement.
+- **D-069 period presentation:** Should I wear previews/detail use the contiguous periods specified in `WEATHER_LOGIC.md`, retaining short useful intervals and actual ranges rather than jacket safety expansion. Allow overflow/scrolling without shrinking or hiding advice. Do not show jacket-specific safety-grouping explanations for those items when no such transformation occurs. Leather Jacket's protective grouping/context remains unchanged.
+- Visual review artifacts live under `docs/prototypes/item-selection/`; A's layout direction and D-070's selector defaults/minimum-selection behavior are approved. Mock forecasts and unapproved final copy/styling remain illustrative/proposed, not live data or app implementation. Static comparison images predate these approvals. The current source components in `Can I Wear/HomeComponents.swift` are the visual baseline when the historical reference image is unavailable.
+- Concrete remaining presentation cases are now shown together in the prototype's **Home advice · in context** section (`index.html#advice-review`); see its README for scenario coverage and browser-only validation. Review wording in the screen context, not as separate approval rounds for routine labels. This artifact does not change the approved rules or itself close Phase 4.1.
 - D-063/D-064 settle the two shared daily aggregation policies and the useful-hour minimum. Wording/layout can be streamlined across both; shared presentation must not collapse their distinct daily meaning. The exact algorithms and acceptance examples belong in [WEATHER_LOGIC.md](WEATHER_LOGIC.md#two-shared-daily-aggregation-policies-d-063), not in view copy.
 
 ### Phase 4 daily verdicts and timing (D-060)

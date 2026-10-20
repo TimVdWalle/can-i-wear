@@ -73,7 +73,7 @@ struct ForecastCacheTests {
 
     @Test func weatherCacheRejectsMalformedStorageAndWrongDayCoverage() async throws {
         let malformedStore = MemoryCacheDataStore()
-        await malformedStore.set(Data("not-json".utf8), forKey: "latestNormalizedForecast")
+        await malformedStore.set(Data("not-json".utf8), forKey: WeatherCache.storageKey)
         #expect(await WeatherCache(store: malformedStore).validForecast(
             at: now,
             for: location
@@ -89,14 +89,17 @@ struct ForecastCacheTests {
         #expect(await oldDayCache.validForecast(at: now, for: location) == nil)
     }
 
-    @Test func weatherCachePreservesFogCondition() async throws {
+    @Test func weatherCachePreservesFogAndSunglassesSignals() async throws {
         let store = MemoryCacheDataStore()
         let cache = WeatherCache(store: store)
         let fogForecast = NormalizedForecast(
             hours: (0..<10).map {
                 hour(
                     at: currentHour.addingTimeInterval(TimeInterval($0 * 3_600)),
-                    fogOrMist: .depositingRimeFog
+                    fogOrMist: .depositingRimeFog,
+                    isDaylight: true,
+                    skyCondition: .fogOrMist,
+                    uvIndex: 6
                 )
             },
             metadata: ForecastMetadata(fetchedAt: now, location: location)
@@ -107,11 +110,17 @@ struct ForecastCacheTests {
 
         #expect(restored == fogForecast)
         #expect(restored.hours.first?.fogOrMistCondition == .depositingRimeFog)
+        #expect(restored.hours.first?.isDaylight == true)
+        #expect(restored.hours.first?.skyCondition == .fogOrMist)
+        #expect(restored.hours.first?.uvIndex == 6)
     }
 
-    @Test func weatherCacheDecodesForecastSavedBeforeFogFieldExisted() async throws {
+    @Test func weatherCacheDecodesCompatiblePayloadWithoutOptionalWeatherSignals() async throws {
         let store = MemoryCacheDataStore()
-        let original = forecast()
+        let original = NormalizedForecast(
+            hours: [hour(at: currentHour, fogOrMist: .fog, isDaylight: true, skyCondition: .fogOrMist, uvIndex: 6)],
+            metadata: ForecastMetadata(fetchedAt: now, location: location)
+        )
         let encoded = try JSONEncoder().encode(original)
         var object = try #require(
             JSONSerialization.jsonObject(with: encoded) as? [String: Any]
@@ -119,11 +128,14 @@ struct ForecastCacheTests {
         var hours = try #require(object["hours"] as? [[String: Any]])
         for index in hours.indices {
             hours[index].removeValue(forKey: "fogOrMistCondition")
+            hours[index].removeValue(forKey: "isDaylight")
+            hours[index].removeValue(forKey: "skyCondition")
+            hours[index].removeValue(forKey: "uvIndex")
         }
         object["hours"] = hours
         await store.set(
             try JSONSerialization.data(withJSONObject: object),
-            forKey: "latestNormalizedForecast"
+            forKey: WeatherCache.storageKey
         )
 
         let restored = try #require(await WeatherCache(store: store).validForecast(
@@ -132,6 +144,30 @@ struct ForecastCacheTests {
         ))
 
         #expect(restored.hours.allSatisfy { $0.fogOrMistCondition == nil })
+        #expect(restored.hours.allSatisfy { $0.isDaylight == nil && $0.skyCondition == nil && $0.uvIndex == nil })
+    }
+
+    @Test func rejectsPreAlignmentCacheAndRemovesItWhenSavingCorrectedData() async throws {
+        let store = MemoryCacheDataStore()
+        let saved = forecast()
+        await store.set(try JSONEncoder().encode(saved), forKey: "latestNormalizedForecast")
+        let cache = WeatherCache(store: store)
+        #expect(await cache.validForecast(at: now, for: location) == nil)
+        #expect(await cache.diagnosticLookup(at: now, for: location) == .unavailable(.missing))
+
+        await cache.save(saved)
+        #expect(await store.data(forKey: "latestNormalizedForecast") == nil)
+        #expect(await WeatherCache(store: store).validForecast(at: now, for: location) == saved)
+    }
+
+    @Test func customCacheKeyDoesNotRemoveOtherStoredForecasts() async throws {
+        let store = MemoryCacheDataStore()
+        let legacyData = Data("other stored data".utf8)
+        await store.set(legacyData, forKey: "latestNormalizedForecast")
+        let cache = WeatherCache(store: store, key: "custom-forecast")
+        await cache.save(forecast())
+        #expect(await cache.validForecast(at: now, for: location) != nil)
+        #expect(await store.data(forKey: "latestNormalizedForecast") == legacyData)
     }
 
     @Test func diagnosticCacheLookupsExplainRejectionReasons() async throws {
@@ -176,7 +212,10 @@ struct ForecastCacheTests {
 
     private func hour(
         at timestamp: Date,
-        fogOrMist: FogOrMistCondition? = nil
+        fogOrMist: FogOrMistCondition? = nil,
+        isDaylight: Bool? = nil,
+        skyCondition: SkyCondition? = nil,
+        uvIndex: Double? = nil
     ) -> HourlyWeather {
         HourlyWeather(
             timestamp: timestamp,
@@ -186,7 +225,10 @@ struct ForecastCacheTests {
             precipitationAmountMillimeters: 0,
             precipitationType: PrecipitationType.none,
             precipitationChanceFraction: 0,
-            fogOrMistCondition: fogOrMist
+            fogOrMistCondition: fogOrMist,
+            isDaylight: isDaylight,
+            skyCondition: skyCondition,
+            uvIndex: uvIndex
         )
     }
 }

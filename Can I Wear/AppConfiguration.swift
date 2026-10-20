@@ -20,6 +20,24 @@ nonisolated struct DayPeriodConfig: Equatable, Sendable {
     let minimumNoisyAlternationHours: Int
 }
 
+nonisolated struct ColdWeatherItemRules: Equatable, Sendable {
+    let maximumUsefulCelsius: Double
+    let maximumMaybeCelsius: Double
+}
+
+nonisolated struct ItemRulesConfig: Equatable, Sendable {
+    let minimumUsefulHours: Int
+    let warmCoat: ColdWeatherItemRules
+    let sweater: ColdWeatherItemRules
+    let gloves: ColdWeatherItemRules
+    let shortsMinimumUsefulCelsius: Double
+    let shortsMinimumMaybeCelsius: Double
+    let raincoatUsefulAmountMillimeters: Double
+    let raincoatMaybeChanceFraction: Double
+    let raincoatWindUpgradeKilometersPerHour: Double
+    let sunglassesUsefulUVIndex: Double
+}
+
 nonisolated struct ReusePolicyConfig: Equatable, Sendable {
     let locationFreshness: TimeInterval
     let weatherRefreshInterval: TimeInterval
@@ -41,10 +59,17 @@ nonisolated struct HomePresentationPreferences: Equatable, Sendable {
 
 nonisolated enum AppConfiguration {
     static let maximumDiagnosticEvents = 20
+    // Open-Meteo's upstream cloud categories; adapter mapping, not item-specific thresholds.
+    static let openMeteoClearSkyUpperCloudCoverPercent = 20.0
+    static let openMeteoMainlyClearUpperCloudCoverPercent = 50.0
+    static let openMeteoPartlyCloudyUpperCloudCoverPercent = 80.0
     static let homePresentationMode: HomePresentationMode = .guided
     static let guidedHomeEnabledKey = "home_presentation_guided"
     static let showHomeIntroductionKey = "home_introduction_visible"
     static let homeIntroductionAcknowledgedKey = "homeIntroductionAcknowledged"
+    static let selectedItemIDsKey = "selected_item_ids"
+    static let itemSelectionCompletedKey = "item_selection_completed"
+    static let resetItemSetupKey = "reset_item_setup"
     private static let legacyGuidedHomeEnabledKey = "guided_home_enabled"
     private static let legacyShowHomeIntroductionKey = "show_home_introduction"
     private static let homePreferenceKeysMigratedKey = "homePreferenceKeysMigratedV2"
@@ -76,6 +101,8 @@ nonisolated enum AppConfiguration {
             defaults.set(true, forKey: homeIntroductionSettingMigratedKey)
         }
         defaults.register(defaults: [
+            itemSelectionCompletedKey: false,
+            resetItemSetupKey: false,
             guidedHomeEnabledKey: homePresentationMode == .guided,
             showHomeIntroductionKey: true
         ])
@@ -178,6 +205,19 @@ nonisolated enum AppConfiguration {
         minimumMeaningfulChangeHours: 3,
         isolatedAvoidSafetyHours: 2,
         minimumNoisyAlternationHours: 3
+    )
+
+    static let itemRules = ItemRulesConfig(
+        minimumUsefulHours: 2,
+        warmCoat: ColdWeatherItemRules(maximumUsefulCelsius: 5, maximumMaybeCelsius: 12),
+        sweater: ColdWeatherItemRules(maximumUsefulCelsius: 12, maximumMaybeCelsius: 18),
+        gloves: ColdWeatherItemRules(maximumUsefulCelsius: 5, maximumMaybeCelsius: 10),
+        shortsMinimumUsefulCelsius: 22,
+        shortsMinimumMaybeCelsius: 17,
+        raincoatUsefulAmountMillimeters: 0.5,
+        raincoatMaybeChanceFraction: 0.30,
+        raincoatWindUpgradeKilometersPerHour: 30,
+        sunglassesUsefulUVIndex: 6
     )
 
     static let reusePolicy = ReusePolicyConfig(

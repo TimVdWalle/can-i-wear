@@ -53,7 +53,16 @@ nonisolated enum FogOrMistCondition: String, Codable, Equatable, Sendable {
     }
 }
 
+nonisolated enum SkyCondition: String, Codable, Equatable, Sendable {
+    case clear
+    case mainlyClear
+    case partlyCloudy
+    case overcast
+    case fogOrMist
+}
+
 nonisolated struct HourlyWeather: Codable, Equatable, Sendable {
+    /// Start of the forecast interval. Accumulated inputs describe this hour, not the preceding hour.
     let timestamp: Date
     /// Nil when the provider does not supply a timezone for the forecast location.
     let timezoneIdentifier: String?
@@ -66,10 +75,15 @@ nonisolated struct HourlyWeather: Codable, Equatable, Sendable {
     let precipitationChanceFraction: Double?
     /// Nil when the provider supplies no explicit fog/mist condition signal.
     let fogOrMistCondition: FogOrMistCondition?
-    /// Informational provider data for local diagnostics only.
+    /// Optional Raincoat modifier; remains diagnostic-only for Leather Jacket.
     let windSpeedKilometersPerHour: Double?
     /// Informational provider data for local diagnostics only.
     let windGustKilometersPerHour: Double?
+    /// Nil when daylight is unavailable or invalid; never assume that missing means night.
+    let isDaylight: Bool?
+    let skyCondition: SkyCondition?
+    /// Hourly UV at this timestamp, never a daily maximum. Nil preserves the sky-only fallback.
+    let uvIndex: Double?
 
     init(
         timestamp: Date,
@@ -81,7 +95,10 @@ nonisolated struct HourlyWeather: Codable, Equatable, Sendable {
         precipitationChanceFraction: Double?,
         fogOrMistCondition: FogOrMistCondition? = nil,
         windSpeedKilometersPerHour: Double? = nil,
-        windGustKilometersPerHour: Double? = nil
+        windGustKilometersPerHour: Double? = nil,
+        isDaylight: Bool? = nil,
+        skyCondition: SkyCondition? = nil,
+        uvIndex: Double? = nil
     ) {
         self.timestamp = timestamp
         self.timezoneIdentifier = timezoneIdentifier
@@ -93,6 +110,9 @@ nonisolated struct HourlyWeather: Codable, Equatable, Sendable {
         self.fogOrMistCondition = fogOrMistCondition
         self.windSpeedKilometersPerHour = windSpeedKilometersPerHour
         self.windGustKilometersPerHour = windGustKilometersPerHour
+        self.isDaylight = isDaylight
+        self.skyCondition = skyCondition
+        self.uvIndex = uvIndex
     }
 }
 
