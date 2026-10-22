@@ -24,7 +24,7 @@ final class Can_I_WearUITests: XCTestCase {
         XCTAssertTrue(wear.label.contains("YES"))
         XCTAssertTrue(caution.label.contains("MAYBE"))
         let hero = app.descendants(matching: .any)["recommendation-hero"]
-        XCTAssertTrue(hero.label.contains("Leather Jacket. Avoid during wet weather"))
+        XCTAssertTrue(hero.label.contains("Leather Jacket. NO. Avoid during wet weather"))
         XCTAssertTrue(hero.label.contains("Wet weather is expected and could damage leather."))
         XCTAssertTrue(app.descendants(matching: .any)["hour-0"].label.contains("06:00"))
         XCTAssertTrue(app.descendants(matching: .any)["hour-17"].label.contains("NO"))

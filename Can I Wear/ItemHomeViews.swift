@@ -120,100 +120,75 @@ struct ItemSelectionView: View {
 struct ItemSummaryView: View {
     let presentation: ItemHomePresentation
     var isOverview = false
+    var qualifier: String?
     @Environment(\.dynamicTypeSize) private var typeSize
+    @ScaledMetric(relativeTo: .largeTitle) private var statusSize = 44
+    @ScaledMetric(relativeTo: .title) private var overviewStatusSize = 32
 
     var body: some View {
-        HStack(alignment: .center, spacing: 12) {
+        HStack(spacing: isOverview ? 12 : 16) {
             if !typeSize.isAccessibilitySize {
-                ItemArtwork(item: presentation.id).frame(width: isOverview ? 48 : 80, height: isOverview ? 60 : 110)
+                ItemArtwork(item: presentation.id)
+                    .frame(width: isOverview ? 64 : 112, height: isOverview ? 80 : 144)
             }
-            VStack(alignment: .leading, spacing: 7) {
-                Text(presentation.id.name).font(isOverview ? .headline : .title3.bold())
-                Label(presentation.title, systemImage: HomeStyle.symbol(presentation.tone))
-                    .font(.title2.bold()).foregroundStyle(HomeStyle.ink(presentation.tone))
-                Text(presentation.timing).font(.subheadline.weight(.semibold).monospacedDigit())
-                Text(presentation.reason).font(.subheadline).foregroundStyle(.secondary)
+            VStack(alignment: .leading, spacing: isOverview ? 4 : 8) {
+                HStack(spacing: 10) {
+                    if typeSize.isAccessibilitySize {
+                        ItemArtwork(item: presentation.id).frame(width: 56, height: 70)
+                    }
+                    Text(presentation.id.name).font(isOverview ? .headline : .title3.bold())
+                    if isOverview {
+                        Spacer(minLength: 0)
+                        Image(systemName: "chevron.right").font(.caption).foregroundStyle(.tertiary)
+                            .accessibilityHidden(true)
+                    }
+                }
+                heroStatus
+                if let qualifier {
+                    Text(qualifier).font(.caption.weight(.semibold).monospacedDigit())
+                }
+                Text(presentation.reason).font(isOverview ? .caption : .subheadline).foregroundStyle(.secondary)
                 if let note = presentation.uncertaintyNote { Text(note).font(.caption).foregroundStyle(.secondary) }
             }
             .fixedSize(horizontal: false, vertical: true)
             .frame(maxWidth: .infinity, alignment: .leading)
-            if isOverview {
-                Image(systemName: "chevron.right").foregroundStyle(.tertiary).accessibilityHidden(true)
-            }
         }
         .frame(maxWidth: .infinity, alignment: .leading)
     }
-}
 
-struct ItemPeriodsView: View {
-    let evaluation: ItemDailyEvaluation
-    @Environment(\.dynamicTypeSize) private var typeSize
-
-    private var columns: [GridItem] {
-        typeSize.isAccessibilitySize ? [GridItem(.flexible())] : [GridItem(.adaptive(minimum: 128))]
-    }
-
-    var body: some View {
-        LazyVGrid(columns: columns, alignment: .leading, spacing: 8) {
-            ForEach(Array(evaluation.periods.enumerated()), id: \.offset) { index, period in
-                let title = ItemHomePresentation.levelTitle(period.level, item: evaluation.item, inferred: period.isInferred)
-                let tone = ItemHomePresentation.tone(period.level, item: evaluation.item, inferred: period.isInferred)
-                let range = ItemHomePresentation.range(period.interval, timezone: period.timezoneIdentifier)
-                VStack(spacing: 6) {
-                    Text(range).font(.caption.monospacedDigit()).fixedSize(horizontal: false, vertical: true)
-                    Label(title, systemImage: period.isInferred ? "questionmark.circle" : HomeStyle.symbol(tone))
-                        .font(.caption.bold())
+    @ViewBuilder
+    private var heroStatus: some View {
+        if let title = presentation.heroTitle {
+            ViewThatFits(in: .horizontal) {
+                HStack(spacing: 7) {
+                    Image(systemName: HomeStyle.symbol(presentation.tone)).accessibilityHidden(true)
+                    Text(title)
                 }
-                .fixedSize(horizontal: false, vertical: true)
-                .foregroundStyle(HomeStyle.ink(tone))
-                .frame(maxWidth: .infinity, minHeight: 52)
-                .padding(8)
-                .background(HomeStyle.ink(tone).opacity(0.09), in: RoundedRectangle(cornerRadius: 12))
-                .accessibilityElement(children: .ignore)
-                .accessibilityLabel("\(range), \(title). \(period.reasons.map(ItemHomePresentation.reasonText).joined(separator: " "))")
-                .accessibilityIdentifier("item-period-\(evaluation.item.rawValue)-\(index)")
+                .fixedSize()
+                Text(title).font(.system(size: answerSize * 0.72, weight: .bold, design: .rounded))
+                    .lineLimit(1).minimumScaleFactor(0.65)
             }
+            .font(.system(size: answerSize, weight: .bold, design: .rounded))
+            .foregroundStyle(HomeStyle.ink(presentation.tone))
+        } else {
+            Text(presentation.title).font(.title2.bold()).foregroundStyle(.secondary)
         }
     }
+
+    private var answerSize: CGFloat { isOverview ? overviewStatusSize : statusSize }
+
 }
 
 struct ItemHourlyAdviceView: View {
     let evaluation: ItemDailyEvaluation
-
-    private var hasRepeatedLocalHour: Bool {
-        Set(evaluation.hours.map { HomeTime.label($0.timestamp, timezone: evaluation.timezoneIdentifier) }).count != evaluation.hours.count
-    }
+    var currentTime: Date?
 
     var body: some View {
-        VStack(alignment: .leading, spacing: 10) {
-            Text("Hourly advice").font(.title3.bold()).accessibilityAddTraits(.isHeader)
-                .accessibilityIdentifier("item-hourly-timeline")
-            ScrollView(.horizontal) {
-                HStack(alignment: .top, spacing: 8) {
-                    ForEach(Array(evaluation.hours.enumerated()), id: \.element.timestamp) { index, hour in
-                        let tone = ItemHomePresentation.tone(hour.advice.level, item: evaluation.item, inferred: hour.isInferred)
-                        let title = ItemHomePresentation.levelTitle(hour.advice.level, item: evaluation.item, inferred: hour.isInferred)
-                        VStack(spacing: 6) {
-                            Text(HomeTime.label(hour.timestamp, timezone: evaluation.timezoneIdentifier, offset: hasRepeatedLocalHour))
-                                .monospacedDigit()
-                            Image(systemName: hour.isInferred ? "questionmark.circle" : HomeStyle.symbol(tone))
-                            Text(title)
-                        }
-                        .font(.caption).foregroundStyle(HomeStyle.ink(tone)).padding(10)
-                        .frame(minWidth: 70, minHeight: 70)
-                        .background(HomeStyle.card, in: RoundedRectangle(cornerRadius: 12))
-                        .accessibilityElement(children: .ignore)
-                        .accessibilityLabel("\(HomeTime.label(hour.timestamp, timezone: evaluation.timezoneIdentifier, offset: true)), \(title). \(ItemHomePresentation.reasonText(hour.advice.reason))")
-                        .accessibilityIdentifier("item-hour-\(index)")
-                    }
-                }
-            }
-            Text("Consecutive hours with the same advice are grouped; short useful intervals stay visible.")
-                .font(.caption).foregroundStyle(.secondary)
-            if evaluation.hours.contains(where: \.isInferred) {
-                Text("? Forecast uncertain — missing weather data, not observed conditions.")
-                    .font(.caption).foregroundStyle(.secondary)
-            }
-        }
+        HourlyTimelineView(
+            hours: evaluation.hours.map {
+                HourlyTimelineSegment($0, item: evaluation.item, timezone: evaluation.timezoneIdentifier, currentTime: currentTime)
+            },
+            title: "Hourly suitability", identifier: "item-hourly-timeline", showsUsefulnessExplanation: true
+        )
     }
 }

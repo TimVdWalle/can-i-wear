@@ -260,14 +260,21 @@ struct ContentView: View {
                 ForEach(selection.selectedItems, id: \.self) { item in
                     let itemPresentation = itemPresentation(item, from: presentation)
                     Button { detailItem = item } label: {
-                        VStack(alignment: .leading, spacing: 12) {
-                            ItemSummaryView(presentation: itemPresentation, isOverview: true)
-                            if let evaluation = itemPresentation.evaluation { ItemPeriodsView(evaluation: evaluation) }
+                        VStack(alignment: .leading, spacing: 8) {
+                            ItemSummaryView(
+                                presentation: itemPresentation, isOverview: true,
+                                qualifier: itemPresentation.heroQualifier(dayParts: itemDayParts(item, from: presentation))
+                            )
+                            if itemPresentation.evaluation != nil {
+                                itemPeriods(itemPresentation.id, from: presentation, isOverview: true)
+                            }
                         }
-                        .padding(14)
+                        .padding(12)
                         .background(HomeStyle.card, in: RoundedRectangle(cornerRadius: HomeStyle.cardRadius))
                         .accessibilityElement(children: .ignore)
-                        .accessibilityLabel(itemPresentation.accessibilityLabel)
+                        .accessibilityLabel(itemPresentation.overviewAccessibilityLabel(
+                            dayParts: itemDayParts(item, from: presentation)
+                        ))
                     }
                     .buttonStyle(.plain)
                     .accessibilityHint("View periods and hourly details")
@@ -290,29 +297,60 @@ struct ContentView: View {
     private func itemDetail(
         _ item: ItemHomePresentation, legacy: DailyRecommendationPresentation, isDetail: Bool = false
     ) -> some View {
+        let qualifier = item.heroQualifier(dayParts: isDetail ? [] : legacy.dayParts)
         VStack(alignment: .leading, spacing: 14) {
-            ItemSummaryView(presentation: item)
+            ItemSummaryView(presentation: item, qualifier: qualifier)
                 .padding(16)
                 .background(HomeStyle.card, in: RoundedRectangle(cornerRadius: HomeStyle.cardRadius))
                 .accessibilityElement(children: .ignore)
-                .accessibilityLabel(item.accessibilityLabel)
+                .accessibilityLabel(item.heroAccessibilityLabel(qualifier: qualifier))
                 .accessibilityIdentifier("recommendation-hero")
             if let evaluation = item.evaluation {
                 if homePresentationMode == .guided {
-                    Text("Advice through the day").font(.title3.bold()).accessibilityAddTraits(.isHeader)
+                    Text(item.id == .leatherJacket ? "When can I wear it?" : "Advice through the day")
+                        .font(.title3.bold()).accessibilityAddTraits(.isHeader)
                         .accessibilityIdentifier("day-parts-heading")
                 }
                 if item.id == .leatherJacket, !legacy.hours.isEmpty {
-                    if isDetail { ItemPeriodsView(evaluation: evaluation) } else { DayPartsView(dayParts: legacy.dayParts) }
+                    if isDetail {
+                        itemPeriods(item.id, from: legacy)
+                    } else {
+                        DayPartsView(dayParts: legacy.dayParts)
+                    }
                     Divider().padding(.vertical, 2)
                     HourlySuitabilityView(presentation: legacy)
                 } else {
-                    ItemPeriodsView(evaluation: evaluation)
+                    itemPeriods(item.id, from: legacy)
                     Divider().padding(.vertical, 2)
-                    ItemHourlyAdviceView(evaluation: evaluation)
+                    ItemHourlyAdviceView(evaluation: planningEvaluation(item.id, from: legacy) ?? evaluation, currentTime: legacy.evaluationHour)
                 }
             }
         }
+    }
+
+    private func planningEvaluation(_ item: PredefinedItem, from presentation: DailyRecommendationPresentation) -> ItemDailyEvaluation? {
+        presentation.itemPlanningResults.first { $0.item == item }?.evaluation
+    }
+
+    private func itemPeriods(
+        _ item: PredefinedItem, from presentation: DailyRecommendationPresentation, isOverview: Bool = false
+    ) -> some View {
+        let planning = planningEvaluation(item, from: presentation)
+        return VStack(alignment: .leading, spacing: 6) {
+            DayPartsView(dayParts: itemDayParts(item, from: presentation), isOverview: isOverview)
+            if item != .leatherJacket, planning == nil, presentation.evaluationHour != nil {
+                Text("Earlier periods unavailable in this forecast.")
+                    .font(.caption).foregroundStyle(.secondary)
+                    .accessibilityIdentifier("item-planning-unavailable-\(item.rawValue)")
+            }
+        }
+    }
+
+    private func itemDayParts(_ item: PredefinedItem, from presentation: DailyRecommendationPresentation) -> [FixedDayPartPresentation] {
+        if item == .leatherJacket { return presentation.dayParts }
+        guard let evaluation = planningEvaluation(item, from: presentation)
+                ?? presentation.itemResults.first(where: { $0.item == item })?.evaluation else { return [] }
+        return FixedDayPartPresentation.make(from: evaluation, at: presentation.evaluationHour ?? evaluation.interval.start)
     }
 
     private func failure(title: String, message: String) -> some View {

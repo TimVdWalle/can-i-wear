@@ -154,23 +154,37 @@ enum UITestScenario {
     }
 
     private static func itemModel(scenario: String) -> RecommendationViewModel {
-        let start = ISO8601DateFormatter().date(from: "2026-10-13T09:00:00Z")!
-        let now = start.addingTimeInterval(1_800)
+        let startHour = scenario == "items-early-morning" ? 0 : 6
+        let start = ISO8601DateFormatter().date(from: "2026-10-13T00:00:00Z")!
+            .addingTimeInterval(Double(startHour) * 3_600)
+        let currentHour: Int
+        switch scenario {
+        case "items-early-morning": currentHour = 0
+        case "items-last-hour", "items-evening-sun": currentHour = 23
+        case "items-late-evening": currentHour = 22
+        default: currentHour = 9
+        }
+        let now = start.addingTimeInterval(Double(currentHour - startHour) * 3_600 + 1_800)
         let location = LocationIdentity(latitude: 50.85, longitude: 4.35)
-        let hours = (9..<24).map { hour -> HourlyWeather in
+        let hours = (startHour..<24).map { hour -> HourlyWeather in
             let sun: Bool
             switch scenario {
+            case "items-evening-sun": sun = hour == 18
             case "items-brief": sun = hour == 12
             case "items-separated": sun = hour == 12 || hour == 14
             case "items-borderline", "items-uncertain", "items-unavailable": sun = false
             default: sun = (12..<15).contains(hour)
             }
-            let amount: Double = scenario == "items-borderline"
+            let amount: Double = scenario == "items-jacket-four-periods" ? ((9..<12).contains(hour) || hour >= 18 ? 1 : 0)
+                : scenario == "items-last-hour" ? (hour == 23 ? 1 : 0)
+                : scenario == "items-early-morning" ? (hour < 6 ? 1 : 0)
+                : scenario == "items-late-evening" ? ((18..<22).contains(hour) ? 1 : 0)
+                : scenario == "items-borderline"
                 ? ((14..<16).contains(hour) ? 0.1 : 0)
                 : (["items-uncertain", "items-unavailable", "items-brief"].contains(scenario) ? 0 : ((15..<18).contains(hour) ? 1 : 0))
             let missingSky = scenario == "items-unavailable" || (scenario == "items-uncertain" && hour == 14)
             return HourlyWeather(
-                timestamp: start.addingTimeInterval(Double(hour - 9) * 3_600), timezoneIdentifier: "UTC",
+                timestamp: start.addingTimeInterval(Double(hour - startHour) * 3_600), timezoneIdentifier: "UTC",
                 actualTemperatureCelsius: scenario == "items-no-jacket" ? nil : 12,
                 apparentTemperatureCelsius: nil, precipitationAmountMillimeters: amount,
                 precipitationType: PrecipitationType.none, precipitationChanceFraction: 0,

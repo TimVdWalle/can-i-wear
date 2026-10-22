@@ -1,7 +1,7 @@
 # Can I Wear — Weather Logic
 
 > Status: ACTIVE
-> Last updated: 2026-10-20
+> Last updated: 2026-10-22
 > Source of truth: YES
 
 ## Goal
@@ -255,6 +255,10 @@ Assume consecutive hourly slots with valid coverage unless an allowed inferred g
 | YES, inferred MAYBE, YES | YES ×1; uncertain MAYBE ×1; YES ×1 | Positive from 2 confirmed hours; do not merge across the gap |
 
 These are deterministic acceptance requirements. Implementation progress and executed-test evidence belong in `TODO.md`, not this policy table.
+
+## Fixed daypart display summaries (D-074)
+
+This is a presentation summary, not a replacement for either daily algorithm or D-069 periods. For the six Should I wear items, a fully covered fixed daypart displays YES if any directly evaluated hour is YES; otherwise MAYBE if any hour is MAYBE (including the permitted uncertain inference); otherwise NO. One useful hour is enough for the daypart badge, but still only brief-usefulness advice for the daily answer when it is the only remaining useful hour. Missing coverage remains unavailable. Raw hours retain actual classifications, reasons and uncertainty; Leather Jacket daypart evaluation is unchanged.
 
 ## Daily behavior versus daily wording (D-060)
 

@@ -70,6 +70,63 @@ nonisolated struct ItemHomePresentation: Identifiable, Equatable, Sendable {
         }
     }
 
+    /// D-072/D-074: short hero answers, independent of daily policy and semantic descriptions.
+    var heroTitle: String? {
+        guard let verdict = evaluation?.verdict else { return nil }
+        switch verdict {
+        case .goodForRemainingDay, .useful: return "YES"
+        case .brieflyUseful, .maybeUseful, .caution: return "MAYBE"
+        case .restricted, .notNeeded: return "NO"
+        }
+    }
+
+    func heroQualifier(dayParts: [FixedDayPartPresentation]) -> String? {
+        guard let evaluation else { return nil }
+        if evaluation.verdict == .brieflyUseful { return "Briefly useful · \(timing)" }
+        guard id == .leatherJacket, !dayParts.isEmpty else { return nil }
+
+        let daypartSummary = HourlyRecommendation.mostProtective(in: dayParts.compactMap {
+            $0.recommendation?.recommendation
+        })?.level
+        var exceptions: [(interval: DateInterval, level: ItemAdviceLevel)] = []
+        for hour in evaluation.hours {
+            let daypart = dayParts.first(where: {
+                hour.timestamp >= $0.interval.start && hour.timestamp < $0.interval.end
+            })
+            // Before 06:00 there is no displayed daypart. Explain conflicting early advice too.
+            guard let displayed = daypart == nil ? daypartSummary : daypart?.recommendation?.level else { continue }
+            let grouped = evaluation.periods.first(where: {
+                hour.timestamp >= $0.interval.start && hour.timestamp < $0.interval.end
+            })?.level ?? hour.advice.level
+            // Preserve both protective expansion and raw caution absorbed by consolidation.
+            let level: ItemAdviceLevel = grouped == .no || hour.advice.level == .no ? .no
+                : grouped == .maybe || hour.advice.level == .maybe ? .maybe : .yes
+            let displayedLevel: ItemAdviceLevel = displayed == .avoid ? .no : displayed == .caution ? .maybe : .yes
+            guard level != displayedLevel else { continue }
+            if let previous = exceptions.last, previous.level == level, previous.interval.end == hour.timestamp {
+                exceptions[exceptions.count - 1].interval = DateInterval(
+                    start: previous.interval.start, duration: previous.interval.duration + 3_600
+                )
+            } else {
+                exceptions.append((DateInterval(start: hour.timestamp, duration: 3_600), level))
+            }
+        }
+        guard let exception = exceptions.first else { return nil }
+        guard exceptions.count == 1 else { return "Advice changes within dayparts." }
+        let label: String
+        switch exception.level {
+        case .yes: label = "Suitable"
+        case .maybe: label = "Caution"
+        case .no: label = "Avoid"
+        }
+        return "\(label) \(Self.range(exception.interval, timezone: evaluation.timezoneIdentifier))"
+    }
+
+    func heroAccessibilityLabel(qualifier: String?) -> String {
+        ["\(id.name). \(heroTitle ?? title).", heroTitle == nil ? nil : "\(title).",
+         qualifier.map { "\($0)." }, reason, uncertaintyNote].compactMap { $0 }.joined(separator: " ")
+    }
+
     var reason: String {
         guard evaluation != nil else { return "Cannot assess the remaining day." }
         let temperatures = relevantReasons.compactMap { reason -> Double? in
@@ -141,6 +198,12 @@ nonisolated struct ItemHomePresentation: Identifiable, Equatable, Sendable {
 
     var accessibilityLabel: String {
         ["\(id.name). \(title). \(timing). \(reason)", uncertaintyNote].compactMap { $0 }.joined(separator: " ")
+    }
+
+    func overviewAccessibilityLabel(
+        dayParts: [FixedDayPartPresentation]
+    ) -> String {
+        "\(heroAccessibilityLabel(qualifier: heroQualifier(dayParts: dayParts))) \(timing). \(dayParts.map(\.accessibilityLabel).joined(separator: ". "))"
     }
 
     static func levelTitle(_ level: ItemAdviceLevel, item: PredefinedItem, inferred: Bool = false) -> String {

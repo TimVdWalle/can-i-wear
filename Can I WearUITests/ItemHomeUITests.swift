@@ -59,6 +59,67 @@ final class ItemHomeUITests: XCTestCase {
     }
 
     @MainActor
+    func testSingleJacketHeroKeepsAdviceAndDaypartsInInitialViewport() {
+        for (scenario, title) in [
+            ("okay", "Good for the rest of today"),
+            ("periods", "Avoid during wet weather"),
+            ("fog", "Avoid during fog or mist")
+        ] {
+            let app = launch(scenario, flags: ["-home_introduction_visible", "NO"], mode: "guided")
+            let hero = app.descendants(matching: .any)["recommendation-hero"]
+            XCTAssertTrue(hero.waitForExistence(timeout: 5))
+            XCTAssertTrue(hero.label.contains(title), hero.label)
+            XCTAssertFalse(hero.label.contains("06:00–24:00"), "Do not repeat the full-day schedule")
+            let viewport = app.frame.insetBy(dx: 0, dy: 44)
+            XCTAssertTrue(viewport.contains(hero.frame))
+            XCTAssertLessThanOrEqual(hero.frame.height, 230, "Standard-size advice should remain compact")
+            for index in 0..<3 {
+                let daypart = app.descendants(matching: .any)["period-\(index)"]
+                XCTAssertTrue(daypart.exists)
+                XCTAssertTrue(viewport.contains(daypart.frame), "Dayparts must fit before scrolling")
+            }
+            capture(app, "Single jacket hero — \(scenario)")
+            app.terminate()
+        }
+    }
+
+    @MainActor
+    func testLargestTextSingleJacketRetainsCompleteAdviceAndScrolling() {
+        let app = launch("periods", flags: [
+            "-UIPreferredContentSizeCategoryName", "UICTContentSizeCategoryAccessibilityXXXL"
+        ])
+        let hero = app.descendants(matching: .any)["recommendation-hero"]
+        XCTAssertTrue(hero.waitForExistence(timeout: 5))
+        XCTAssertTrue(hero.label.contains("Leather Jacket. NO. Avoid during wet weather"))
+        XCTAssertTrue(hero.label.contains("could damage leather"))
+        XCTAssertLessThanOrEqual(hero.frame.width, app.frame.width - 32)
+        capture(app, "Single jacket hero — largest text")
+        let timeline = app.staticTexts["hourly-timeline"]
+        reveal(timeline, in: app)
+        XCTAssertTrue(timeline.isHittable)
+    }
+
+    @MainActor
+    func testQualifiersHighlightLateEveningAndEarlyMorningExceptions() {
+        for (scenario, answer, qualifier, evening) in [
+            ("items-late-evening", "YES", "Suitable 22:00–24:00", "NO"),
+            ("items-early-morning", "NO", "Avoid 00:00–06:00", "YES")
+        ] {
+            let app = launch(scenario, flags: [
+                "-ui-test-items", "leatherJacket", "-home_introduction_visible", "NO"
+            ], mode: "guided")
+            let hero = app.descendants(matching: .any)["recommendation-hero"]
+            XCTAssertTrue(hero.waitForExistence(timeout: 5))
+            XCTAssertTrue(hero.label.contains("Leather Jacket. \(answer)."))
+            XCTAssertTrue(hero.label.contains(qualifier), hero.label)
+            XCTAssertTrue(app.descendants(matching: .any)["period-2"].label.contains(evening))
+            XCTAssertEqual(app.staticTexts["day-parts-heading"].label, "When can I wear it?")
+            capture(app, "Single jacket — \(scenario) exception")
+            app.terminate()
+        }
+    }
+
+    @MainActor
     func testFreshSelectionDraftValidationSaveCancelPersistenceAndReplay() {
         let app = launch("items-setup", flags: ["-ui-test-reset-selection"])
         let confirm = app.buttons["confirm-item-selection"]
@@ -101,6 +162,88 @@ final class ItemHomeUITests: XCTestCase {
     }
 
     @MainActor
+    func testOverviewFitsTwoCompleteCardsWithReadableTimePreviews() {
+        let app = launch("items-mixed", flags: [
+            "-ui-test-items", "leatherJacket,sunglasses", "-home_introduction_visible", "NO"
+        ], mode: "guided")
+        let jacket = app.buttons["item-card-leatherJacket"]
+        XCTAssertTrue(jacket.waitForExistence(timeout: 5))
+        let sun = app.buttons["item-card-sunglasses"]
+        let viewport = app.frame.insetBy(dx: 0, dy: 44)
+        for card in [jacket, sun] {
+            XCTAssertTrue(viewport.contains(card.frame), "Two complete standard-size cards should fit without scrolling")
+            XCTAssertLessThanOrEqual(card.frame.height, 250, "Compact jacket-style cards must be shorter than the previous layout")
+        }
+        XCTAssertTrue(jacket.label.contains("Avoid during wet weather"))
+        XCTAssertTrue(jacket.label.hasPrefix("Leather Jacket. NO."))
+        XCTAssertTrue(jacket.label.contains("15:00–18:00"))
+        XCTAssertTrue(sun.label.contains("Useful today"))
+        XCTAssertTrue(sun.label.hasPrefix("Sunglasses. YES."))
+        XCTAssertTrue(sun.label.contains("12:00–15:00"))
+        capture(app, "Multi-item Home — compact cards and time previews")
+        jacket.tap()
+        let detail = app.scrollViews["item-detail"]
+        XCTAssertTrue(detail.waitForExistence(timeout: 5))
+        XCTAssertTrue(detail.descendants(matching: .any)["recommendation-hero"].label.contains("Leather Jacket. NO."))
+        XCTAssertTrue(detail.descendants(matching: .any)["period-1"].label.contains("Afternoon"))
+    }
+
+    @MainActor
+    func testAllDayPeriodsRemainVisibleAtNightWithPastPeriodsMarkedFinished() {
+        let app = launch("items-last-hour", flags: [
+            "-ui-test-items", "leatherJacket,sunglasses", "-home_introduction_visible", "NO"
+        ], mode: "guided")
+        let jacket = app.buttons["item-card-leatherJacket"]
+        XCTAssertTrue(jacket.waitForExistence(timeout: 5))
+        for (index, name, range) in [(0, "Morning", "06–12"), (1, "Afternoon", "12–18"), (2, "Evening", "18–24")] {
+            let daypart = jacket.descendants(matching: .any)["period-\(index)"]
+            XCTAssertTrue(daypart.label.contains(name))
+            XCTAssertTrue(daypart.label.contains(range))
+            XCTAssertEqual(daypart.label.contains("finished for today"), index < 2)
+        }
+        XCTAssertFalse(jacket.descendants(matching: .any)["period-3"].exists)
+        let sunglasses = app.buttons["item-card-sunglasses"]
+        for (index, name) in ["Morning", "Afternoon", "Evening"].enumerated() {
+            let tile = sunglasses.descendants(matching: .any)["period-\(index)"]
+            XCTAssertTrue(tile.label.contains(name))
+            XCTAssertEqual(tile.label.contains("finished for today"), index < 2)
+        }
+        XCTAssertTrue(app.buttons["item-card-sunglasses"].label.contains("Not needed today"))
+        capture(app, "Multi-item Home — full day retained at 23:30")
+        app.buttons["item-card-sunglasses"].tap()
+        let detail = app.scrollViews["item-detail"]
+        XCTAssertTrue(detail.waitForExistence(timeout: 5))
+        let afternoon = detail.descendants(matching: .any)["period-1"]
+        XCTAssertTrue(afternoon.label.contains("Afternoon, 12–18, YES"))
+        XCTAssertTrue(afternoon.label.contains("12:00–15:00, Useful"))
+        XCTAssertTrue(afternoon.label.contains("finished for today"))
+        XCTAssertTrue(detail.descendants(matching: .any)["recommendation-hero"].label.contains("Sunglasses. NO."))
+        capture(app, "Sunglasses detail — full day retained at 23:30")
+    }
+
+    @MainActor
+    func testJacketKeepsExactlyThreeNamedDaypartsEvenWhenWeatherHasFourPeriods() {
+        let app = launch("items-jacket-four-periods", flags: [
+            "-ui-test-items", "leatherJacket,sunglasses", "-home_introduction_visible", "NO"
+        ], mode: "guided")
+        let jacket = app.buttons["item-card-leatherJacket"]
+        XCTAssertTrue(jacket.waitForExistence(timeout: 5))
+        for (index, name) in ["Morning", "Afternoon", "Evening"].enumerated() {
+            XCTAssertTrue(jacket.descendants(matching: .any)["period-\(index)"].label.contains(name))
+        }
+        XCTAssertFalse(jacket.descendants(matching: .any)["period-3"].exists)
+        capture(app, "Leather Jacket overview — exactly three dayparts")
+        jacket.tap()
+        let detail = app.scrollViews["item-detail"]
+        XCTAssertTrue(detail.waitForExistence(timeout: 5))
+        for (index, name) in ["Morning", "Afternoon", "Evening"].enumerated() {
+            XCTAssertTrue(detail.descendants(matching: .any)["period-\(index)"].label.contains(name))
+        }
+        XCTAssertFalse(detail.descendants(matching: .any)["period-3"].exists)
+        capture(app, "Leather Jacket detail — exactly three dayparts")
+    }
+
+    @MainActor
     func testMixedAdviceCardsOpenMatchingFullDetail() {
         let app = launch("items-mixed")
         let jacket = app.buttons["item-card-leatherJacket"]
@@ -114,8 +257,8 @@ final class ItemHomeUITests: XCTestCase {
         sunglasses.tap()
         let detail = app.scrollViews["item-detail"]
         XCTAssertTrue(detail.waitForExistence(timeout: 5))
-        XCTAssertTrue(detail.descendants(matching: .any)["recommendation-hero"].label.contains("Sunglasses. Useful today"))
-        XCTAssertTrue(detail.descendants(matching: .any)["item-period-sunglasses-1"].label.contains("12:00–15:00, Useful"))
+        XCTAssertTrue(detail.descendants(matching: .any)["recommendation-hero"].label.contains("Sunglasses. YES. Useful today"))
+        XCTAssertTrue(detail.descendants(matching: .any)["period-1"].label.contains("12:00–15:00, Useful"))
         XCTAssertFalse(app.staticTexts["hourly-grouping-note"].exists)
         capture(app, "Sunglasses — full detail")
         app.buttons["Done"].tap()
@@ -158,7 +301,18 @@ final class ItemHomeUITests: XCTestCase {
             let hero = app.descendants(matching: .any)["recommendation-hero"]
             XCTAssertTrue(hero.waitForExistence(timeout: 5))
             XCTAssertTrue(hero.label.contains(title), hero.label)
-            XCTAssertTrue(hero.label.contains(time), hero.label)
+            for range in time.components(separatedBy: " · ") {
+                let period = app.descendants(matching: .any).matching(NSPredicate(
+                    format: "identifier BEGINSWITH %@ AND label CONTAINS %@", "period-", range
+                )).firstMatch
+                XCTAssertTrue(period.exists, "Detailed timing remains in the periods: \(range)")
+            }
+            if scenario == "items-brief" {
+                XCTAssertTrue(hero.label.contains("MAYBE. Briefly useful"))
+                XCTAssertTrue(hero.label.contains(time))
+            } else {
+                XCTAssertFalse(hero.label.contains(time), "Do not duplicate the period schedule in the hero")
+            }
             XCTAssertFalse(app.buttons["item-card-\(item)"].exists)
             XCTAssertTrue(app.descendants(matching: .any)["item-hourly-timeline"].exists)
             capture(app, scenario)
@@ -179,7 +333,7 @@ final class ItemHomeUITests: XCTestCase {
         let detail = app.scrollViews["item-detail"]
         XCTAssertTrue(detail.waitForExistence(timeout: 5))
         XCTAssertFalse(detail.descendants(matching: .any)["item-hourly-timeline"].exists)
-        XCTAssertFalse(detail.descendants(matching: .any)["item-period-sunglasses-0"].exists)
+        XCTAssertFalse(detail.descendants(matching: .any)["period-0"].exists)
         capture(app, "Sunglasses — missing data")
         app.terminate()
 
@@ -222,10 +376,75 @@ final class ItemHomeUITests: XCTestCase {
         sunglasses.tap()
         let detail = app.scrollViews["item-detail"]
         XCTAssertTrue(detail.waitForExistence(timeout: 5))
-        let finalPeriod = detail.descendants(matching: .any)["item-period-sunglasses-4"]
+        let finalPeriod = detail.descendants(matching: .any)["period-2"]
         reveal(finalPeriod, in: app)
         XCTAssertTrue(finalPeriod.isHittable)
         capture(app, "Sunglasses detail — accessibility text")
+    }
+
+    @MainActor
+    func testEveryItemUsesThreeNamedDaypartsOnSingleHomeOverviewAndDetail() {
+        let items = ["leatherJacket", "warmCoat", "sweater", "raincoat", "sunglasses", "shorts", "gloves"]
+        for item in items {
+            let app = launch("items-last-hour", flags: ["-ui-test-items", item, "-home_introduction_visible", "NO"])
+            XCTAssertTrue(app.descendants(matching: .any)["recommendation-hero"].waitForExistence(timeout: 5))
+            assertNamedDayparts(in: app)
+            assertCompactTimeline(in: app, item: item)
+            capture(app, "\(item) single Home — three dayparts at night")
+            app.terminate()
+        }
+        let app = launch("items-evening-sun", flags: [
+            "-ui-test-items", items.joined(separator: ","), "-home_introduction_visible", "NO"
+        ])
+        XCTAssertTrue(app.buttons["item-card-leatherJacket"].waitForExistence(timeout: 5))
+        for item in items {
+            let card = app.buttons["item-card-\(item)"]
+            reveal(card, in: app)
+            assertNamedDayparts(in: card)
+            card.tap()
+            let detail = app.scrollViews["item-detail"]
+            XCTAssertTrue(detail.waitForExistence(timeout: 5))
+            assertNamedDayparts(in: detail)
+            assertCompactTimeline(in: detail, item: item)
+            if item == "sunglasses" {
+                let evening = detail.descendants(matching: .any)["period-2"]
+                XCTAssertTrue(evening.label.contains("Evening, 18–24, YES"))
+                XCTAssertTrue(evening.label.contains("18:00–19:00, Useful"))
+                XCTAssertTrue(evening.label.contains("19:00–24:00, Not needed"))
+                capture(app, "Sunglasses screenshot regression — three named cards")
+            }
+            app.buttons["Done"].tap()
+        }
+    }
+
+    @MainActor
+    private func assertCompactTimeline(in scope: XCUIElement, item: String) {
+        let prefix = item == "leatherJacket" ? "hour" : "item-hour"
+        let first = scope.descendants(matching: .any)["\(prefix)-0"]
+        XCTAssertTrue(first.exists)
+        for index in 0..<18 {
+            let hour = scope.descendants(matching: .any)["\(prefix)-\(index)"]
+            XCTAssertTrue(hour.exists)
+            XCTAssertEqual(hour.frame.minY, first.frame.minY, accuracy: 1)
+            XCTAssertLessThanOrEqual(hour.frame.width, 24, "Raw hours must be compact segments, not large tiles")
+            XCTAssertLessThanOrEqual(hour.frame.height, 70)
+        }
+        XCTAssertFalse(scope.descendants(matching: .any)["\(prefix)-18"].exists)
+    }
+
+    @MainActor
+    private func assertNamedDayparts(in scope: XCUIElement) {
+        let first = scope.descendants(matching: .any)["period-0"]
+        for (index, name, range) in [(0, "Morning", "06–12"), (1, "Afternoon", "12–18"), (2, "Evening", "18–24")] {
+            let part = scope.descendants(matching: .any)["period-\(index)"]
+            XCTAssertTrue(part.exists)
+            XCTAssertTrue(part.label.contains("\(name), \(range)"), part.label)
+            XCTAssertEqual(part.label.contains("finished for today"), index < 2)
+            XCTAssertEqual(part.frame.minY, first.frame.minY, accuracy: 1, "The three dayparts must share one row")
+            XCTAssertEqual(part.frame.width, first.frame.width, accuracy: 1)
+            XCTAssertLessThanOrEqual(part.frame.height, 150, "Standard-size dayparts must not expand into unused screen space")
+        }
+        XCTAssertFalse(scope.descendants(matching: .any)["period-3"].exists)
     }
 
     @MainActor

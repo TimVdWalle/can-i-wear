@@ -1,7 +1,7 @@
 # Can I Wear — Technical Specification
 
 > Status: ACTIVE
-> Last updated: 2026-10-20
+> Last updated: 2026-10-22
 > Source of truth: YES
 
 ## Technical goal
@@ -149,7 +149,13 @@ The implemented Phase 3 Home Screen presentation carries the existing `DailyEval
 
 For Phase 4, D-060 replaces the universal daily YES/MAYBE/NO presentation with an explicit verdict and timing; this is approved future work, not implemented by this documentation. Keep the daily advice's meaning and supporting time intervals distinct from its display wording and from raw hourly levels. SwiftUI must present evaluated item-specific advice, not select a best/worst hour by parsing copy or inspecting an item's display name. Preserve the jacket's most-protective evaluation and the raw-hour/consolidated-period distinction.
 
+D-072 subsequently restores the large YES/MAYBE/NO single-item/detail hero with optional exception qualifiers; the explicit daily verdict/timing remains in multi-item overview cards. Map the existing semantic verdict separately from overview copy. Derive jacket exceptions from evaluated advice compared with the displayed dayparts, respecting protective periods and inferred uncertainty; never alter evaluation or present a raw safe blip inside protective avoidance as a safe interval.
+
+D-073 keeps item planning-display evaluations separate from remaining-day `itemResults`. Derive the planning window using the existing forecast-timezone 06:00 start and each item's unchanged engine/grouping, reusing the same normalized forecast. Every item's Home/overview/detail row reuses the fixed Morning/Afternoon/Evening boundaries and `DayPartsView`. Non-jacket contiguous advice is clipped into those cards without a new aggregation algorithm; preserve short intervals and uncertainty. Jacket daypart evaluation stays unchanged. Carry display context through refresh/fallback/selection updates; never use its daily verdict/count as the current answer. If earlier coverage is unavailable, preserve remaining advice and mark unsupported dayparts unavailable. No new network request, cache schema or freshness policy is needed.
+
 The default-on `home_presentation_guided` and `home_introduction_visible` Settings-bundle preferences use explicit Boolean `TrueValue`/`FalseValue` values in the standard application preference domain. On first use of this contract, migrate stored `guided_home_enabled` and `show_home_introduction` values to the canonical keys. Preserve the separate legacy acknowledgement migration so an already dismissed card is not redisplayed. Synchronize and resolve the standard domain when the app returns active; do not use a cached `@AppStorage` binding or construct a `UserDefaults` suite from the app’s own bundle identifier for these externally edited values. Disabling Guided also disables the introduction, while enabling the introduction also enables Guided. **Got it** turns off the introduction only.
+
+D-074 supersedes D-073's non-jacket stacked interval rendering: map fully covered fixed dayparts to one usefulness badge (any confirmed YES, otherwise any MAYBE, otherwise NO), keeping clipped periods as accessibility context. Missing coverage is unavailable. Share the compact hourly timeline renderer across item-specific presentation values without converting non-jacket recommendations into jacket domain rules. Overview uses a compact version of the existing hero; daily evaluation and the jacket detail are unchanged.
 
 ## Central configuration
 

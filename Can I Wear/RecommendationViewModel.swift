@@ -413,7 +413,8 @@ final class RecommendationViewModel {
                 periods: current.periods, hours: current.hours, weatherFetchedAt: current.weatherFetchedAt,
                 isUsingSavedWeather: true, isRefreshing: true, refreshFailed: false,
                 refreshAvailableAt: current.refreshAvailableAt, dayParts: current.dayParts,
-                displayHours: current.displayHours, itemResults: current.itemResults, evaluationHour: current.evaluationHour
+                displayHours: current.displayHours, itemResults: current.itemResults,
+                itemPlanningResults: current.itemPlanningResults, evaluationHour: current.evaluationHour
             ))
         } else {
             state = .loading
@@ -719,6 +720,8 @@ final class RecommendationViewModel {
 
         let displayEvaluation = dailyEngine.evaluateDisplayHours(forecast, now: currentTime)
             ?? evaluation
+        let planningStart = ForecastEvaluationWindow(forecast: forecast, now: currentTime, includesPlanningMorning: true)?.interval.start
+        let itemPlanningResults = planningStart.map { itemEngine.evaluate(forecast, for: selectedItems, now: $0) } ?? []
         let displayHours = (displayEvaluation?.hours ?? []).map {
             HourlySuitabilityPresentation(
                 hour: $0,
@@ -749,6 +752,7 @@ final class RecommendationViewModel {
             dayParts: displayEvaluation.map { FixedDayPartPresentation.make(from: $0, at: currentTime) } ?? [],
             displayHours: displayHours,
             itemResults: itemResults,
+            itemPlanningResults: itemPlanningResults,
             evaluationHour: window.interval.start
         )
     }
@@ -851,6 +855,7 @@ final class RecommendationViewModel {
             dayParts: current.dayParts,
             displayHours: current.displayHours,
             itemResults: current.itemResults,
+            itemPlanningResults: current.itemPlanningResults,
             evaluationHour: current.evaluationHour
         ))
     }

@@ -142,6 +142,63 @@ struct ItemHomeIntegrationTests {
         #expect(await weather.requestCount == 1)
     }
 
+    @Test func lateNightKeepsPlanningPeriodsButDailyAnswersOnlyCountRemainingHours() async throws {
+        let start = ItemEngineFixtures.dayEnd.addingTimeInterval(-18 * 3_600)
+        let now = ItemEngineFixtures.dayEnd.addingTimeInterval(-1_800)
+        let hours: [HourlyWeather] = (6..<24).map { hour in
+            let timestamp = start.addingTimeInterval(Double(hour - 6) * 3_600)
+            return ItemEngineFixtures.hour(
+                at: timestamp, amount: hour == 23 ? 1 : 0,
+                daylight: hour < 19, sky: (12..<15).contains(hour) ? .clear : .overcast
+            )
+        }
+        let forecast = NormalizedForecast(hours: hours, metadata: ForecastMetadata(
+            fetchedAt: now, location: LocationIdentity(latitude: 50.85, longitude: 4.35)
+        ))
+        let weather = ItemHomeCountingWeatherProvider(forecast: forecast)
+        let model = makeModel(forecast: forecast, store: MemoryCacheDataStore(), weather: weather, now: { now })
+        model.updateSelectedItems([.leatherJacket, .sunglasses])
+        await model.loadIfNeeded()
+        let display = try #require(result(model))
+        #expect(display.itemResults[0].evaluation?.hours.count == 1)
+        #expect(display.itemResults[1].evaluation?.verdict == .notNeeded)
+        #expect(display.itemResults[1].evaluation?.qualifyingHours.isEmpty == true)
+        #expect(display.itemPlanningResults[0].evaluation?.periods.count == 2)
+        #expect(display.itemPlanningResults[1].evaluation?.hours.count == 18)
+        #expect(display.itemPlanningResults[1].evaluation?.periods.count == 3)
+        #expect(display.itemPlanningResults[1].evaluation?.qualifyingHours.count == 3)
+        let spoken = ItemHomePresentation(result: display.itemResults[1]).overviewAccessibilityLabel(
+            dayParts: FixedDayPartPresentation.make(from: try #require(display.itemPlanningResults[1].evaluation), at: now)
+        )
+        #expect(spoken.contains("Not needed today"))
+        #expect(spoken.contains("Afternoon, 12–18, YES"))
+        #expect(spoken.contains("12:00–15:00, Useful"))
+        #expect(spoken.contains("finished for today"))
+        model.updateSelectedItems([.raincoat])
+        #expect(result(model)?.itemResults[0].evaluation?.verdict == .brieflyUseful)
+        #expect(result(model)?.itemPlanningResults[0].item == .raincoat)
+        #expect(result(model)?.itemPlanningResults[0].evaluation?.periods.count == 2)
+        #expect(await weather.requestCount == 1)
+    }
+
+    @Test func unavailablePastInputsDoNotSuppressValidRemainingItemAdvice() async throws {
+        let start = ItemEngineFixtures.dayEnd.addingTimeInterval(-18 * 3_600)
+        let now = ItemEngineFixtures.dayEnd.addingTimeInterval(-1_800)
+        let hours: [HourlyWeather] = (6..<24).map { hour in
+            ItemEngineFixtures.hour(at: start.addingTimeInterval(Double(hour - 6) * 3_600), daylight: [8, 9].contains(hour) ? nil : true)
+        }
+        let forecast = NormalizedForecast(hours: hours, metadata: ForecastMetadata(
+            fetchedAt: now, location: LocationIdentity(latitude: 50.85, longitude: 4.35)
+        ))
+        let model = makeModel(forecast: forecast, store: MemoryCacheDataStore(), weather: FixedWeatherProvider(result: .success(forecast)), now: { now })
+        model.updateSelectedItems([.leatherJacket, .sunglasses])
+        await model.loadIfNeeded()
+        let display = try #require(result(model))
+        #expect(display.itemResults.allSatisfy { $0.evaluation != nil })
+        #expect(display.itemPlanningResults[0].evaluation != nil)
+        #expect(display.itemPlanningResults[1].evaluation == nil)
+    }
+
     private func result(_ model: RecommendationViewModel) -> DailyRecommendationPresentation? {
         guard case .result(let presentation) = model.state else { return nil }
         return presentation

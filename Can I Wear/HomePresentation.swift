@@ -104,6 +104,49 @@ nonisolated struct HourlySuitabilityPresentation: Equatable, Sendable, Identifia
     }
 }
 
+/// Shared visual timeline values, without sharing item classification rules.
+nonisolated struct HourlyTimelineSegment: Identifiable {
+    let id: Date
+    let timezoneIdentifier: String
+    let tone: ItemAdviceTone
+    let isInferred: Bool
+    let isPast: Bool
+    let accessibilityLabel: String
+
+    init(_ hour: HourlySuitabilityPresentation) {
+        id = hour.id
+        timezoneIdentifier = hour.timezoneIdentifier
+        switch hour.recommendation.level {
+        case .okay: tone = .positive
+        case .caution: tone = .caution
+        case .avoid: tone = .negative
+        }
+        isInferred = hour.isInferred
+        isPast = hour.isPast
+        accessibilityLabel = hour.accessibilityLabel
+    }
+
+    init(_ hour: EvaluatedItemHour, item: PredefinedItem, timezone: String, currentTime: Date?) {
+        id = hour.timestamp
+        timezoneIdentifier = timezone
+        tone = ItemHomePresentation.tone(hour.advice.level, item: item, inferred: hour.isInferred)
+        isInferred = hour.isInferred
+        isPast = currentTime.map { hour.timestamp.addingTimeInterval(3_600) <= $0 } ?? false
+        let title: String
+        switch hour.advice.level {
+        case .yes: title = "YES"
+        case .maybe: title = "MAYBE"
+        case .no: title = "NO"
+        }
+        let meaning = ItemHomePresentation.levelTitle(hour.advice.level, item: item, inferred: hour.isInferred)
+        accessibilityLabel = "\(HomeTime.label(id, timezone: timezone, offset: true)), \(hour.isInferred ? "Forecast uncertain" : title), \(meaning)\(isPast ? ", finished for today" : ""). \(ItemHomePresentation.reasonText(hour.advice.reason))"
+    }
+
+    var timeLabel: String { HomeTime.label(id, timezone: timezoneIdentifier) }
+    var axisTimeLabel: String { HomeTime.hourLabel(id, timezone: timezoneIdentifier) }
+    var unambiguousAxisTimeLabel: String { HomeTime.hourLabel(id, timezone: timezoneIdentifier, offset: true) }
+}
+
 nonisolated enum FixedDayPart: String, CaseIterable, Sendable {
     case morning
     case afternoon
@@ -146,14 +189,56 @@ nonisolated struct FixedDayPartPresentation: Equatable, Sendable, Identifiable {
     let interval: DateInterval
     let recommendation: RecommendationPresentation?
     let isPast: Bool
+    var item: PredefinedItem = .leatherJacket
+    var itemAdvicePeriods: [ItemAdvicePeriod] = []
 
     var id: FixedDayPart { dayPart }
     var label: String { dayPart.label }
     var symbolName: String { dayPart.symbolName }
     var timeRangeLabel: String { dayPart.timeRangeLabel }
 
+    /// D-074: a daypart answers whether the item is useful sometime within it.
+    /// This never feeds the remaining-day useful-hour count.
+    var itemSummaryLevel: ItemAdviceLevel? {
+        guard let first = itemAdvicePeriods.first, first.interval.start == interval.start,
+              itemAdvicePeriods.last?.interval.end == interval.end else { return nil }
+        for pair in zip(itemAdvicePeriods, itemAdvicePeriods.dropFirst()) where pair.0.interval.end != pair.1.interval.start {
+            return nil
+        }
+        if itemAdvicePeriods.contains(where: { $0.level == .yes && !$0.isInferred }) { return .yes }
+        if itemAdvicePeriods.contains(where: { $0.level == .maybe || $0.isInferred }) { return .maybe }
+        return .no
+    }
+
+    var statusTitle: String {
+        if item == .leatherJacket { return recommendation?.title ?? "—" }
+        switch itemSummaryLevel {
+        case .yes: return "YES"
+        case .maybe: return "MAYBE"
+        case .no: return "NO"
+        case nil: return "—"
+        }
+    }
+
     var accessibilityLabel: String {
-        let result = recommendation?.title ?? "Unavailable"
+        let result: String
+        if item == .leatherJacket {
+            result = recommendation?.title ?? "Unavailable"
+        } else {
+            let intervals = itemAdvicePeriods.map { period in
+                let range = ItemHomePresentation.range(period.interval, timezone: period.timezoneIdentifier)
+                let status = ItemHomePresentation.levelTitle(period.level, item: item, inferred: period.isInferred)
+                return "\(range), \(status)"
+            }.joined(separator: ". ")
+            let summary: String
+            switch itemSummaryLevel {
+            case .yes: summary = "YES, useful sometime within this daypart, not necessarily throughout"
+            case .maybe: summary = "MAYBE, borderline or uncertain advice within this daypart"
+            case .no: summary = "NO, not needed during this daypart"
+            case nil: summary = "Unavailable"
+            }
+            result = [summary, intervals].filter { !$0.isEmpty }.joined(separator: ". ")
+        }
         return isPast
             ? "\(label), \(timeRangeLabel), \(result), finished for today"
             : "\(label), \(timeRangeLabel), \(result)"
@@ -163,7 +248,39 @@ nonisolated struct FixedDayPartPresentation: Equatable, Sendable, Identifiable {
         from evaluation: DailyEvaluation,
         at currentTime: Date
     ) -> [FixedDayPartPresentation] {
-        guard let timezone = TimeZone(identifier: evaluation.timezoneIdentifier) else { return [] }
+        make(timezoneIdentifier: evaluation.timezoneIdentifier, at: currentTime).map { context in
+            let hours = evaluation.hours.filter {
+                $0.timestamp >= context.interval.start && $0.timestamp < context.interval.end
+            }
+            let recommendation = HourlyRecommendation.mostProtective(in: hours.map(\.recommendation))
+                .map { RecommendationPresentation(recommendation: $0) }
+            return FixedDayPartPresentation(
+                dayPart: context.dayPart, interval: context.interval,
+                recommendation: recommendation, isPast: context.isPast
+            )
+        }
+    }
+
+    /// Retain exact intervals for accessibility; D-074 summarizes them in one visible badge.
+    static func make(from evaluation: ItemDailyEvaluation, at currentTime: Date) -> [FixedDayPartPresentation] {
+        make(timezoneIdentifier: evaluation.timezoneIdentifier, at: currentTime).map { context in
+            var part = context
+            part.item = evaluation.item
+            part.itemAdvicePeriods = evaluation.periods.compactMap { period in
+                let start = max(context.interval.start, period.interval.start)
+                let end = min(context.interval.end, period.interval.end)
+                guard start < end else { return nil }
+                return ItemAdvicePeriod(
+                    interval: DateInterval(start: start, end: end), timezoneIdentifier: period.timezoneIdentifier,
+                    level: period.level, reasons: period.reasons, isInferred: period.isInferred
+                )
+            }
+            return part
+        }
+    }
+
+    private static func make(timezoneIdentifier: String, at currentTime: Date) -> [FixedDayPartPresentation] {
+        guard let timezone = TimeZone(identifier: timezoneIdentifier) else { return [] }
         var calendar = Calendar(identifier: .gregorian)
         calendar.timeZone = timezone
         guard let day = calendar.dateInterval(of: .day, for: currentTime) else { return [] }
@@ -190,18 +307,12 @@ nonisolated struct FixedDayPartPresentation: Equatable, Sendable, Identifiable {
             }
 
             let interval = DateInterval(start: start, end: end)
-            let allHours = evaluation.hours.filter {
-                $0.timestamp >= start && $0.timestamp < end
-            }
             let isPast = end <= currentTime
-            let recommendation = HourlyRecommendation.mostProtective(
-                in: allHours.map(\.recommendation)
-            ).map { RecommendationPresentation(recommendation: $0) }
 
             return FixedDayPartPresentation(
                 dayPart: dayPart,
                 interval: interval,
-                recommendation: recommendation,
+                recommendation: nil,
                 isPast: isPast
             )
         }
@@ -220,6 +331,8 @@ nonisolated struct DailyRecommendationPresentation: Equatable, Sendable {
     let refreshFailed: Bool
     let refreshAvailableAt: Date
     let itemResults: [ItemForecastResult]
+    /// Planning-day display only. Never use these verdicts/counts as the remaining-day answer.
+    let itemPlanningResults: [ItemForecastResult]
     let evaluationHour: Date?
 
     init(
@@ -233,6 +346,7 @@ nonisolated struct DailyRecommendationPresentation: Equatable, Sendable {
         dayParts: [FixedDayPartPresentation] = [],
         displayHours: [HourlySuitabilityPresentation]? = nil,
         itemResults: [ItemForecastResult] = [],
+        itemPlanningResults: [ItemForecastResult] = [],
         evaluationHour: Date? = nil
     ) {
         self.periods = periods
@@ -245,6 +359,7 @@ nonisolated struct DailyRecommendationPresentation: Equatable, Sendable {
         self.refreshFailed = refreshFailed
         self.refreshAvailableAt = refreshAvailableAt
         self.itemResults = itemResults
+        self.itemPlanningResults = itemPlanningResults
         self.evaluationHour = evaluationHour
     }
 

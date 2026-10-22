@@ -1,7 +1,7 @@
 # Can I Wear — Product Specification
 
 > Status: ACTIVE
-> Last updated: 2026-10-20
+> Last updated: 2026-10-22
 > Source of truth: YES
 
 ## Initial real-device user story (historical foundation)
@@ -62,6 +62,10 @@ The Phase 3 single-item Home foundation follows D-046/D-047/D-051 and `UX.md`: a
 
 ### Phase 4 daily advice: meaning and time must be explicit (D-060)
 
+**Single-item presentation amendment (D-072):** Restore the earlier artwork-left hero with large YES/MAYBE/NO and a short reason. A small qualifier highlights an exception within displayed dayparts or a qualified brief/uncertain outcome; it is not a recap of every matching period. Omit redundant all-window timing. Detailed schedules remain below; the multi-item overview keeps the explicit-verdict/timing contract. No daily algorithm or item meaning changes.
+
+**Planning-context correction (D-073, all-item clarification):** Every item's single-item Home, overview preview and matching detail shows exactly Morning (06–12) / Afternoon (12–18) / Evening (18–24), subduing past cards instead of removing them. Actual non-jacket advice changes remain identifiable within those cards and hourly detail, not separate wrapping top-level periods. This display context does not contribute past hours to the remaining-day daily answer. Missing earlier inputs cannot invalidate otherwise valid remaining advice or become fabricated past periods.
+
 - Present an item-appropriate daily verdict, relevant times and a short weather reason. The answer must distinguish an item that is useful at some point today from an item that suits the entire evaluated window, and distinguish not needing an item from conditions making it unsuitable.
 - Do not present one universal daily YES/NO whose meaning silently changes between items. A positive usefulness verdict does not imply every hour is positive; a restriction verdict must make the affected times clear rather than implying every hour is unsuitable.
 - Keep hourly evaluations and meaningful periods available. Hourly answers can retain YES/MAYBE/NO; the new daily copy does not change the approved classification thresholds, time window, conservative missing-hour handling or jacket safety consolidation.
@@ -70,6 +74,8 @@ The Phase 3 single-item Home foundation follows D-046/D-047/D-051 and `UX.md`: a
 - No visible item-group labels are required to interpret the predefined collection. Fixed-item behavior can be predefined while remaining separable from UI copy; exact grouping labels and the configuration explanation are deferred to custom items in Phase 8.1, not settled by D-059's historical wording.
 
 The presentation contract and representative verdicts are maintained in [UX.md](UX.md#phase-4-daily-verdicts-and-timing-d-060).
+
+**D-074 presentation amendment:** Multi-item overview now uses shorter artwork-left YES/MAYBE/NO heroes, retaining qualified brief/uncertain outcomes and semantic accessibility descriptions. Non-jacket dayparts show one badge: any YES → YES; otherwise any MAYBE → MAYBE; otherwise NO, with missing coverage unavailable. A positive daypart means useful sometime, not all six hours. Exact hours use the same compact segmented timeline as the jacket on single Home/detail. This supersedes stacked within-card intervals and explicit-verdict-only overview layout above; daily policies and the jacket detail remain unchanged.
 
 ## Leather-jacket recommendation policy
 

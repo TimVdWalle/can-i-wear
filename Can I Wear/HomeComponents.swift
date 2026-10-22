@@ -135,36 +135,31 @@ struct HomeIntroductionCard: View {
 
 struct DayPartCardView: View {
     let dayPart: FixedDayPartPresentation
+    var isOverview = false
 
     var body: some View {
-        VStack(spacing: 6) {
+        VStack(spacing: isOverview ? 3 : 6) {
             Image(systemName: dayPart.symbolName)
-                .font(.title3.weight(.light))
+                .font(isOverview ? .subheadline.weight(.light) : .title3.weight(.light))
                 .foregroundStyle(.secondary)
                 .opacity(detailOpacity)
                 .accessibilityHidden(true)
             Text(dayPart.label)
-                .font(.subheadline.weight(.medium))
+                .font(isOverview ? .caption.weight(.medium) : .subheadline.weight(.medium))
                 .lineLimit(1)
                 .minimumScaleFactor(0.72)
                 .allowsTightening(true)
                 .frame(maxWidth: .infinity)
                 .opacity(detailOpacity)
             Text(dayPart.timeRangeLabel)
-                .font(.caption.monospacedDigit())
+                .font(isOverview ? .caption2.monospacedDigit() : .caption.monospacedDigit())
                 .foregroundStyle(.secondary)
                 .lineLimit(1)
                 .opacity(detailOpacity)
-            Text(dayPart.recommendation?.title ?? "—")
-                .font(.subheadline.bold())
-                .lineLimit(1)
-                .foregroundStyle(dayPart.recommendation.map { HomeStyle.ink($0.level) } ?? .secondary)
-                .padding(.horizontal, 4)
-                .frame(maxWidth: .infinity, minHeight: 32)
-                .background(statusColor.opacity(dayPart.isPast ? 0.08 : 0.16), in: Capsule())
+            status
         }
         .padding(.horizontal, 6)
-        .padding(.vertical, 10)
+        .padding(.vertical, isOverview ? 6 : 10)
         .frame(maxWidth: .infinity, maxHeight: .infinity)
         .background {
             RoundedRectangle(cornerRadius: 16)
@@ -178,8 +173,32 @@ struct DayPartCardView: View {
         .accessibilityLabel(dayPart.accessibilityLabel)
     }
 
+    private var status: some View {
+        Text(dayPart.statusTitle)
+            .font(.subheadline.bold())
+            .lineLimit(1)
+            .foregroundStyle(statusInk)
+            .padding(.horizontal, 4)
+            .frame(maxWidth: .infinity, minHeight: 32)
+            .background(statusColor.opacity(dayPart.isPast ? 0.08 : 0.16), in: Capsule())
+    }
+
+    private var statusInk: Color {
+        if dayPart.item == .leatherJacket {
+            return dayPart.recommendation.map { HomeStyle.ink($0.level) } ?? .secondary
+        }
+        return dayPart.itemSummaryLevel.map { HomeStyle.ink(ItemHomePresentation.tone($0, item: dayPart.item)) } ?? .secondary
+    }
+
     private var statusColor: Color {
-        dayPart.recommendation.map { HomeStyle.color($0.level) } ?? .secondary
+        if dayPart.item == .leatherJacket {
+            return dayPart.recommendation.map { HomeStyle.color($0.level) } ?? .secondary
+        }
+        switch dayPart.itemSummaryLevel {
+        case .yes: return .green
+        case .maybe: return .orange
+        case .no, nil: return .secondary
+        }
     }
 
     private var detailOpacity: Double {
@@ -189,8 +208,10 @@ struct DayPartCardView: View {
 
 struct DayPartsView: View {
     let dayParts: [FixedDayPartPresentation]
+    var isOverview = false
     @Environment(\.dynamicTypeSize) private var typeSize
-    @ScaledMetric(relativeTo: .body) private var rowHeight = 120
+    @ScaledMetric(relativeTo: .body) private var rowHeight: CGFloat = 120
+    @ScaledMetric(relativeTo: .body) private var overviewRowHeight: CGFloat = 100
 
     private let columnSpacing: CGFloat = 8
 
@@ -210,20 +231,20 @@ struct DayPartsView: View {
                     )
                     HStack(spacing: columnSpacing) {
                         ForEach(Array(dayParts.enumerated()), id: \.element.id) { index, dayPart in
-                            DayPartCardView(dayPart: dayPart)
+                            DayPartCardView(dayPart: dayPart, isOverview: isOverview)
                                 .frame(width: cardWidth)
                                 .accessibilityIdentifier("period-\(index)")
                         }
                     }
                 }
-                .frame(height: rowHeight)
+                .frame(height: isOverview ? overviewRowHeight : rowHeight)
             }
         }
     }
 
     private var cards: some View {
         ForEach(Array(dayParts.enumerated()), id: \.element.id) { index, dayPart in
-            DayPartCardView(dayPart: dayPart)
+            DayPartCardView(dayPart: dayPart, isOverview: isOverview)
                 .accessibilityIdentifier("period-\(index)")
         }
     }
@@ -231,18 +252,36 @@ struct DayPartsView: View {
 
 struct HourlySuitabilityView: View {
     let presentation: DailyRecommendationPresentation
+
+    var body: some View {
+        HourlyTimelineView(
+            hours: presentation.displayHours.map(HourlyTimelineSegment.init),
+            title: "Hourly suitability", identifier: "hourly-timeline",
+            hasConsolidatedDifferences: presentation.hasConsolidatedDifferences
+        )
+    }
+}
+
+struct HourlyTimelineView: View {
+    let hours: [HourlyTimelineSegment]
+    let title: String
+    let identifier: String
+    var hasConsolidatedDifferences = false
+    var showsUsefulnessExplanation = false
     @ScaledMetric(relativeTo: .caption) private var axisHeight = 20
     @ScaledMetric(relativeTo: .caption) private var segmentHeight = 24
 
+    private var hasRepeatedLocalHour: Bool { Set(hours.map(\.timeLabel)).count != hours.count }
+
     var body: some View {
         VStack(alignment: .leading, spacing: 8) {
-            Text("Hourly suitability")
+            Text(title)
                 .font(.title3.bold())
                 .accessibilityAddTraits(.isHeader)
-                .accessibilityIdentifier("hourly-timeline")
+                .accessibilityIdentifier(identifier)
 
             GeometryReader { geometry in
-                let count = presentation.displayHours.count
+                let count = hours.count
                 let hoursPerDayPart = 6
                 let hourSpacing: CGFloat = 2
                 let dayPartSpacing: CGFloat = 8
@@ -260,7 +299,7 @@ struct HourlySuitabilityView: View {
                                     ForEach(0..<hoursPerDayPart, id: \.self) { offset in
                                         let index = dayPartIndex * hoursPerDayPart + offset
                                         segment(
-                                            presentation.displayHours[index],
+                                            hours[index],
                                             index: index,
                                             width: width
                                         )
@@ -273,7 +312,7 @@ struct HourlySuitabilityView: View {
                             geometry.size.width - CGFloat(max(0, count - 1)) * hourSpacing
                         ) / CGFloat(max(1, count))
                         HStack(alignment: .top, spacing: hourSpacing) {
-                            ForEach(Array(presentation.displayHours.enumerated()), id: \.element.id) { index, hour in
+                            ForEach(Array(hours.enumerated()), id: \.element.id) { index, hour in
                                 segment(hour, index: index, width: width)
                             }
                         }
@@ -282,21 +321,25 @@ struct HourlySuitabilityView: View {
                 .padding(.bottom, 4)
             }
             .frame(height: segmentHeight + axisHeight + 12)
-            if presentation.hasInferredHour {
+            if hours.contains(where: \.isInferred) {
                 Text("? Forecast uncertain")
                     .font(.caption)
                     .foregroundStyle(.secondary)
             }
-            if presentation.hasConsolidatedDifferences {
+            if hasConsolidatedDifferences {
                 Text("Hourly conditions shown; period advice groups brief changes for safety.")
                     .font(.caption)
                     .foregroundStyle(.secondary)
                     .accessibilityIdentifier("hourly-grouping-note")
             }
+            if showsUsefulnessExplanation {
+                Text("YES: useful · MAYBE: borderline · NO: not needed. A daypart is YES if any hour is useful.")
+                    .font(.caption).foregroundStyle(.secondary)
+            }
         }
     }
 
-    private func segment(_ hour: HourlySuitabilityPresentation, index: Int, width: CGFloat) -> some View {
+    private func segment(_ hour: HourlyTimelineSegment, index: Int, width: CGFloat) -> some View {
         VStack(alignment: .leading, spacing: 8) {
             RoundedRectangle(cornerRadius: 4)
                 .fill(segmentColor(hour))
@@ -310,10 +353,10 @@ struct HourlySuitabilityView: View {
                 .frame(height: segmentHeight)
 
             Color.clear.frame(height: axisHeight)
-                .overlay(alignment: index >= presentation.displayHours.count - 2 ? .topTrailing : .topLeading) {
-                    if presentation.hasRepeatedLocalHour || index % 3 == 0 {
+                .overlay(alignment: index >= hours.count - 2 ? .topTrailing : .topLeading) {
+                    if hasRepeatedLocalHour || index % 3 == 0 {
                         Text(
-                            presentation.hasRepeatedLocalHour
+                            hasRepeatedLocalHour
                                 ? hour.unambiguousAxisTimeLabel
                                 : hour.axisTimeLabel
                         )
@@ -326,12 +369,18 @@ struct HourlySuitabilityView: View {
         .frame(width: width)
         .accessibilityElement(children: .ignore)
         .accessibilityLabel(hour.accessibilityLabel)
-        .accessibilityIdentifier("hour-\(index)")
+        .accessibilityIdentifier("\(showsUsefulnessExplanation ? "item-hour" : "hour")-\(index)")
     }
 
-    private func segmentColor(_ hour: HourlySuitabilityPresentation) -> Color {
+    private func segmentColor(_ hour: HourlyTimelineSegment) -> Color {
         if hour.isInferred { return Color.secondary.opacity(0.15) }
-        if hour.isPast { return HomeStyle.color(hour.recommendation.level).opacity(0.22) }
-        return HomeStyle.color(hour.recommendation.level).opacity(0.62)
+        let color: Color
+        switch hour.tone {
+        case .positive: color = .green
+        case .caution: color = .orange
+        case .negative: color = .red
+        case .neutral: color = .secondary
+        }
+        return color.opacity(hour.isPast ? 0.22 : 0.62)
     }
 }
