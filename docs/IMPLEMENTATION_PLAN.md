@@ -1,7 +1,7 @@
 # Can I Wear — Complete Implementation Plan
 
 > Status: ACTIVE — agreed scope plus gated, sometimes provisional future execution
-> Last updated: 2026-10-20
+> Last updated: 2026-10-24
 > Source of truth: execution detail subordinate to the existing truth files
 
 ## Authority and execution rules
@@ -473,6 +473,7 @@ Goal: expand the already implemented jacket-only experience to a **small user-ap
 - **Tests/validation:** Deterministic multi-item UI scenarios with conflicting item recommendations and changing periods; cover the D-060 examples, uncertainty and incomplete coverage; large text/accessibility checks convey the same time scope and meaning.
 - **Setup-reset regression:** Exercise the actual Apple Settings control on foreground return (including an open configuration sheet) and cold launch; verify cleared selected items, disabled Continue until a new selection, one-shot consumption, preserved Home preferences/caches and successful confirmation/relaunch without a reset loop. See ISS-002 for current verification state.
 - **Post-Phase-4 layout regression (D-074 / ISS-006):** Verify compact jacket-style overview heroes, one non-jacket daypart summary badge under the approved display rule, shared compact hourly timelines and unchanged jacket detail/daily algorithms. Cover all seven items, single useful hours, borderline/inferred hours, missing coverage, standard iPhone 13 card density and accessibility text sizes. This follow-up does not reopen accepted 4.4 or its deferred 6.3 recovery check.
+- **Subsequent approved overview refinement (D-075; execution status in TODO):** This supersedes the universal stacked-A/compact-artwork/chevron requirements above. Verify count boundaries 1/2/3/4/7, selected-order preservation, complete two-/three-card standard viewport, scrolling gallery/detail access, all known NO outcomes red without making unavailable advice red, single-item-style text without routine timing duplication, necessary brief/exception/uncertainty qualifications, all three dayparts, and narrow/largest-text light/dark layouts. Keep recommendation/domain and existing single-item/detail layout regressions. Run `bash scripts/verify.sh full` and inspect actual simulator screenshots; prototype assertions do not satisfy app acceptance. No phone installation until the user separately requests it. Handoff: `prototypes/multi-item-layouts/IMPLEMENTATION_HANDOFF.md`.
 - **Dependencies:** 4.1–4.2, 3.5.
 - **Non-goals:** Widget, saved cities, custom items, broad settings.
 

@@ -1,7 +1,7 @@
 # Can I Wear — Product Specification
 
 > Status: ACTIVE
-> Last updated: 2026-10-22
+> Last updated: 2026-10-24
 > Source of truth: YES
 
 ## Initial real-device user story (historical foundation)
@@ -76,6 +76,8 @@ The Phase 3 single-item Home foundation follows D-046/D-047/D-051 and `UX.md`: a
 The presentation contract and representative verdicts are maintained in [UX.md](UX.md#phase-4-daily-verdicts-and-timing-d-060).
 
 **D-074 presentation amendment:** Multi-item overview now uses shorter artwork-left YES/MAYBE/NO heroes, retaining qualified brief/uncertain outcomes and semantic accessibility descriptions. Non-jacket dayparts show one badge: any YES → YES; otherwise any MAYBE → MAYBE; otherwise NO, with missing coverage unavailable. A positive daypart means useful sometime, not all six hours. Exact hours use the same compact segmented timeline as the jacket on single Home/detail. This supersedes stacked within-card intervals and explicit-verdict-only overview layout above; daily policies and the jacket detail remain unchanged.
+
+**D-075 approved overview refinement:** Keep the existing one-item Home; use **A — Mini heroes for 2–3 selected items** and **C — Item gallery for 4+** from `prototypes/multi-item-layouts/`. Match single-item text rather than adding a separate daily-verdict/timing sentence, retain necessary qualifiers, enlarge/balance artwork and remove chevrons without removing full-card detail access. **Every NO is red**, including not-needed advice; this does not redefine not-needed as dangerous or change evaluation. Unavailable advice remains distinct. Presentation/adaptive/accessibility details belong in `UX.md`; existing single-item/detail layouts and recommendation rules remain unchanged. Execution/verification status is in `TODO.md`.
 
 ## Leather-jacket recommendation policy
 

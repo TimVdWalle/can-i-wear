@@ -189,6 +189,161 @@ final class ItemHomeUITests: XCTestCase {
     }
 
     @MainActor
+    func testThreeMiniHeroesFitInitialViewportInGuidedAndCompactModes() {
+        for mode in ["guided", "compact"] {
+            let app = launch("items-mixed", flags: [
+                "-ui-test-items", "leatherJacket,sunglasses,sweater", "-home_introduction_visible", "NO",
+                "-AppleInterfaceStyle", mode == "guided" ? "Light" : "Dark"
+            ], mode: mode)
+            XCTAssertTrue(app.buttons["item-card-leatherJacket"].waitForExistence(timeout: 5))
+            XCTAssertTrue(app.descendants(matching: .any)["item-mini-heroes"].exists)
+            let viewport = app.frame.insetBy(dx: 0, dy: 44)
+            var previousBottom: CGFloat = 0
+            // Saved order is catalog order, not the order in the launch argument.
+            for item in ["leatherJacket", "sweater", "sunglasses"] {
+                let card = app.buttons["item-card-\(item)"]
+                XCTAssertTrue(viewport.contains(card.frame), "Three complete cards must fit: \(item) \(card.frame)")
+                XCTAssertGreaterThanOrEqual(card.frame.minY, previousBottom)
+                XCTAssertGreaterThanOrEqual(card.frame.height, 150, "Keep artwork and daypart context, not compressed rows")
+                previousBottom = card.frame.maxY
+            }
+            capture(app, "D-075 — three mini heroes, \(mode)")
+            app.terminate()
+        }
+    }
+
+    @MainActor
+    func testFourAndSevenItemsUseTwoColumnGalleryAndEveryCardOpensMatchingDetail() {
+        let catalog = ["leatherJacket", "warmCoat", "sweater", "raincoat", "sunglasses", "shorts", "gloves"]
+        for count in [4, 7] {
+            let items = Array(catalog.prefix(count))
+            let app = launch("items-mixed", flags: [
+                "-ui-test-items", items.joined(separator: ","), "-home_introduction_visible", "NO",
+                "-AppleInterfaceStyle", count == 4 ? "Light" : "Dark"
+            ])
+            let first = app.buttons["item-card-leatherJacket"]
+            XCTAssertTrue(first.waitForExistence(timeout: 5))
+            XCTAssertTrue(app.descendants(matching: .any)["item-gallery"].exists)
+            let second = app.buttons["item-card-warmCoat"]
+            let third = app.buttons["item-card-sweater"]
+            XCTAssertEqual(first.frame.minY, second.frame.minY, accuracy: 1)
+            XCTAssertEqual(first.frame.width, second.frame.width, accuracy: 1)
+            XCTAssertGreaterThan(second.frame.minX, first.frame.maxX)
+            XCTAssertGreaterThanOrEqual(third.frame.minY, first.frame.maxY)
+            XCTAssertEqual(third.frame.minX, first.frame.minX, accuracy: 1)
+            XCTAssertTrue(app.frame.insetBy(dx: 0, dy: 44).contains(app.buttons["item-card-raincoat"].frame),
+                          "Four ordinary gallery cards must be readable in the initial viewport")
+            capture(app, "D-075 — \(count)-item gallery")
+            for item in items {
+                let card = app.buttons["item-card-\(item)"]
+                reveal(card, in: app)
+                XCTAssertTrue(card.isHittable)
+                card.tap()
+                let detail = app.scrollViews["item-detail"]
+                XCTAssertTrue(detail.waitForExistence(timeout: 5))
+                let hero = detail.descendants(matching: .any)["recommendation-hero"]
+                XCTAssertTrue(hero.label.hasPrefix(cardName(item) + "."), hero.label)
+                app.buttons["Done"].tap()
+            }
+            app.terminate()
+        }
+    }
+
+    @MainActor
+    func testSelectionEditsCrossSingleMiniHeroAndGalleryBoundariesWithoutLosingSelection() {
+        let app = launch("items-mixed", flags: ["-ui-test-items", "leatherJacket", "-home_introduction_visible", "NO"])
+        XCTAssertTrue(app.descendants(matching: .any)["recommendation-hero"].waitForExistence(timeout: 5))
+        for (item, count) in [("warmCoat", 2), ("sweater", 3), ("raincoat", 4), ("raincoat", 3)] {
+            app.buttons["configure-items"].tap()
+            app.buttons["select-item-\(item)"].tap()
+            XCTAssertEqual(app.staticTexts["selection-count"].label, "\(count) selected")
+            app.buttons["confirm-item-selection"].tap()
+            let identifier = count >= 4 ? "item-gallery" : "item-mini-heroes"
+            XCTAssertTrue(app.descendants(matching: .any)[identifier].waitForExistence(timeout: 5))
+            XCTAssertEqual(app.buttons.matching(NSPredicate(format: "identifier BEGINSWITH 'item-card-'")).count, count)
+        }
+        app.terminate()
+        app.launchArguments = ["-ui-test-scenario", "items-mixed", "-ui-test-home-mode", "compact", "-ui-test-preserve-selection"]
+        app.launch()
+        XCTAssertTrue(app.buttons["item-card-sweater"].waitForExistence(timeout: 5))
+        XCTAssertFalse(app.buttons["item-card-raincoat"].exists)
+    }
+
+    @MainActor
+    func testGalleryAdaptsColumnCountToViewportWidth() {
+        let app = launch("items-mixed", flags: [
+            "-ui-test-items", "leatherJacket,warmCoat,sweater,raincoat", "-home_introduction_visible", "NO"
+        ])
+        let first = app.buttons["item-card-leatherJacket"]
+        XCTAssertTrue(first.waitForExistence(timeout: 5))
+        let second = app.buttons["item-card-warmCoat"]
+        if app.frame.width < 382 {
+            XCTAssertEqual(first.frame.width, app.frame.width - 32, accuracy: 1)
+            XCTAssertGreaterThanOrEqual(second.frame.minY, first.frame.maxY)
+        } else {
+            XCTAssertEqual(first.frame.minY, second.frame.minY, accuracy: 1)
+            XCTAssertGreaterThan(second.frame.minX, first.frame.maxX)
+        }
+        capture(app, "D-075 — gallery viewport adaptation")
+        let final = app.buttons["item-card-raincoat"]
+        reveal(final, in: app)
+        XCTAssertTrue(final.isHittable)
+        final.tap()
+        XCTAssertTrue(app.scrollViews["item-detail"].waitForExistence(timeout: 5))
+    }
+
+    @MainActor
+    func testGalleryReflowsAtLargestTextAndRetainsQualifiersAndUnavailableAdvice() {
+        for (scenario, expected) in [("items-brief", "Briefly useful"), ("items-uncertain", "One forecast hour is uncertain"),
+                                     ("items-unavailable", "Not enough forecast data")] {
+            let app = launch(scenario, flags: [
+                "-ui-test-items", "leatherJacket,sweater,raincoat,sunglasses", "-home_introduction_visible", "NO",
+                "-UIPreferredContentSizeCategoryName", "UICTContentSizeCategoryAccessibilityXXXL"
+            ])
+            let first = app.buttons["item-card-leatherJacket"]
+            XCTAssertTrue(first.waitForExistence(timeout: 5))
+            XCTAssertTrue(app.descendants(matching: .any)["item-gallery"].exists)
+            XCTAssertEqual(first.frame.width, app.frame.width - 32, accuracy: 1)
+            let sun = app.buttons["item-card-sunglasses"]
+            reveal(sun, in: app)
+            XCTAssertTrue(sun.isHittable)
+            XCTAssertTrue(sun.label.contains(expected), sun.label)
+            XCTAssertLessThanOrEqual(sun.frame.width, app.frame.width - 32)
+            if scenario == "items-unavailable" {
+                XCTAssertFalse(sun.label.contains("Sunglasses. NO."))
+                XCTAssertFalse(sun.descendants(matching: .any)["period-0"].exists)
+            } else {
+                XCTAssertTrue(sun.descendants(matching: .any)["period-2"].exists)
+            }
+            capture(app, "D-075 — largest text gallery, \(scenario)")
+            app.terminate()
+        }
+    }
+
+    @MainActor
+    func testGalleryRemainsScrollableInDarkLandscape() {
+        let app = launch("items-last-hour", flags: [
+            "-ui-test-items", "leatherJacket,warmCoat,sweater,raincoat,sunglasses,shorts,gloves",
+            "-home_introduction_visible", "NO", "-AppleInterfaceStyle", "Dark"
+        ])
+        XCTAssertTrue(app.buttons["item-card-leatherJacket"].waitForExistence(timeout: 5))
+        capture(app, "D-075 — dark gallery at night")
+        XCUIDevice.shared.orientation = .landscapeLeft
+        let gloves = app.buttons["item-card-gloves"]
+        reveal(gloves, in: app)
+        XCTAssertTrue(gloves.isHittable)
+        XCTAssertLessThanOrEqual(gloves.frame.width, app.frame.width)
+        capture(app, "D-075 — dark landscape gallery, final item")
+        gloves.tap()
+        XCTAssertTrue(app.scrollViews["item-detail"].waitForExistence(timeout: 5))
+    }
+
+    private func cardName(_ item: String) -> String {
+        ["leatherJacket": "Leather Jacket", "warmCoat": "Warm Coat", "sweater": "Sweater", "raincoat": "Raincoat",
+         "sunglasses": "Sunglasses", "shorts": "Shorts", "gloves": "Gloves"][item] ?? item
+    }
+
+    @MainActor
     func testAllDayPeriodsRemainVisibleAtNightWithPastPeriodsMarkedFinished() {
         let app = launch("items-last-hour", flags: [
             "-ui-test-items", "leatherJacket,sunglasses", "-home_introduction_visible", "NO"

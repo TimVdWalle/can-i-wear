@@ -1,7 +1,7 @@
 # Can I Wear — Decisions
 
 > Status: ACTIVE
-> Last updated: 2026-10-22
+> Last updated: 2026-10-24
 > Source of truth: YES
 
 This file records decisions that AI and developers must not casually reopen.
@@ -431,6 +431,18 @@ This changes the displayed schedule, not the daily answer: daily aggregation/use
 For all six non-jacket items, each fixed daypart has **one summary badge**: any directly evaluated YES hour makes it YES; otherwise any MAYBE (including the permitted uncertain inference) makes it MAYBE; otherwise NO. The user explicitly chose to retain MAYBE. This supersedes D-073's stacked within-card intervals, not D-069's underlying contiguous periods. A daypart YES means useful sometime in that daypart, not useful throughout it. Missing coverage remains unavailable rather than NO; exact per-hour advice and uncertainty remain available below and in accessibility descriptions. Leather Jacket's daypart policy remains unchanged.
 
 Reuse the jacket's compact segmented hourly layout for other items on single Home and detail, with item-specific advice/reasons, neutral not-needed semantics, past-hour dimming and explicit uncertain hours. Retain all three fixed dayparts and remaining-day versus planning-context separation. No weather thresholds, domain grouping, provider/cache behavior, selection or Phase 4 acceptance changes.
+
+### D-075 — Count-adaptive multi-item Home, single-item text and all NO red
+**Decision (2026-10-24):** After reviewing `docs/prototypes/multi-item-layouts/`, the user chose **A — Mini heroes for 2–3 selected items** and **C — Item gallery for 4 or more**, and explicitly confirmed **“all no red.”** These labels refer to this new prototype, not the historical A/B comparison in D-068.
+
+- One selected item retains the existing single-item Home. Two or three use the artwork-left A cards; four or more use C's two-column gallery at standard phone/text sizes, with scrolling for the longer collection. Adapt naturally at narrow/accessibility sizes rather than shrinking essential text. Retain all three named dayparts; C may show their time ranges in the shared key illustrated by the prototype.
+- Match the single-item text structure: **item name → YES / MAYBE / NO → short weather reason**. No extra routine “Avoid from … to …”/“Useful from … to …” sentence, and no replacement combined weather-and-time line. Retain the existing brief-usefulness, jacket-exception and uncertainty qualifiers when actually required. Preserve full semantic meaning and timing in accessible descriptions and detail.
+- Use **green YES / amber MAYBE / red NO for every item**, including too-hot Sweater, too-cold Shorts and not-needed Sunglasses. Red is a negative weather-fit answer, not a claim of damage or danger. Not-needed semantics and the daily algorithms remain unchanged. Missing/unavailable advice is not NO and must not become red merely because it shares a neutral domain/presentation tone. Keep the single-item and detail layouts/text; consistent NO colouring is not permission to redesign them.
+- Increase overview artwork and improve card balance following the reviewed A/C direction. Remove the right chevrons; the whole card still opens matching detail. Keep current configuration/selection, Guided/Compact and first-use behavior. Do not add a user-facing layout switch, sorting, filtering or hidden not-needed items.
+
+This supersedes D-068's universal stacked-A overview and D-074's compact-artwork/chevron direction where they conflict. It rejects the prototype's proposed blue not-needed palette. Approved recommendation thresholds, aggregation, daypart summaries, raw-hour uncertainty, protective grouping, remaining-day/planning-context separation and provider/cache behavior remain unchanged. Prototype controls/forecasts are review tools only. Exact asset integration must remain focused on this overview work, without a single-item redesign.
+
+**Execution boundary:** The user requested a saved handoff so the session can be compacted before implementation. This records the final design choices; no app implementation or phone installation was performed or is to start as part of this handoff step. Resume from `docs/prototypes/multi-item-layouts/IMPLEMENTATION_HANDOFF.md` when the user continues.
 
 ## Not yet decided
 

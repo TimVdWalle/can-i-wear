@@ -1,7 +1,7 @@
 # Can I Wear — Technical Specification
 
 > Status: ACTIVE
-> Last updated: 2026-10-22
+> Last updated: 2026-10-24
 > Source of truth: YES
 
 ## Technical goal
@@ -156,6 +156,8 @@ D-073 keeps item planning-display evaluations separate from remaining-day `itemR
 The default-on `home_presentation_guided` and `home_introduction_visible` Settings-bundle preferences use explicit Boolean `TrueValue`/`FalseValue` values in the standard application preference domain. On first use of this contract, migrate stored `guided_home_enabled` and `show_home_introduction` values to the canonical keys. Preserve the separate legacy acknowledgement migration so an already dismissed card is not redisplayed. Synchronize and resolve the standard domain when the app returns active; do not use a cached `@AppStorage` binding or construct a `UserDefaults` suite from the app’s own bundle identifier for these externally edited values. Disabling Guided also disables the introduction, while enabling the introduction also enables Guided. **Got it** turns off the introduction only.
 
 D-074 supersedes D-073's non-jacket stacked interval rendering: map fully covered fixed dayparts to one usefulness badge (any confirmed YES, otherwise any MAYBE, otherwise NO), keeping clipped periods as accessibility context. Missing coverage is unavailable. Share the compact hourly timeline renderer across item-specific presentation values without converting non-jacket recommendations into jacket domain rules. Overview uses a compact version of the existing hero; daily evaluation and the jacket detail are unchanged.
+
+D-075's count-adaptive overview is a presentation change only. Derive its A/C layout from the existing selected-item count; do not add a persisted layout preference, separate forecasts or recommendation engines. Reuse current hero/qualifier, fixed-daypart and detail data. Map known NO outcomes to red without globally recolouring `.neutral`: unavailable advice also uses neutral presentation and is not a negative recommendation. Keep semantic not-needed versus restricted outcomes intact, and preserve existing single-item/detail layout, provider/cache/request and selection-storage contracts. Visual/adaptive requirements belong in `UX.md`.
 
 ## Central configuration
 

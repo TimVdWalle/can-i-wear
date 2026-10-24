@@ -5,6 +5,11 @@ enum HomeStyle {
     static let cardRadius: CGFloat = 22
     static let background = Color(uiColor: .systemGroupedBackground)
     static let card = Color(uiColor: .secondarySystemGroupedBackground)
+    static let artBackground = Color(uiColor: UIColor { traits in
+        traits.userInterfaceStyle == .dark
+            ? UIColor(red: 0.82, green: 0.77, blue: 0.71, alpha: 1)
+            : UIColor(red: 0.95, green: 0.93, blue: 0.90, alpha: 1)
+    })
 
     static func ink(_ level: RecommendationLevel) -> Color {
         Color(uiColor: UIColor { traits in
@@ -184,10 +189,7 @@ struct DayPartCardView: View {
     }
 
     private var statusInk: Color {
-        if dayPart.item == .leatherJacket {
-            return dayPart.recommendation.map { HomeStyle.ink($0.level) } ?? .secondary
-        }
-        return dayPart.itemSummaryLevel.map { HomeStyle.ink(ItemHomePresentation.tone($0, item: dayPart.item)) } ?? .secondary
+        HomeStyle.ink(dayPart.tone)
     }
 
     private var statusColor: Color {
@@ -197,7 +199,8 @@ struct DayPartCardView: View {
         switch dayPart.itemSummaryLevel {
         case .yes: return .green
         case .maybe: return .orange
-        case .no, nil: return .secondary
+        case .no: return .red
+        case nil: return .secondary
         }
     }
 

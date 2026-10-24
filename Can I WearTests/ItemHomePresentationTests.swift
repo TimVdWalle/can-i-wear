@@ -1,8 +1,28 @@
 import Foundation
+import SwiftUI
 import Testing
+import UIKit
 @testable import Can_I_Wear
 
 struct ItemHomePresentationTests {
+    @MainActor
+    @Test func overviewArtworkIsBundledAndNoPaletteIsRedInBothAppearances() {
+        for item in PredefinedItem.allCases where item != .leatherJacket {
+            #expect(UIImage(named: "Overview-\(item.rawValue)") != nil)
+        }
+        for appearance in [UIUserInterfaceStyle.light, .dark] {
+            let traits = UITraitCollection(userInterfaceStyle: appearance)
+            let negative = UIColor(HomeStyle.ink(ItemAdviceTone.negative)).resolvedColor(with: traits)
+            var red: CGFloat = 0
+            var green: CGFloat = 0
+            var blue: CGFloat = 0
+            var alpha: CGFloat = 0
+            #expect(negative.getRed(&red, green: &green, blue: &blue, alpha: &alpha))
+            #expect(red > green * 1.5 && red > blue * 1.3)
+            #expect(negative != UIColor(HomeStyle.ink(ItemAdviceTone.neutral)).resolvedColor(with: traits))
+        }
+    }
+
     @Test(arguments: PredefinedItem.allCases.filter { $0 != .leatherJacket })
     func daypartSummaryUsesAnyUsefulHourThenMaybeWithoutChangingDailyMinimum(item: PredefinedItem) throws {
         for (levels, expected) in [
@@ -52,7 +72,7 @@ struct ItemHomePresentationTests {
             HourlyTimelineSegment($0, item: item, timezone: evaluation.timezoneIdentifier, currentTime: now)
         }
         #expect(segments.map(\.id) == evaluation.hours.map(\.timestamp))
-        #expect(segments.map(\.tone) == [.positive, .neutral, .caution])
+        #expect(segments.map(\.tone) == [.positive, .negative, .caution])
         #expect(segments.map(\.isPast) == [true, false, false])
         #expect(segments[0].accessibilityLabel.contains("YES, Useful, finished for today"))
         #expect(segments[1].accessibilityLabel.contains("NO, Not needed"))
@@ -154,7 +174,7 @@ struct ItemHomePresentationTests {
         #expect(try presentation([.no, .maybe, .no], item: .raincoat).title == "May be useful")
         let notNeeded = try presentation([.no, .no], item: .raincoat)
         #expect(notNeeded.title == "Not needed today")
-        #expect(notNeeded.tone == .neutral)
+        #expect(notNeeded.tone == .negative)
         #expect(notNeeded.reason == "Dry forecast.")
         #expect(notNeeded.timing == "22:00–24:00")
     }
@@ -243,10 +263,32 @@ struct ItemHomePresentationTests {
             #expect(!item.name.isEmpty)
             #expect(!item.symbolName.isEmpty)
             #expect(item.id == item)
-            #expect(ItemHomePresentation.tone(.no, item: item) == (item == .leatherJacket ? .negative : .neutral))
+            #expect(ItemHomePresentation.tone(.no, item: item) == .negative)
             #expect(ItemHomePresentation.levelTitle(.no, item: item) == (item == .leatherJacket ? "Avoid" : "Not needed"))
             #expect(ItemHomePresentation.levelTitle(.maybe, item: item, inferred: true) == "Uncertain")
         }
+    }
+
+    @Test(arguments: PredefinedItem.allCases)
+    func allKnownNoAnswersAreRedWithoutChangingMeaningOrUnavailableData(item: PredefinedItem) throws {
+        let display = try presentation(Array(repeating: .no, count: 18), item: item)
+        let evaluation = try #require(display.evaluation)
+        #expect(display.heroTitle == "NO")
+        #expect(display.tone == .negative)
+        #expect(evaluation.verdict == (item == .leatherJacket ? .restricted : .notNeeded))
+        let parts = FixedDayPartPresentation.make(from: evaluation, at: evaluation.interval.start)
+        if item != .leatherJacket {
+            #expect(parts.allSatisfy { $0.statusTitle == "NO" && $0.tone == .negative })
+            #expect(parts.allSatisfy { $0.accessibilityLabel.contains("not needed") })
+        }
+        let missing = ItemHomePresentation(result: ItemForecastResult(item: item, evaluation: nil))
+        #expect(missing.tone == .neutral)
+        #expect(missing.heroTitle == nil)
+        #expect(ItemHomePresentation.tone(.no, item: item, inferred: true) == .caution)
+        let unavailableParts = FixedDayPartPresentation.make(
+            from: try #require(presentation([.no], item: item).evaluation), at: evaluation.interval.start
+        )
+        #expect(unavailableParts.prefix(2).allSatisfy { $0.tone == .neutral && $0.statusTitle == "—" })
     }
 
     @Test func shortHeroAnswersPreserveDailyMeaningsAndUniformAdviceNeedsNoQualifier() throws {

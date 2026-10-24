@@ -109,7 +109,7 @@ struct ContentView: View {
                     footer
                 }
                 .padding(.horizontal, 16)
-                .padding(.top, 24)
+                .padding(.top, selection.selectedItems.count > 1 ? 12 : 24)
                 .padding(.bottom, 16)
                 .frame(maxWidth: 640, minHeight: geometry.size.height, alignment: .topLeading)
                 .frame(maxWidth: .infinity)
@@ -256,30 +256,15 @@ struct ContentView: View {
             if selection.selectedItems.count == 1, let item = selection.selectedItems.first {
                 itemDetail(itemPresentation(item, from: presentation), legacy: presentation)
             } else {
-                Text("Your items today").font(.title3.bold()).accessibilityAddTraits(.isHeader)
-                ForEach(selection.selectedItems, id: \.self) { item in
-                    let itemPresentation = itemPresentation(item, from: presentation)
-                    Button { detailItem = item } label: {
-                        VStack(alignment: .leading, spacing: 8) {
-                            ItemSummaryView(
-                                presentation: itemPresentation, isOverview: true,
-                                qualifier: itemPresentation.heroQualifier(dayParts: itemDayParts(item, from: presentation))
-                            )
-                            if itemPresentation.evaluation != nil {
-                                itemPeriods(itemPresentation.id, from: presentation, isOverview: true)
-                            }
-                        }
-                        .padding(12)
-                        .background(HomeStyle.card, in: RoundedRectangle(cornerRadius: HomeStyle.cardRadius))
-                        .accessibilityElement(children: .ignore)
-                        .accessibilityLabel(itemPresentation.overviewAccessibilityLabel(
-                            dayParts: itemDayParts(item, from: presentation)
-                        ))
-                    }
-                    .buttonStyle(.plain)
-                    .accessibilityHint("View periods and hourly details")
-                    .accessibilityIdentifier("item-card-\(item.rawValue)")
-                }
+                ItemOverviewView(
+                    items: selection.selectedItems.map { itemPresentation($0, from: presentation) },
+                    dayParts: { itemDayParts($0, from: presentation) },
+                    missingPlanningContext: { item in
+                        item != .leatherJacket && planningEvaluation(item, from: presentation) == nil
+                            && presentation.evaluationHour != nil
+                    },
+                    onSelect: { detailItem = $0 }
+                )
             }
         }
         .task(id: scenePhase == .active ? presentation.weatherFetchedAt : nil) {

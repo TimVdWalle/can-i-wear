@@ -220,6 +220,19 @@ nonisolated struct FixedDayPartPresentation: Equatable, Sendable, Identifiable {
         }
     }
 
+    /// D-075 colours known negative answers red; missing coverage stays unavailable.
+    var tone: ItemAdviceTone {
+        if item == .leatherJacket {
+            switch recommendation?.level {
+            case .okay: return .positive
+            case .caution: return .caution
+            case .avoid: return .negative
+            case nil: return .neutral
+            }
+        }
+        return itemSummaryLevel.map { ItemHomePresentation.tone($0, item: item) } ?? .neutral
+    }
+
     var accessibilityLabel: String {
         let result: String
         if item == .leatherJacket {

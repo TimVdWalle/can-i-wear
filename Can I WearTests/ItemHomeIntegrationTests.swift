@@ -20,6 +20,12 @@ struct ItemHomeIntegrationTests {
         #expect(results.allSatisfy { $0.evaluation != nil })
         model.updateSelectedItems([.gloves])
         model.updateSelectedItems([.leatherJacket, .sunglasses])
+        for count in [1, 2, 3, 4, 7, 4, 3, 1] {
+            let selected = Array(PredefinedItem.allCases.prefix(count))
+            model.updateSelectedItems(selected.reversed())
+            #expect(result(model)?.itemResults.map(\.item) == selected)
+        }
+        model.updateSelectedItems([.leatherJacket, .sunglasses])
         model.updateSelectedItems([])
         #expect(model.selectedItems == [.leatherJacket, .sunglasses])
         #expect(await weather.requestCount == 1)

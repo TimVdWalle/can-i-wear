@@ -1,7 +1,7 @@
 # Can I Wear — UX
 
 > Status: ACTIVE
-> Last updated: 2026-10-22
+> Last updated: 2026-10-24
 > Source of truth: YES
 
 ## Core UX goal
@@ -198,6 +198,17 @@ These examples establish the intended meaning, not fabricated live times or a co
 - Keep the accepted jacket detail. Other items share its hero → fixed dayparts → compact segmented hourly timeline hierarchy, not large scrolling hour tiles.
 - Non-jacket fixed dayparts show one equally sized badge: any confirmed YES hour → YES, otherwise any MAYBE → MAYBE, otherwise NO. Missing coverage is unavailable; inferred hours remain uncertain. A YES means useful during some of the daypart. Actual intervals remain in accessible descriptions and the raw hourly timeline rather than stacked inside cards. This supersedes D-073's within-card interval rendering, not domain grouping or daily aggregation.
 - Preserve neutral not-needed semantics, dim past metadata rather than badge text, retain all three named dayparts and do not add jacket safety-grouping explanations to other items.
+
+### Approved count-adaptive overview refinement (D-075, 2026-10-24)
+
+`TODO.md` records implementation/verification status; the prototype screenshots are not execution evidence.
+
+- Route by selected-item count: **1 → existing single-item Home; 2–3 → A Mini heroes; 4+ → C Item gallery**, as reviewed in `prototypes/multi-item-layouts/`. A uses larger artwork beside the answer, with the three dayparts beneath. C uses two columns at standard sizes, artwork above the answer, and a compact daypart preview; time ranges may move to its shared Morning 06–12 / Afternoon 12–18 / Evening 18–24 key. Keep every selected item, with vertical scrolling. Narrow/accessibility layouts may use fewer columns and natural card growth rather than clipping or shrinking content.
+- Use the single-item text hierarchy and existing presentation values: name, YES/MAYBE/NO, short weather reason. Do not add a second routine verdict/time message or invent a combined weather-and-time replacement. Keep only the established brief-usefulness/exception qualifications and uncertainty notes when required. Natural wrapping is allowed; this is not a one-physical-line limit. Full accessibility summaries retain evaluated meaning and timing.
+- Use **green YES, amber MAYBE, red NO for all items**, including not-needed Sunglasses and temperature-mismatch items. Red indicates a negative answer, not necessarily damage/danger. This supersedes grey/blue treatment of known NO outcomes, not their domain semantics. Unavailable/missing data never becomes NO; retain explicit uncertainty and non-colour cues. Single-item/detail layouts and text are not redesigned.
+- Remove right chevrons. The full card remains a button opening its existing matching detail, with accessible action semantics and adequate touch targets. The prototype's single shared tap hint is acceptable; do not add repeated navigation decoration.
+- Preserve Guided/Compact, the optional introduction, gear/selection, all three fixed dayparts, past-context dimming without weakening status typography, and D-074 summary semantics. Two or three ordinary cards must fit the standard iPhone 13 initial viewport after introduction dismissal. Do not promise no scrolling for large text, introduction/exceptional notes or smaller viewports.
+- B and A-for-longer-lists are no longer implementation alternatives. The latest reference PNG/HTML still contains pre-approval blue not-needed colours; **the all-NO-red decision overrides those pixels**. Other mock forecasts, review dropdowns and provisional assets are not executable product logic or new app settings.
 
 ## Later multi-location overview UX (Phase 10)
 

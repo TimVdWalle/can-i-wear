@@ -23,11 +23,14 @@ extension HomeStyle {
 struct ItemArtwork: View {
     let item: PredefinedItem
     var symbolInset: CGFloat = 8
+    var isOverview = false
 
     var body: some View {
         Group {
             if item == .leatherJacket {
                 Image("LeatherJacket").resizable().scaledToFit()
+            } else if isOverview {
+                Image("Overview-\(item.rawValue)").resizable().scaledToFit()
             } else {
                 Image(systemName: item.symbolName)
                     .resizable().scaledToFit().padding(symbolInset).foregroundStyle(.secondary)
@@ -119,57 +122,87 @@ struct ItemSelectionView: View {
 
 struct ItemSummaryView: View {
     let presentation: ItemHomePresentation
-    var isOverview = false
+    var overviewLayout: ItemOverviewLayout?
     var qualifier: String?
     @Environment(\.dynamicTypeSize) private var typeSize
     @ScaledMetric(relativeTo: .largeTitle) private var statusSize = 44
     @ScaledMetric(relativeTo: .title) private var overviewStatusSize = 32
 
+    private var isOverview: Bool { overviewLayout != nil }
+    private var isGallery: Bool { overviewLayout == .gallery }
+
     var body: some View {
+        if isGallery {
+            VStack(alignment: .leading, spacing: 10) {
+                overviewArtwork.frame(height: 96)
+                copy
+            }
+        } else {
+            horizontalHero
+        }
+    }
+
+    private var horizontalHero: some View {
         HStack(spacing: isOverview ? 12 : 16) {
             if !typeSize.isAccessibilitySize {
-                ItemArtwork(item: presentation.id)
-                    .frame(width: isOverview ? 64 : 112, height: isOverview ? 80 : 144)
-            }
-            VStack(alignment: .leading, spacing: isOverview ? 4 : 8) {
-                HStack(spacing: 10) {
-                    if typeSize.isAccessibilitySize {
-                        ItemArtwork(item: presentation.id).frame(width: 56, height: 70)
-                    }
-                    Text(presentation.id.name).font(isOverview ? .headline : .title3.bold())
-                    if isOverview {
-                        Spacer(minLength: 0)
-                        Image(systemName: "chevron.right").font(.caption).foregroundStyle(.tertiary)
-                            .accessibilityHidden(true)
-                    }
+                if isOverview {
+                    overviewArtwork.frame(width: 96, height: 96)
+                } else {
+                    ItemArtwork(item: presentation.id).frame(width: 112, height: 144)
                 }
-                heroStatus
-                if let qualifier {
-                    Text(qualifier).font(.caption.weight(.semibold).monospacedDigit())
-                }
-                Text(presentation.reason).font(isOverview ? .caption : .subheadline).foregroundStyle(.secondary)
-                if let note = presentation.uncertaintyNote { Text(note).font(.caption).foregroundStyle(.secondary) }
             }
-            .fixedSize(horizontal: false, vertical: true)
-            .frame(maxWidth: .infinity, alignment: .leading)
+            copy
         }
+        .frame(maxWidth: .infinity, alignment: .leading)
+    }
+
+    private var overviewArtwork: some View {
+        ItemArtwork(item: presentation.id, isOverview: true)
+            .padding(6)
+            .frame(maxWidth: .infinity)
+            .background(HomeStyle.artBackground, in: RoundedRectangle(cornerRadius: 16))
+    }
+
+    private var copy: some View {
+        VStack(alignment: .leading, spacing: isOverview ? 4 : 8) {
+            HStack(spacing: 10) {
+                if typeSize.isAccessibilitySize && !isGallery {
+                    ItemArtwork(item: presentation.id, isOverview: isOverview).frame(width: 56, height: 70)
+                }
+                Text(presentation.id.name).font(isOverview ? .headline : .title3.bold())
+            }
+            heroStatus
+            if let qualifier {
+                Text(qualifier).font(.caption.weight(.semibold).monospacedDigit())
+            }
+            Text(presentation.reason).font(isOverview ? .caption : .subheadline).foregroundStyle(.secondary)
+            if let note = presentation.uncertaintyNote { Text(note).font(.caption).foregroundStyle(.secondary) }
+        }
+        .fixedSize(horizontal: false, vertical: true)
         .frame(maxWidth: .infinity, alignment: .leading)
     }
 
     @ViewBuilder
     private var heroStatus: some View {
         if let title = presentation.heroTitle {
-            ViewThatFits(in: .horizontal) {
-                HStack(spacing: 7) {
-                    Image(systemName: HomeStyle.symbol(presentation.tone)).accessibilityHidden(true)
-                    Text(title)
+            if isOverview {
+                // The short answer keeps its full text size; omit the redundant symbol in tight tiles.
+                Text(title)
+                    .font(.system(size: answerSize, weight: .bold, design: .rounded))
+                    .foregroundStyle(HomeStyle.ink(presentation.tone))
+            } else {
+                ViewThatFits(in: .horizontal) {
+                    HStack(spacing: 7) {
+                        Image(systemName: HomeStyle.symbol(presentation.tone)).accessibilityHidden(true)
+                        Text(title)
+                    }
+                    .fixedSize()
+                    Text(title).font(.system(size: answerSize * 0.72, weight: .bold, design: .rounded))
+                        .lineLimit(1).minimumScaleFactor(0.65)
                 }
-                .fixedSize()
-                Text(title).font(.system(size: answerSize * 0.72, weight: .bold, design: .rounded))
-                    .lineLimit(1).minimumScaleFactor(0.65)
+                .font(.system(size: answerSize, weight: .bold, design: .rounded))
+                .foregroundStyle(HomeStyle.ink(presentation.tone))
             }
-            .font(.system(size: answerSize, weight: .bold, design: .rounded))
-            .foregroundStyle(HomeStyle.ink(presentation.tone))
         } else {
             Text(presentation.title).font(.title2.bold()).foregroundStyle(.secondary)
         }

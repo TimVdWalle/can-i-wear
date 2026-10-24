@@ -65,8 +65,7 @@ nonisolated struct ItemHomePresentation: Identifiable, Equatable, Sendable {
         switch verdict {
         case .goodForRemainingDay, .useful: return .positive
         case .brieflyUseful, .maybeUseful, .caution: return .caution
-        case .restricted: return .negative
-        case .notNeeded: return .neutral
+        case .restricted, .notNeeded: return .negative
         }
     }
 
@@ -220,7 +219,7 @@ nonisolated struct ItemHomePresentation: Identifiable, Equatable, Sendable {
         switch level {
         case .yes: return .positive
         case .maybe: return .caution
-        case .no: return item == .leatherJacket ? .negative : .neutral
+        case .no: return .negative
         }
     }
 
