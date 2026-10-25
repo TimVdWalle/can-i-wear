@@ -75,7 +75,7 @@ These examples express the product intent and should become automated tests.
 
 1. Evaluate only the forecast location's remaining current calendar day, from its current local hour through day end, using its timezone (including DST boundaries).
 2. Classify every relevant hour; an incomplete window follows the missing-hour rule below.
-3. The jacket's daily evaluation uses the most-protective hourly result: Avoid over Caution over OK, with the existing approved reason precedence. It is not a majority vote. D-060 changes the Phase 4 Home verdict wording/timing, not this evaluation.
+3. The jacket's daily evaluation uses the most-protective hourly result: Avoid over Caution over OK, with the existing approved reason precedence. It is not a majority vote. Home presentation decisions do not change this evaluation; current wording/timing requirements belong in `UX.md`.
 4. Group the hours into meaningful, non-overlapping periods; do not present noisy alternation as many tiny changes.
 
 Normal recommendation changes require 3 consecutive forecast hours to form a separate period. A one-hour Avoid result expands into a 2-hour safety period by including the preceding hour, or the following hour if it is at the start of the evaluated window. Short safer intervals do not override surrounding risk. Repeated hour-by-hour alternation is consolidated into one period using the most protective result in the noisy span. These parameters remain centralized and fixture-tested.
@@ -129,7 +129,7 @@ These rules apply only to the named items; they do not alter Leather Jacket beha
 | Gloves | ≤5°C | >5°C through 10°C | >10°C |
 | Shorts | ≥22°C | ≥17°C and <22°C | <17°C |
 
-The item-level decision is weather fit: “Is today a good day for [item]?” D-060 approves explicit daily verdicts; D-063/D-064 settle the two shared daily algorithms below. D-065 assigns all four temperature items to Should I wear: enough useful hours makes the daily result positive even when other hours are a poor fit. Do not invent a separate daily algorithm for each.
+The item-level decision is weather fit: “Is today a good day for [item]?” D-063/D-064 settle the two shared daily algorithms below. D-065 assigns all four temperature items to Should I wear: enough useful hours makes the daily result positive even when other hours are a poor fit. Do not invent a separate daily algorithm for each. Presentation wording belongs in `UX.md`.
 
 Extend the approved D-024 isolated-gap rule to these items: at most one unusable/missing hour may be inferred, only when valid hours exist immediately before and after it. D-066 fixes this inferred result at uncertain/MAYBE for Should I wear items; it is never observed weather or a useful hour. Two or more gaps, or a gap at either edge, makes daily coverage incomplete and produces no daily answer. Leather Jacket retains its own existing conservative neighbor mapping.
 
@@ -165,7 +165,7 @@ UV Index ≥6 overrides the cloudiness-based result to Useful. Below 6, UV does 
 
 Sky conditions are not a direct brightness measurement. Do not add humidity, visibility, mountain/snow-glare or altitude heuristics under this approval. Provider signal mappings/validity must be explicit, and missing or unrecognized required signals must not become an assumed overcast/dry/no-need result. D-066 requires valid daylight/sky signals before evaluation; available UV does not rescue an hour lacking those required signals.
 
-## Phase 4 input gaps and remaining policy scope
+## Required-input handling and policy scope
 
 Wind is optional for the Raincoat; UV is optional for Sunglasses. Missing required signals follow the D-066 isolated-hour inference/coverage rule rather than becoming Not needed. The already approved apparent-temperature fallback remains unchanged for the temperature items. Missing-data handling remains item-specific: lack of one item's required signal must not prevent advice for another item with sufficient inputs.
 
@@ -173,14 +173,14 @@ The initial predefined collection is Leather Jacket, Warm Coat, Sweater, Raincoa
 
 ## Two shared daily aggregation policies (D-063)
 
-**Approved Phase 4 domain contract; multi-item Home integration remains separate. D-064 amends the Should I wear trigger below; “best hour wins” is superseded.** Classify hours using item-specific weather rules, then choose the daily result with one of two shared policies:
+**Current domain contract (D-063/D-064): “best hour wins” is superseded.** Classify hours using item-specific weather rules, then choose the daily result with one of two shared policies. Domain/Home implementation and acceptance evidence is maintained in `TODO.md`.
 
 | Behavior | Daily selection | Meaning |
 | --- | --- | --- |
 | **Can I wear** — worst hour wins | Any NO → NO; otherwise any MAYBE → MAYBE; otherwise YES. | Any unsuitable hour makes the overall day not OK. A wholly positive answer requires all evaluated hours to be suitable. |
 | **Should I wear** — enough useful hours (D-064) | At least 2 directly evaluated YES hours → positive daily advice; exactly 1 → qualified brief-usefulness advice; 0 YES with any MAYBE → MAYBE; otherwise NO. | Enough useful time makes the day a good day to use the item. A lone useful hour remains visible but does not yield the normal positive-day verdict. NO means not needed, not hazardous. |
 
-YES/MAYBE/NO here describe semantic levels, **not approved final daily UI strings**. Should I wear also retains the qualified single-hour outcome; do not flatten it into the normal positive or not-needed result. Leather Jacket retains its existing OK/Caution/Avoid domain levels and protective reason precedence; in this table they correspond to YES/MAYBE/NO respectively. Hourly Useful/Maybe useful/Not needed correspond to YES/MAYBE/NO for usefulness evaluation.
+YES/MAYBE/NO here describe semantic levels, not the complete visual/accessibility presentation contract maintained in `UX.md`. Current heroes use these short labels with reasons and necessary qualifications under D-072/D-074/D-075. Should I wear retains the qualified single-hour outcome; do not flatten it into the normal positive or not-needed result. Leather Jacket retains its existing OK/Caution/Avoid domain levels and protective reason precedence; in this table they correspond to YES/MAYBE/NO respectively. Hourly Useful/Maybe useful/Not needed correspond to YES/MAYBE/NO for usefulness evaluation.
 
 **Approved launch-item assignments (D-065):**
 
@@ -233,7 +233,7 @@ For D-066, additionally test missing required Sunglasses daylight/sky with avail
 
 ## Should I wear period grouping (D-069)
 
-**Approved Phase 4 domain contract; multi-item Home integration remains separate.** For each of the six Should I wear items:
+For each of the six Should I wear items:
 - Group adjacent, temporally consecutive evaluated hours with the same advice level into one period. Preserve actual time boundaries and ordered, non-overlapping coverage; do not bridge a different-level hour or erase an inferred hour's uncertainty.
 - Keep a one-hour useful interval visible. Do not expand it, absorb it into its neighbors, require a three-hour change, or smooth alternation using the jacket's safety policy. A sequence of changes can therefore produce several short periods; scrolling is preferable to fabricated advice.
 - Keep the daily calculation independent: D-064 counts directly evaluated useful hours, including separate intervals, before presentation grouping. Never count a period's display width or a safety-expanded span as useful forecast hours.

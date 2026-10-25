@@ -1,12 +1,12 @@
 # Can I Wear — Project Truth
 
 > Status: ACTIVE
-> Last updated: 2026-10-19
+> Last updated: 2026-10-25
 > Source of truth: YES
 
 ## Purpose
 
-Can I Wear is a simple, recommendation-first mobile app answering weather-based questions about **items**. Its **first real-device milestone** focuses on “Can I wear my leather jacket today?” The broader app supports other predefined items by the first public release, and custom items later. The Phase 4 Home Screen communicates item-specific daily advice with explicit verdicts and timing (D-060); exact labels for the different item behaviors are deferred to custom-item configuration.
+Can I Wear is a simple, recommendation-first mobile app answering weather-based questions about **items**. Its **first real-device milestone** focuses on “Can I wear my leather jacket today?” The accepted Phase 4 app supports seven predefined items; custom items come later. Home communicates item-specific daily advice through short answers, weather reasons and necessary qualifiers, with daypart/hourly timing and explicit accessible meaning (D-060 as amended by D-072/D-074/D-075). Exact labels for the different item behaviors are deferred to custom-item configuration.
 
 For the leather jacket specifically, the main concern is avoiding rain/fog damage and excessive heat, not maximizing comfort.
 
@@ -44,7 +44,7 @@ The product should answer quickly and correctly:
 
 with a very short reason.
 
-For Phase 4 daily advice, D-060 replaces a universal daily Yes/Maybe/No label with an explicit verdict and time scope; hourly answers can retain those labels. See `PRODUCT_SPEC.md` and `UX.md` for the current presentation requirements.
+For current daily advice, D-072/D-074/D-075 use visual YES/MAYBE/NO answers while preserving D-060's item-specific meaning and time scope. Shared labels do not imply shared daily algorithms or all-day suitability. See `PRODUCT_SPEC.md` and `UX.md` for the current presentation requirements.
 
 D-063 and its D-064 amendment lock the two shared daily algorithms and the useful-hour minimum. For item/daily-advice work, read those decisions and [WEATHER_LOGIC.md](WEATHER_LOGIC.md#two-shared-daily-aggregation-policies-d-063); shared wording must not be mistaken for one universal algorithm. Agent handling is in `AI_RULES.md` §5.1.
 
@@ -128,7 +128,7 @@ The hierarchy above resolves conflicts; this list says **where to maintain each 
 | `AI_RULES.md` | Instructions for AI/developer work and decision handling. |
 | `DECISIONS.md` | Approved decisions, supersession history, and explicitly undecided choices. |
 | `PRODUCT_SPEC.md` | Current user-facing requirements and product scope; exact jacket classification and grouping rules belong in `WEATHER_LOGIC.md`. |
-| `WEATHER_LOGIC.md` | Current item-specific weather rules, daily evaluation, missing-data and period grouping; distinguish the implemented leather-jacket foundation from approved/pending additional item policies. |
+| `WEATHER_LOGIC.md` | Current item-specific weather rules, daily evaluation, missing-data and period grouping; distinguish leather-jacket protection from the other items' policies. |
 | `UX.md` | Approved presentation, interaction and accessibility requirements; open design questions stay labeled open. |
 | `TECH_SPEC.md` | Technical architecture, integrations, caching implementation constraints and settings storage contracts. |
 | `ISSUES.md` | Short, ID-based list of observed defects and their resolution/verification status; other files may refer to issue IDs. |

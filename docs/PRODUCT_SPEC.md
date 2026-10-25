@@ -51,33 +51,30 @@ For Leather Jacket, provider-supplied wind speed/gusts remain diagnostic-only; a
 
 ## Decision output
 
-The app should communicate:
-- whether wearing the leather jacket is recommended;
-- when the recommendation changes during the day, if applicable;
+The app should communicate for each selected item:
+- whether wearing or bringing it is recommended, with item-specific meaning;
+- when the advice changes during the day, if applicable;
 - the primary reason.
 
 The primary visual result should be understandable almost immediately.
 
-The Phase 3 single-item Home foundation follows D-046/D-047/D-051 and `UX.md`: a Leather Jacket hero, the most-protective remaining-day summary, a short data-derived weather reason, daypart cards, and raw hourly suitability with explicit uncertainty/grouping context. **Guided Home** is the default and adds the item-neutral purpose line, daypart context and a concise dismissible explanation. **Compact Home** omits this guidance and retains the denser presentation. These modes do not change weather rules. Phase 4 keeps that one-item hierarchy while replacing the old universal daily YES/MAYBE/NO with D-060's explicit verdict/timing and adding selected-item Home routing; hourly jacket labels remain unchanged. Actual implementation/verification progress is in `TODO.md`, not inferred from historical Phase 3 evidence.
+Single-item Home retains the Phase 3 hero → dayparts → raw hourly suitability hierarchy, applied to the selected item's own rules. **Guided Home** is the default and adds the item-neutral purpose line, daypart context and a concise dismissible explanation. **Compact Home** omits this guidance. These modes do not change weather rules. Multiple selected items use the count-adaptive overview below, with matching detail. Current presentation requirements are in `UX.md`; implementation/verification evidence is in `TODO.md`.
 
 ### Phase 4 daily advice: meaning and time must be explicit (D-060)
 
-**Single-item presentation amendment (D-072):** Restore the earlier artwork-left hero with large YES/MAYBE/NO and a short reason. A small qualifier highlights an exception within displayed dayparts or a qualified brief/uncertain outcome; it is not a recap of every matching period. Omit redundant all-window timing. Detailed schedules remain below; the multi-item overview keeps the explicit-verdict/timing contract. No daily algorithm or item meaning changes.
+The current contract is D-060's explicit advice meaning and time scope with the short visual presentation approved in D-072/D-074/D-075; it is not a requirement to restore the superseded long-verdict layouts.
 
-**Planning-context correction (D-073, all-item clarification):** Every item's single-item Home, overview preview and matching detail shows exactly Morning (06–12) / Afternoon (12–18) / Evening (18–24), subduing past cards instead of removing them. Actual non-jacket advice changes remain identifiable within those cards and hourly detail, not separate wrapping top-level periods. This display context does not contribute past hours to the remaining-day daily answer. Missing earlier inputs cannot invalidate otherwise valid remaining advice or become fabricated past periods.
-
-- Present an item-appropriate daily verdict, relevant times and a short weather reason. The answer must distinguish an item that is useful at some point today from an item that suits the entire evaluated window, and distinguish not needing an item from conditions making it unsuitable.
-- Do not present one universal daily YES/NO whose meaning silently changes between items. A positive usefulness verdict does not imply every hour is positive; a restriction verdict must make the affected times clear rather than implying every hour is unsuitable.
-- Keep hourly evaluations and meaningful periods available. Hourly answers can retain YES/MAYBE/NO; the new daily copy does not change the approved classification thresholds, time window, conservative missing-hour handling or jacket safety consolidation.
+- Use item name → YES/MAYBE/NO → short weather reason on single Home, overview and detail. Keep necessary brief-usefulness, jacket-exception and uncertainty qualifications; do not add a routine second verdict/timing sentence or recap every period. Detailed timing remains in dayparts/hourly output and accessible descriptions.
+- Preserve item-specific meaning: useful during enough remaining hours is not all-day suitability, and not-needed is not unsafe. Accessible summaries must convey that meaning and time scope; shared visual labels must not silently collapse the distinction.
+- Every item's single Home, overview preview and matching detail retains Morning (06–12) / Afternoon (12–18) / Evening (18–24), with past context subdued but status typography preserved. This planning context does not add past hours to the remaining-day daily answer. Missing earlier inputs stay unavailable and cannot invalidate valid remaining advice.
+- Non-jacket dayparts show one summary badge under the [approved display rule](WEATHER_LOGIC.md#fixed-daypart-display-summaries-d-074). A positive daypart means useful sometime, not all six hours. Exact advice and uncertainty remain in accessible descriptions and the shared compact hourly timeline, not stacked intervals inside cards. Jacket protective grouping remains unchanged.
 - Use one of the **two approved shared daily aggregation policies (D-063/D-064)**: Can I wear items use the worst hour; Should I wear items need enough useful hours, not merely the best hour. All launch-item assignments are approved in D-065. Do not force one algorithm onto all items or invent a separate daily algorithm per item. The assignments, approved useful-hour threshold and qualified single-hour outcome are maintained in [WEATHER_LOGIC.md](WEATHER_LOGIC.md#two-shared-daily-aggregation-policies-d-063).
 - Streamline/reuse presentation wording across both behaviors where it remains clear. Common wording does not mean common aggregation: dayparts/hourly detail explain suitable/unsuitable or useful/not-needed intervals. A positive daily usefulness result is not an all-day suitability claim.
 - No visible item-group labels are required to interpret the predefined collection. Fixed-item behavior can be predefined while remaining separable from UI copy; exact grouping labels and the configuration explanation are deferred to custom items in Phase 8.1, not settled by D-059's historical wording.
 
-The presentation contract and representative verdicts are maintained in [UX.md](UX.md#phase-4-daily-verdicts-and-timing-d-060).
+The detailed presentation and accessibility contract is maintained in [UX.md](UX.md#phase-4-daily-verdicts-and-timing-d-060).
 
-**D-074 presentation amendment:** Multi-item overview now uses shorter artwork-left YES/MAYBE/NO heroes, retaining qualified brief/uncertain outcomes and semantic accessibility descriptions. Non-jacket dayparts show one badge: any YES → YES; otherwise any MAYBE → MAYBE; otherwise NO, with missing coverage unavailable. A positive daypart means useful sometime, not all six hours. Exact hours use the same compact segmented timeline as the jacket on single Home/detail. This supersedes stacked within-card intervals and explicit-verdict-only overview layout above; daily policies and the jacket detail remain unchanged.
-
-**D-075 approved overview refinement:** Keep the existing one-item Home; use **A — Mini heroes for 2–3 selected items** and **C — Item gallery for 4+** from `prototypes/multi-item-layouts/`. Match single-item text rather than adding a separate daily-verdict/timing sentence, retain necessary qualifiers, enlarge/balance artwork and remove chevrons without removing full-card detail access. **Every NO is red**, including not-needed advice; this does not redefine not-needed as dangerous or change evaluation. Unavailable advice remains distinct. Presentation/adaptive/accessibility details belong in `UX.md`; existing single-item/detail layouts and recommendation rules remain unchanged. Execution/verification status is in `TODO.md`.
+**Count-adaptive Home (D-075):** Keep the existing one-item Home; use **A — Mini heroes for 2–3 selected items** and **C — Item gallery for 4+**. Reuse original catalog artwork with enlarged overview bounds and readable scalable text; omit chevrons while retaining full-card matching detail access. **Every known NO is red**, including not-needed advice; this does not redefine not-needed as dangerous. Unavailable advice remains distinct. Presentation/adaptive/accessibility details belong in `UX.md`; existing single-item/detail layouts and recommendation rules remain unchanged.
 
 ## Leather-jacket recommendation policy
 
@@ -85,7 +82,7 @@ Protect the jacket from precipitation and explicit forecast fog/mist, even when 
 
 The complete current hourly thresholds, valid-input requirements, signal interpretation, conservative missing-hour handling, daily summary and period-grouping policy are in [WEATHER_LOGIC.md](WEATHER_LOGIC.md) (D-023/D-024/D-026/D-029/D-046/D-055/D-056). Keep tunable values centralized; changes to approved rules require a new decision.
 
-The approved temporary Phase 2 fog reason is **“Fog is expected.”** Final reason copy remains part of the Phase 3 presentation review.
+The short fog reason is **“Fog is expected.”** Existing Home/recovery presentation is accepted; it is not awaiting a Phase 3 review.
 
 ## Personalization
 
