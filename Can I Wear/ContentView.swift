@@ -147,17 +147,17 @@ struct ContentView: View {
 
     private var header: some View {
         VStack(alignment: .leading, spacing: 8) {
-            HStack(alignment: .firstTextBaseline) {
-                Text("Can I Wear")
-                    .font(.largeTitle.bold())
-                    .accessibilityAddTraits(.isHeader)
-                Spacer(minLength: 8)
-                Button { isShowingItemSelection = true } label: {
-                    Image(systemName: "gearshape").font(.title2).frame(width: 44, height: 44)
+            ViewThatFits(in: .horizontal) {
+                HStack(spacing: 8) {
+                    homeTitle.fixedSize()
+                    Spacer(minLength: 0)
+                    locality.fixedSize()
                 }
-                .buttonStyle(.plain)
-                .accessibilityLabel("Configure items")
-                .accessibilityIdentifier("configure-items")
+                VStack(alignment: .trailing, spacing: 4) {
+                    homeTitle.frame(maxWidth: .infinity, alignment: .leading)
+                    locality
+                        .multilineTextAlignment(.trailing)
+                }
             }
             if homePresentationMode == .guided {
                 Text("Today’s weather, interpreted for each item.")
@@ -165,45 +165,88 @@ struct ContentView: View {
                     .foregroundStyle(.secondary)
                     .accessibilityIdentifier("home-purpose")
             }
-            HStack(spacing: 8) {
-                LocationPinIcon()
-                    .accessibilityHidden(true)
-                Text(model.locality ?? "Current location")
-            }
-                .font(.headline)
-                .accessibilityElement(children: .combine)
-                .accessibilityIdentifier("weather-locality")
         }
     }
 
-    private var footer: some View {
-        ZStack {
-            Link(destination: URL(string: "https://open-meteo.com/")!) {
-                Text("Weather provided by Open-Meteo")
-                    .font(.footnote)
-                    .frame(maxWidth: .infinity, minHeight: 44)
-                    .multilineTextAlignment(.center)
-                    .contentShape(Rectangle())
-            }
-            .tint(.secondary)
+    private var homeTitle: some View {
+        Text("Can I Wear")
+            .font(.largeTitle.bold())
+            .fixedSize(horizontal: false, vertical: true)
+            .accessibilityAddTraits(.isHeader)
+            .accessibilityIdentifier("home-title")
+    }
 
-            if model.diagnostics.isEnabled {
-                HStack {
-                    Spacer()
-                    Button {
-                        isShowingDiagnostics = true
-                    } label: {
-                        Image(systemName: "ladybug")
-                            .font(.title3)
-                            .frame(width: 44, height: 44)
-                            .contentShape(Rectangle())
-                    }
-                    .buttonStyle(.plain)
-                    .accessibilityLabel("Diagnostics")
-                    .accessibilityIdentifier("diagnostics-button")
-                }
+    private var locality: some View {
+        HStack(spacing: 4) {
+            LocationPinIcon().accessibilityHidden(true)
+            Text(model.locality ?? "Current location")
+                .fixedSize(horizontal: false, vertical: true)
+        }
+        .font(.subheadline)
+        .foregroundStyle(.secondary)
+        .accessibilityElement(children: .combine)
+        .accessibilityIdentifier("weather-locality")
+    }
+
+    private var configureItems: some View {
+        Button { isShowingItemSelection = true } label: {
+            Image(systemName: "gearshape")
+                .font(.title2).frame(width: 44, height: 44)
+                .contentShape(Rectangle())
+        }
+        .buttonStyle(.plain)
+        .accessibilityLabel("Configure items")
+        .accessibilityIdentifier("configure-items")
+    }
+
+    private var footer: some View {
+        ViewThatFits(in: .horizontal) {
+            HStack(spacing: 8) {
+                weatherAttribution.fixedSize()
+                Spacer(minLength: 0)
+                footerControls
+            }
+            VStack(alignment: .trailing, spacing: 4) {
+                weatherAttribution.frame(maxWidth: .infinity)
+                footerControls
             }
         }
+        .frame(maxWidth: .infinity)
+    }
+
+    private var weatherAttribution: some View {
+        Link(destination: URL(string: "https://open-meteo.com/")!) {
+            Text("Weather provided by Open-Meteo")
+                .font(.footnote)
+                .fixedSize(horizontal: false, vertical: true)
+                .frame(minHeight: 44)
+                .multilineTextAlignment(.center)
+                .contentShape(Rectangle())
+        }
+        .tint(.secondary)
+        .accessibilityIdentifier("weather-attribution")
+    }
+
+    private var footerControls: some View {
+        HStack(spacing: 8) {
+            configureItems
+            if model.diagnostics.isEnabled {
+                Button {
+                    isShowingDiagnostics = true
+                } label: {
+                    Image(systemName: "ladybug")
+                        .font(.title3)
+                        .frame(width: 44, height: 44)
+                        .contentShape(Rectangle())
+                }
+                .buttonStyle(.plain)
+                .accessibilityLabel("Diagnostics")
+                .accessibilityIdentifier("diagnostics-button")
+            }
+        }
+        .foregroundStyle(.secondary)
+        // Keep symbols inside their touch targets; attribution still scales fully.
+        .dynamicTypeSize(...DynamicTypeSize.xxxLarge)
     }
 
     @ViewBuilder

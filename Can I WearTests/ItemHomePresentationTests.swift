@@ -6,6 +6,33 @@ import UIKit
 
 struct ItemHomePresentationTests {
     @MainActor
+    @Test func overviewArtworkBackgroundsFillTheirSharedStagesForEveryItem() throws {
+        for scheme in [ColorScheme.light, .dark] {
+            let swatch = ImageRenderer(content: HomeStyle.artBackground.frame(width: 1, height: 1).environment(\.colorScheme, scheme))
+            swatch.scale = 1
+            let expected = try pixel(#require(swatch.uiImage), at: .zero)
+            for layout in [ItemOverviewLayout.miniHeroes, .gallery] {
+                for item in PredefinedItem.allCases {
+                    let display = try presentation([.yes, .yes], item: item)
+                    let renderer = ImageRenderer(content: ItemSummaryView(presentation: display, overviewLayout: layout)
+                        .frame(width: layout == .miniHeroes ? 358 : 173, height: layout == .miniHeroes ? 180 : 340, alignment: .topLeading)
+                        .environment(\.dynamicTypeSize, .large).environment(\.colorScheme, scheme))
+                    renderer.scale = 1
+                    let image = try #require(renderer.uiImage)
+                    // Sample the background beyond the wide symbol, not its icon pixels or rounded corners.
+                    let points = layout == .miniHeroes
+                        ? [CGPoint(x: 8, y: 12), CGPoint(x: 8, y: 84)]
+                        : [CGPoint(x: 8, y: 12), CGPoint(x: 8, y: 68)]
+                    for point in points {
+                        let actual = try pixel(image, at: point)
+                        #expect(actual == expected, "\(item) \(layout) \(scheme) background must fill its shared artwork stage at \(point)")
+                    }
+                }
+            }
+        }
+    }
+
+    @MainActor
     @Test func originalArtworkIsAvailableAndNoPaletteIsRedInBothAppearances() {
         #expect(UIImage(named: "LeatherJacket") != nil)
         for item in PredefinedItem.allCases where item != .leatherJacket {
@@ -229,6 +256,62 @@ struct ItemHomePresentationTests {
         #expect(display.reason.hasPrefix("Wet weather"))
         #expect(display.reason.contains("Too warm"))
         #expect(display.reason.contains("Fog"))
+        #expect(display.explanation.hasPrefix("Wet weather"))
+        #expect(display.explanation.contains("excessive heat"))
+        #expect(display.explanation.contains("fog or mist"))
+        #expect(!display.explanation.contains(". "))
+        #expect(display.explanation.hasSuffix("."))
+    }
+
+    @Test func combinedSunAndRainReasonsUseOneSentenceWithoutDroppingConditions() throws {
+        let start = ItemEngineFixtures.dayEnd.addingTimeInterval(-2 * 3_600)
+        for (item, hours, expected) in [
+            (PredefinedItem.sunglasses, [
+                ItemEngineFixtures.hour(at: start),
+                ItemEngineFixtures.hour(at: start.addingTimeInterval(3_600), sky: .overcast, uv: 6)
+            ], "Sunshine and high UV are forecast."),
+            (.raincoat, [
+                ItemEngineFixtures.hour(at: start, amount: 1),
+                ItemEngineFixtures.hour(at: start.addingTimeInterval(3_600), amount: 0.1, wind: 30)
+            ], "Precipitation and wind-driven precipitation are forecast.")
+        ] {
+            let evaluation = try #require(MultiItemRecommendationEngine().evaluate(ItemEngineFixtures.forecast(hours), for: item, now: start))
+            let display = ItemHomePresentation(result: ItemForecastResult(item: item, evaluation: evaluation))
+            #expect(display.explanation == expected)
+            #expect(display.evaluation?.verdict == .useful)
+        }
+    }
+
+    @Test func uncertaintyIsPartOfOneExplanationAndTemperatureRangesStayCompact() throws {
+        let start = ItemEngineFixtures.dayEnd.addingTimeInterval(-3 * 3_600)
+        let forecast = ItemEngineFixtures.forecast([
+            ItemEngineFixtures.hour(at: start, actual: 3.5),
+            ItemEngineFixtures.hour(at: start.addingTimeInterval(3_600), actual: nil),
+            ItemEngineFixtures.hour(at: start.addingTimeInterval(2 * 3_600), actual: 4.5)
+        ])
+        let evaluation = try #require(MultiItemRecommendationEngine().evaluate(forecast, for: .gloves, now: start))
+        let display = ItemHomePresentation(result: ItemForecastResult(item: .gloves, evaluation: evaluation))
+        let low = 3.5.formatted(.number.precision(.fractionLength(0...1)))
+        let high = 4.5.formatted(.number.precision(.fractionLength(0...1)))
+        #expect(display.explanation == "Temperature: \(low)–\(high)°C; one forecast hour is uncertain.")
+        #expect(display.evaluation?.verdict == .useful)
+        #expect(display.evaluation?.qualifyingHours.count == 2)
+        #expect(display.accessibilityLabel.contains("One forecast hour is uncertain"))
+        let original = ItemEngineFixtures.sequence([.no, .no, .no], for: .sunglasses)
+        let partial = ItemEngineFixtures.forecast([original.hours[0], original.hours[2]])
+        let uncertain = try #require(MultiItemRecommendationEngine().evaluate(partial, for: .sunglasses, now: original.hours[0].timestamp))
+        #expect(ItemHomePresentation(result: ItemForecastResult(item: .sunglasses, evaluation: uncertain)).explanation == "One forecast hour is uncertain.")
+        #expect(ItemHomePresentation(result: ItemForecastResult(item: .sunglasses, evaluation: nil)).explanation == "Cannot assess the remaining day.")
+    }
+
+    @Test(arguments: PredefinedItem.allCases)
+    func ordinaryExplanationsRemainOneSentenceAndKeepTheExistingReason(item: PredefinedItem) throws {
+        for level in [ItemAdviceLevel.yes, .maybe, .no] {
+            let display = try presentation([level, level], item: item)
+            #expect(display.explanation == display.reason)
+            #expect(!display.explanation.contains(". "))
+            #expect(display.explanation.hasSuffix("."))
+        }
     }
 
     @Test func temperatureReasonIsCompactAndDoesNotMislabelActualFallbackAsFeelsLike() throws {
@@ -345,7 +428,7 @@ struct ItemHomePresentationTests {
         levels[7] = .maybe
         let (display, parts) = try jacketHome(levels)
         #expect(display.heroTitle == "MAYBE")
-        #expect(display.heroQualifier(dayParts: parts) == "Advice changes within dayparts.")
+        #expect(display.heroQualifier(dayParts: parts) == "Advice changes within dayparts")
         // Only the final caution remains; earlier risk made the whole Evening card NO.
         let (caution, cautionParts) = try jacketHome(
             Array(repeating: .no, count: 14) + Array(repeating: .maybe, count: 4), currentHourOffset: 14
@@ -391,5 +474,16 @@ struct ItemHomePresentationTests {
         let forecast = ItemEngineFixtures.sequence(levels, for: item)
         let evaluation = try #require(MultiItemRecommendationEngine().evaluate(forecast, for: item, now: forecast.hours[0].timestamp))
         return ItemHomePresentation(result: ItemForecastResult(item: item, evaluation: evaluation))
+    }
+
+    @MainActor
+    private func pixel(_ image: UIImage, at point: CGPoint) throws -> Data {
+        let format = UIGraphicsImageRendererFormat()
+        format.scale = 1
+        let sample = UIGraphicsImageRenderer(size: CGSize(width: 1, height: 1), format: format).image { _ in
+            image.draw(at: CGPoint(x: -point.x, y: -point.y))
+        }
+        let cgImage = try #require(sample.cgImage)
+        return try #require(cgImage.dataProvider?.data) as Data
     }
 }

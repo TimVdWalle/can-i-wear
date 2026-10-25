@@ -85,7 +85,7 @@ struct ItemSelectionView: View {
                         }
                     }
                     .background(HomeStyle.card, in: RoundedRectangle(cornerRadius: HomeStyle.cardRadius))
-                    Text("You can change these anytime using the gear on Home.")
+                    Text("Change items using the gear at the bottom of Home.")
                         .font(.footnote).foregroundStyle(.secondary)
                 }
                 .padding(16).frame(maxWidth: 640).frame(maxWidth: .infinity)
@@ -156,12 +156,12 @@ struct ItemSummaryView: View {
     private var overviewArtwork: some View {
         ItemArtwork(item: presentation.id)
             .padding(6)
-            .frame(maxWidth: .infinity)
+            .frame(maxWidth: .infinity, maxHeight: .infinity)
             .background(HomeStyle.artBackground, in: RoundedRectangle(cornerRadius: 16))
     }
 
     private var copy: some View {
-        VStack(alignment: .leading, spacing: isOverview ? 2 : 8) {
+        VStack(alignment: .leading, spacing: isOverview ? 4 : 8) {
             HStack(spacing: 10) {
                 if typeSize.isAccessibilitySize && !isGallery {
                     ItemArtwork(item: presentation.id).frame(width: 56, height: 70)
@@ -172,10 +172,8 @@ struct ItemSummaryView: View {
             if let qualifier {
                 Text(qualifier).font((isOverview ? Font.footnote : .caption).weight(.semibold).monospacedDigit())
             }
-            Text(presentation.reason).font(.subheadline).foregroundStyle(.secondary)
-            if let note = presentation.uncertaintyNote {
-                Text(note).font(isOverview ? .footnote : .caption).foregroundStyle(.secondary)
-            }
+            Text(presentation.explanation).font(.subheadline).foregroundStyle(.secondary)
+                .accessibilityIdentifier("item-explanation")
         }
         .fixedSize(horizontal: false, vertical: true)
         .frame(maxWidth: .infinity, alignment: .leading)

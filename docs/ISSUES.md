@@ -4,6 +4,15 @@
 
 Keep stable IDs, priority, expected/observed behavior, acceptance and validation. Use **NEEDS DECISION** when expected behavior is undefined, **AWAITING VERIFICATION** while checks remain, and **RESOLVED** only after acceptance passes. Preserve resolved entries as regression history. Detailed run/install chronology is retained in [TODO.md](TODO.md).
 
+## ISS-008 [AWAITING VERIFICATION] — Sunglasses overview artwork background is shorter
+
+- **Priority:** P2 presentation.
+- **Observed/cause:** User reported the Sunglasses background is not as tall as other items. `ItemSummaryView.overviewArtwork` applies its background before the caller's fixed artwork frame; aspect-fit symbols can therefore paint a shorter background despite equal outer frames.
+- **Expected/acceptance:** Under D-075/D-078, every overview background fills its shared mini-hero/gallery stage, regardless of artwork aspect ratio. Preserve original artwork/aspect fit, readable copy and viewport/detail behavior. Add a rendered regression that reproduces the wide-symbol discrepancy before fixing it; review native captures and run the full gate.
+- **Implementation:** The overview artwork container now fills its proposed width and height before painting the background; outer 96-/80-point stages and aspect-fit artwork remain unchanged.
+- **Validation:** `d078-artwork-baseline.xcresult` ran the new rendered regression and reproduced four failures, only for Sunglasses mini heroes in light/dark. The unchanged painted-pixel assertions now pass for all seven items in both overview layouts/appearances. Final focused checks and native screenshot review passed. `full.d7dtO9/` passed all 179 unit/integration tests and 45/46 UI executions but failed on a screenshot timeout during host clamshell sleep, not an artwork/layout assertion; it is not a gate pass. The unchanged footer case passed after a non-erasing simulator reboot (`d078-footer-recheck.xcresult`). Full gate `full.rwd6t6/` is running; remain awaiting verification until it passes. No new physical-device acceptance claimed.
+- **Documentation recheck (2026-10-25):** Confirmed the existing `full.rwd6t6/` verification and `xcodebuild` UI-test processes are still active; there is no final `status.txt` or finalized result bundle. The pending status is current, not a stale completed-run record. Record the actual full-gate outcome before closing this issue; this documentation update does not rerun app tests or imply acceptance of the installed correction.
+
 ## ISS-007 [RESOLVED] — Interrupted verification can print a misleading PASS
 
 - **Priority:** P1 tooling/evidence; app behavior unaffected.

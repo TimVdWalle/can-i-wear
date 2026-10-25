@@ -39,7 +39,7 @@ D-046 and subsequent Home decisions established the single-item foundation. Late
 
 - All four subphases and latest visual/interaction follow-ups are accepted as of 2026-10-25; evidence and explicitly deferred manual validation remain in `TODO.md`. Acceptance is not a public-release or deferred-check pass.
 - Seven predefined items use their approved hourly rules and two shared daily policies, preserving leather protection. The rule contract is maintained in `WEATHER_LOGIC.md`, not reopened at later feature gates.
-- Current-location recommendations share one forecast. First-launch selection and the header gear provide focused item configuration, not broad settings.
+- Current-location recommendations share one forecast. First-launch selection and the Home gear provide focused item configuration, not broad settings; current placement is maintained in `UX.md`.
 - D-075 retains single-item Home for one selection, mini heroes for 2–3 and a gallery for 4+, with matching detail. Current presentation requirements are in `UX.md`; user-facing group naming/configuration remains deferred to 8.1.
 - No user-created items, personalized thresholds, accounts, saved cities or notifications yet.
 

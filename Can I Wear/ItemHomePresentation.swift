@@ -111,7 +111,7 @@ nonisolated struct ItemHomePresentation: Identifiable, Equatable, Sendable {
             }
         }
         guard let exception = exceptions.first else { return nil }
-        guard exceptions.count == 1 else { return "Advice changes within dayparts." }
+        guard exceptions.count == 1 else { return "Advice changes within dayparts" }
         let label: String
         switch exception.level {
         case .yes: label = "Suitable"
@@ -128,16 +128,58 @@ nonisolated struct ItemHomePresentation: Identifiable, Equatable, Sendable {
 
     var reason: String {
         guard evaluation != nil else { return "Cannot assess the remaining day." }
-        let temperatures = relevantReasons.compactMap { reason -> Double? in
+        return Self.temperatureReason(relevantReasons) ?? relevantReasons.map(Self.reasonText).joined(separator: " · ")
+    }
+
+    /// One visible sentence; full individual reasons remain in accessible/hourly output.
+    var explanation: String {
+        guard evaluation != nil else { return reason }
+        let weatherReasons = relevantReasons.filter { $0 != .incompleteForecast }
+        guard !weatherReasons.isEmpty else { return uncertaintyNote ?? reason }
+        let sentence: String
+        if let temperature = Self.temperatureReason(weatherReasons) {
+            sentence = temperature
+        } else if weatherReasons.count == 1 {
+            sentence = Self.reasonText(weatherReasons[0])
+        } else {
+            let conditions = weatherReasons.map(Self.conditionText)
+            let list = "\(conditions.dropLast().joined(separator: ", ")) and \(conditions[conditions.count - 1])"
+            sentence = "\(list.prefix(1).uppercased())\(list.dropFirst()) are forecast."
+        }
+        return uncertaintyNote == nil ? sentence : "\(sentence.dropLast()); one forecast hour is uncertain."
+    }
+
+    private static func temperatureReason(_ reasons: [ItemAdviceReason]) -> String? {
+        let temperatures = reasons.compactMap { reason -> Double? in
             if case .temperature(let value) = reason { return value }
             return nil
         }
-        if let low = temperatures.min(), let high = temperatures.max(), temperatures.count == relevantReasons.count {
-            let lower = low.formatted(.number.precision(.fractionLength(0...1)))
-            let upper = high.formatted(.number.precision(.fractionLength(0...1)))
-            return low == high ? "Temperature: \(lower)°C." : "Temperature: \(lower)–\(upper)°C."
+        guard let low = temperatures.min(), let high = temperatures.max(), temperatures.count == reasons.count else { return nil }
+        let lower = low.formatted(.number.precision(.fractionLength(0...1)))
+        let upper = high.formatted(.number.precision(.fractionLength(0...1)))
+        return low == high ? "Temperature: \(lower)°C." : "Temperature: \(lower)–\(upper)°C."
+    }
+
+    private static func conditionText(_ reason: ItemAdviceReason) -> String {
+        switch reason {
+        case .jacket(.precipitation): "wet weather"
+        case .jacket(.fogOrMist), .fogOrMist: "fog or mist"
+        case .jacket(.excessiveHeat): "excessive heat"
+        case .jacket(.precipitationRisk), .precipitationChance: "possible precipitation"
+        case .jacket(.warmTemperature): "warm conditions"
+        case .jacket(.suitableTemperature): "dry, cool conditions"
+        case .jacket(.incompleteForecast), .incompleteForecast: "forecast uncertainty"
+        case .temperature(let value): "\(value.formatted(.number.precision(.fractionLength(0...1))))°C temperatures"
+        case .precipitation: "precipitation"
+        case .lightPrecipitation: "light precipitation"
+        case .windDrivenPrecipitation: "wind-driven precipitation"
+        case .dryWeather: "dry weather"
+        case .sunshine: "sunshine"
+        case .partlyCloudy: "partly cloudy skies"
+        case .overcast: "overcast skies"
+        case .night: "night-time conditions"
+        case .highUV: "high UV"
         }
-        return relevantReasons.map(Self.reasonText).joined(separator: " · ")
     }
 
     private var relevantReasons: [ItemAdviceReason] {

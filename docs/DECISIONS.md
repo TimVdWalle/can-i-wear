@@ -446,6 +446,19 @@ This supersedes D-068's universal stacked-A overview and D-074's compact-artwork
 
 **Post-install correction (2026-10-24):** The user rejected the substituted overview illustrations and requested restoring the original icons, also reporting that some text is too small. Reuse the existing Leather Jacket asset and catalog SF Symbols throughout; enlarge overview weather reasons and supporting/daypart text rather than shrinking them for density. Keep the approved A/C routing, larger artwork bounds, red NO palette and recommendation behavior. Compact gallery daypart labels may abbreviate the names alongside the full shared name/range key and full accessibility descriptions.
 
+### D-076 — Quieter scrolling header and more multi-item whitespace
+**Decision (2026-10-25):** The user approved trying a compact, non-sticky Home header: **Can I Wear → secondary-gray locality → configure-items gear** on one row when space permits, in both Guided and Compact. The header scrolls away with the content; keeping configuration visible at every scroll position is not required. Reflow long localities and larger text instead of truncating essential context or shrinking text. Keep the gear's accessible label and at least 44-point target.
+
+Use the space recovered from the separate location row to add breathing room within and between multi-item cards, retaining readable text, original artwork and the accepted standard-iPhone 13 two-/three-card fit. Preserve count-adaptive routing, introduction/guidance, dayparts, detail navigation and all recommendation/provider/cache/selection behavior. Do not add a pinned footer, floating control or move configuration beside attribution. This refines D-067/D-075's presentation only; final visual acceptance of this trial remains separate from implementation and automated verification in `TODO.md`.
+
+### D-077 — Move item configuration to the scrolling footer
+**Decision (2026-10-25):** After seeing the D-076 trial, the user found the header too messy and explicitly requested the configuration icon at the bottom. Move the configure-items gear beside weather attribution and optional diagnostics in the **normal scrolling footer**, not a pinned bar or floating control. This supersedes D-067/D-076's header-gear placement and D-076's prohibition on footer configuration. Keep the quieter title/locality header and multi-item whitespace trial otherwise unchanged. Let the footer reflow at narrow/larger-text sizes without overlapping attribution or reducing the controls' 44-point targets. The need to scroll to configuration is accepted; update selector guidance accordingly. No recommendation, selection persistence, provider/cache or debug policy changes.
+
+### D-078 — Remove the tap hint and keep one concise weather explanation
+**Decision (2026-10-25):** The user approved the D-077 direction and requested removing **“Tap an item for detail”**, equal-height artwork backgrounds (including Sunglasses), and only one explanation sentence. Remove the visual tap hint, retaining full-card button/accessibility action semantics. Overview artwork backgrounds must fill their shared stage regardless of the asset/symbol's aspect ratio; preserve the original artwork and its aspect fit.
+
+Use one concise weather explanation in each item summary, combining actual weather reasons and any inferred-hour uncertainty rather than concatenating complete sentences or dropping relevant hazards. Necessary brief-usefulness and jacket-exception timing remain short qualifiers, not redundant explanation sentences; full evaluated meaning/timing remains accessible and in detail. Natural text wrapping is still allowed. Existing whitespace, footer configuration, dayparts, fonts, daily/hourly algorithms, thresholds and provider/cache/selection behavior remain unchanged.
+
 ## Not yet decided
 
 The following are intentionally NOT decisions:

@@ -106,6 +106,42 @@ final class Can_I_WearUITests: XCTestCase {
     }
 
     @MainActor
+    func testFooterConfigurationAndDiagnosticsDoNotOverlapAttribution() {
+        for category in ["UICTContentSizeCategoryL", "UICTContentSizeCategoryAccessibilityXXXL"] {
+            let app = XCUIApplication()
+            app.launchArguments = [
+                "-ui-test-scenario", "diagnostics", "-ui-test-home-mode", "compact",
+                "-UIPreferredContentSizeCategoryName", category
+            ]
+            app.launch()
+            let gear = app.buttons["configure-items"]
+            XCTAssertTrue(gear.waitForExistence(timeout: 5))
+            revealFooterControl(gear, in: app)
+            let attribution = app.buttons["weather-attribution"]
+            let diagnostics = app.buttons["diagnostics-button"]
+            XCTAssertTrue(gear.isHittable)
+            XCTAssertTrue(diagnostics.isHittable)
+            XCTAssertGreaterThanOrEqual(gear.frame.width, 44)
+            XCTAssertGreaterThanOrEqual(gear.frame.height, 44)
+            XCTAssertGreaterThanOrEqual(diagnostics.frame.width, 44)
+            XCTAssertGreaterThanOrEqual(diagnostics.frame.height, 44)
+            XCTAssertLessThanOrEqual(gear.frame.maxX, diagnostics.frame.minX)
+            XCTAssertFalse(attribution.frame.intersects(gear.frame))
+            XCTAssertFalse(attribution.frame.intersects(diagnostics.frame))
+            XCTAssertLessThanOrEqual(attribution.frame.width, app.frame.width - 32)
+            capture(app, name: "D-077 — footer with diagnostics, \(category)")
+            gear.tap()
+            XCTAssertTrue(app.buttons["confirm-item-selection"].waitForExistence(timeout: 5))
+            app.buttons["Cancel"].tap()
+            revealFooterControl(diagnostics, in: app)
+            diagnostics.tap()
+            XCTAssertTrue(app.descendants(matching: .any)["diagnostics-sheet"].waitForExistence(timeout: 5))
+            app.buttons["Done"].tap()
+            app.terminate()
+        }
+    }
+
+    @MainActor
     func testSystemSettingsToggleIsReflectedWhenAppBecomesActive() throws {
         let app = XCUIApplication()
         app.launchArguments = ["-ui-test-scenario", "periods"]
@@ -212,6 +248,7 @@ final class Can_I_WearUITests: XCTestCase {
 
     @MainActor
     private func verifyItemSetupReset(app: XCUIApplication, settings: XCUIApplication) {
+        revealFooterControl(app.buttons["configure-items"], in: app)
         app.buttons["configure-items"].tap()
         XCTAssertTrue(app.buttons["Cancel"].waitForExistence(timeout: 5))
         settings.activate()
@@ -377,6 +414,16 @@ final class Can_I_WearUITests: XCTestCase {
         let attribution = weatherAttribution(in: app)
         for _ in 0..<8 where !attribution.isHittable { app.swipeUp() }
         XCTAssertTrue(attribution.isHittable)
+    }
+
+    @MainActor
+    private func revealFooterControl(_ element: XCUIElement, in app: XCUIApplication) {
+        let viewport = app.frame.insetBy(dx: 8, dy: 60)
+        for _ in 0..<16 {
+            if element.exists, element.isHittable,
+               viewport.contains(CGPoint(x: element.frame.midX, y: element.frame.midY)) { return }
+            app.swipeUp()
+        }
     }
 
     @MainActor

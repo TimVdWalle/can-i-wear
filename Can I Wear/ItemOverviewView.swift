@@ -19,16 +19,9 @@ struct ItemOverviewView: View {
 
     var body: some View {
         VStack(alignment: .leading, spacing: 10) {
-            ViewThatFits(in: .horizontal) {
-                HStack(alignment: .firstTextBaseline) {
-                    heading
-                    Spacer(minLength: 8)
-                    hint
-                }
-                VStack(alignment: .leading, spacing: 4) { heading; hint }
-            }
+            heading
             if layout == .gallery && columns == 2 { daypartKey }
-            Grid(horizontalSpacing: 10, verticalSpacing: 10) {
+            Grid(horizontalSpacing: 12, verticalSpacing: 12) {
                 ForEach(0..<((items.count + columns - 1) / columns), id: \.self) { row in
                     GridRow(alignment: .top) {
                         ForEach(0..<columns, id: \.self) { column in
@@ -52,10 +45,6 @@ struct ItemOverviewView: View {
             .accessibilityIdentifier(layout == .gallery ? "item-gallery" : "item-mini-heroes")
     }
 
-    private var hint: some View {
-        Text("Tap an item for detail").font(.footnote).foregroundStyle(.secondary)
-    }
-
     private var daypartKey: some View {
         HStack(spacing: 4) {
             ForEach(FixedDayPart.allCases, id: \.self) { part in
@@ -75,7 +64,7 @@ struct ItemOverviewView: View {
         let planningNote = item.evaluation != nil && missingPlanningContext(item.id)
             ? "Earlier periods unavailable in this forecast." : nil
         return Button { onSelect(item.id) } label: {
-            VStack(alignment: .leading, spacing: 6) {
+            VStack(alignment: .leading, spacing: 10) {
                 ItemSummaryView(presentation: item, overviewLayout: layout, qualifier: item.heroQualifier(dayParts: parts))
                 if layout == .gallery { Spacer(minLength: 0) }
                 if item.evaluation != nil {
@@ -87,7 +76,7 @@ struct ItemOverviewView: View {
                 }
             }
             .padding(.horizontal, 12)
-            .padding(.vertical, 8)
+            .padding(.vertical, 10)
             .frame(maxWidth: .infinity, maxHeight: .infinity, alignment: .topLeading)
             .background(HomeStyle.card, in: RoundedRectangle(cornerRadius: HomeStyle.cardRadius))
             .contentShape(RoundedRectangle(cornerRadius: HomeStyle.cardRadius))

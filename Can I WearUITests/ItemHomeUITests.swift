@@ -18,7 +18,7 @@ final class ItemHomeUITests: XCTestCase {
             XCTAssertTrue(viewport.contains(row.frame), "\(item) must be fully visible before scrolling: \(row.frame)")
             XCTAssertLessThanOrEqual(row.frame.maxY, confirm.frame.minY)
         }
-        let hint = app.staticTexts["You can change these anytime using the gear on Home."]
+        let hint = app.staticTexts["Change items using the gear at the bottom of Home."]
         XCTAssertTrue(viewport.contains(hint.frame), "The setup hint must be visible without scrolling")
         // Accessibility frames can be clipped to the scroll view and still pass a bounds check.
         XCTAssertGreaterThanOrEqual(hint.frame.height, app.staticTexts["selection-count"].frame.height - 1,
@@ -131,12 +131,12 @@ final class ItemHomeUITests: XCTestCase {
         confirm.tap()
         XCTAssertTrue(app.descendants(matching: .any)["recommendation-hero"].waitForExistence(timeout: 5))
 
-        app.buttons["configure-items"].tap()
+        openConfiguration(in: app)
         app.buttons["select-item-leatherJacket"].tap()
         XCTAssertFalse(confirm.isEnabled)
         app.buttons["Cancel"].tap()
         XCTAssertTrue(app.descendants(matching: .any)["recommendation-hero"].exists)
-        app.buttons["configure-items"].tap()
+        openConfiguration(in: app)
         let sun = app.buttons["select-item-sunglasses"]
         reveal(sun, in: app)
         sun.tap()
@@ -159,6 +159,38 @@ final class ItemHomeUITests: XCTestCase {
         XCTAssertTrue(confirm.isEnabled) // Replay preserves selection, not a fresh-install reset.
         XCTAssertEqual(app.buttons["select-item-leatherJacket"].value as? String, "Selected")
         XCTAssertEqual(app.buttons["select-item-sunglasses"].value as? String, "Selected")
+    }
+
+    @MainActor
+    func testOverviewOmitsTapHintAndKeepsOneWeatherExplanationWithMatchingDetail() {
+        for scenario in ["items-combined-reasons", "items-uncertain"] {
+            let app = launch(scenario, flags: [
+                "-ui-test-items", "leatherJacket,sunglasses", "-home_introduction_visible", "NO"
+            ])
+            XCTAssertTrue(app.buttons["item-card-leatherJacket"].waitForExistence(timeout: 5))
+            XCTAssertFalse(app.staticTexts["Tap an item for detail"].exists)
+            capture(app, "D-078 — matching artwork backgrounds and one explanation, \(scenario)")
+            for item in ["leatherJacket", "sunglasses"] {
+                let card = app.buttons["item-card-\(item)"]
+                let explanations = card.staticTexts.matching(identifier: "item-explanation")
+                XCTAssertEqual(explanations.count, 1)
+                let copy = explanations.firstMatch.label
+                XCTAssertFalse(copy.contains(". "), copy)
+                XCTAssertTrue(copy.hasSuffix("."), copy)
+                if scenario == "items-combined-reasons" {
+                    XCTAssertTrue(copy.contains(item == "leatherJacket" ? "fog or mist" : "high UV"), copy)
+                } else if item == "sunglasses" {
+                    XCTAssertTrue(copy.contains("forecast hour is uncertain"), copy)
+                }
+                reveal(card, in: app)
+                card.tap()
+                let detail = app.scrollViews["item-detail"]
+                XCTAssertTrue(detail.waitForExistence(timeout: 5))
+                XCTAssertEqual(detail.staticTexts["item-explanation"].label, copy)
+                app.buttons["Done"].tap()
+            }
+            app.terminate()
+        }
     }
 
     @MainActor
@@ -189,6 +221,64 @@ final class ItemHomeUITests: XCTestCase {
     }
 
     @MainActor
+    func testQuietHeaderAndConfigurationInScrollingFooterInGuidedAndCompact() {
+        for mode in ["guided", "compact"] {
+            let app = launch("items-mixed", flags: [
+                "-ui-test-items", "leatherJacket,warmCoat,sweater,raincoat,sunglasses,shorts,gloves",
+                "-home_introduction_visible", "NO"
+            ], mode: mode)
+            XCTAssertTrue(app.buttons["item-card-leatherJacket"].waitForExistence(timeout: 5))
+            let title = app.staticTexts["home-title"]
+            let locality = app.descendants(matching: .any)["weather-locality"]
+            let gear = app.buttons["configure-items"]
+            capture(app, "D-077 — uncluttered scrolling header, \(mode)")
+            XCTAssertTrue(locality.label.contains("Ghent"))
+            XCTAssertLessThanOrEqual(title.frame.maxX, locality.frame.minX)
+            XCTAssertEqual(title.frame.midY, locality.frame.midY, accuracy: 2)
+            XCTAssertEqual(app.staticTexts["home-purpose"].exists, mode == "guided")
+            XCTAssertGreaterThanOrEqual(gear.frame.minY, app.buttons["item-card-gloves"].frame.maxY)
+            XCTAssertFalse(gear.isHittable, "The footer must not float over the initial gallery")
+            reveal(gear, in: app)
+            let attribution = app.buttons["weather-attribution"]
+            XCTAssertGreaterThanOrEqual(gear.frame.width, 44)
+            XCTAssertGreaterThanOrEqual(gear.frame.height, 44)
+            XCTAssertEqual(gear.frame.midY, attribution.frame.midY, accuracy: 2)
+            XCTAssertLessThanOrEqual(attribution.frame.maxX, gear.frame.minX)
+            XCTAssertFalse(title.isHittable, "The header must scroll away, not become sticky")
+            capture(app, "D-077 — scrolling footer configuration, \(mode)")
+            // The padded corner must work too, not only the small gear glyph.
+            gear.coordinate(withNormalizedOffset: CGVector(dx: 0.1, dy: 0.1)).tap()
+            XCTAssertTrue(app.buttons["confirm-item-selection"].waitForExistence(timeout: 5))
+            app.buttons["Cancel"].tap()
+            app.terminate()
+        }
+    }
+
+    @MainActor
+    func testHeaderReflowsLongLocalityAndLargestTextWithoutLosingConfiguration() {
+        let place = "Sint-Martens-Latem, Oost-Vlaanderen, België"
+        for (mode, category) in [("guided", "UICTContentSizeCategoryL"), ("compact", "UICTContentSizeCategoryAccessibilityXXXL")] {
+            let app = launch("items-mixed", flags: [
+                "-ui-test-items", "leatherJacket,sunglasses", "-home_introduction_visible", "NO",
+                "-ui-test-locality", place, "-UIPreferredContentSizeCategoryName", category
+            ], mode: mode)
+            XCTAssertTrue(app.buttons["item-card-leatherJacket"].waitForExistence(timeout: 5))
+            let title = app.staticTexts["home-title"]
+            let locality = app.descendants(matching: .any)["weather-locality"]
+            // AX float conversion reported 374.0000076 for the 374-point right edge.
+            let viewport = app.frame.insetBy(dx: 16, dy: 44).insetBy(dx: -0.01, dy: -0.01)
+            capture(app, "D-076 — long locality reflow, \(mode), \(category)")
+            XCTAssertTrue(locality.label.contains(place), locality.label)
+            XCTAssertTrue(viewport.contains(title.frame), "Title must wrap rather than overflow")
+            XCTAssertTrue(viewport.contains(locality.frame), "Long location must remain readable within the screen")
+            XCTAssertGreaterThanOrEqual(locality.frame.minY, title.frame.maxY)
+            openConfiguration(in: app)
+            app.buttons["Cancel"].tap()
+            app.terminate()
+        }
+    }
+
+    @MainActor
     func testThreeMiniHeroesFitInitialViewportInGuidedAndCompactModes() {
         for mode in ["guided", "compact"] {
             let app = launch("items-mixed", flags: [
@@ -198,12 +288,15 @@ final class ItemHomeUITests: XCTestCase {
             XCTAssertTrue(app.buttons["item-card-leatherJacket"].waitForExistence(timeout: 5))
             XCTAssertTrue(app.descendants(matching: .any)["item-mini-heroes"].exists)
             let viewport = app.frame.insetBy(dx: 0, dy: 44)
+            XCTAssertTrue(viewport.contains(app.staticTexts["home-title"].frame), "Keep the scrolling header visible at launch")
             var previousBottom: CGFloat = 0
             // Saved order is catalog order, not the order in the launch argument.
             for item in ["leatherJacket", "sweater", "sunglasses"] {
                 let card = app.buttons["item-card-\(item)"]
                 XCTAssertTrue(viewport.contains(card.frame), "Three complete cards must fit: \(item) \(card.frame)")
-                XCTAssertGreaterThanOrEqual(card.frame.minY, previousBottom)
+                if previousBottom > 0 {
+                    XCTAssertGreaterThanOrEqual(card.frame.minY - previousBottom, 12, "Keep breathing room between cards")
+                }
                 XCTAssertGreaterThanOrEqual(card.frame.height, 150, "Keep artwork and daypart context, not compressed rows")
                 previousBottom = card.frame.maxY
             }
@@ -228,8 +321,8 @@ final class ItemHomeUITests: XCTestCase {
             let third = app.buttons["item-card-sweater"]
             XCTAssertEqual(first.frame.minY, second.frame.minY, accuracy: 1)
             XCTAssertEqual(first.frame.width, second.frame.width, accuracy: 1)
-            XCTAssertGreaterThan(second.frame.minX, first.frame.maxX)
-            XCTAssertGreaterThanOrEqual(third.frame.minY, first.frame.maxY)
+            XCTAssertGreaterThanOrEqual(second.frame.minX - first.frame.maxX, 12)
+            XCTAssertGreaterThanOrEqual(third.frame.minY - first.frame.maxY, 12)
             XCTAssertEqual(third.frame.minX, first.frame.minX, accuracy: 1)
             capture(app, "D-075 — \(count)-item gallery")
             XCTAssertTrue(app.frame.insetBy(dx: 0, dy: 44).contains(app.buttons["item-card-raincoat"].frame),
@@ -254,7 +347,7 @@ final class ItemHomeUITests: XCTestCase {
         let app = launch("items-mixed", flags: ["-ui-test-items", "leatherJacket", "-home_introduction_visible", "NO"])
         XCTAssertTrue(app.descendants(matching: .any)["recommendation-hero"].waitForExistence(timeout: 5))
         for (item, count) in [("warmCoat", 2), ("sweater", 3), ("raincoat", 4), ("raincoat", 3)] {
-            app.buttons["configure-items"].tap()
+            openConfiguration(in: app)
             app.buttons["select-item-\(item)"].tap()
             XCTAssertEqual(app.staticTexts["selection-count"].label, "\(count) selected")
             app.buttons["confirm-item-selection"].tap()
@@ -462,11 +555,11 @@ final class ItemHomeUITests: XCTestCase {
         app.buttons["select-item-leatherJacket"].tap()
         confirm.tap()
         XCTAssertTrue(app.descendants(matching: .any)["recommendation-hero"].waitForExistence(timeout: 5))
-        app.buttons["configure-items"].tap()
+        openConfiguration(in: app)
         app.buttons["select-item-leatherJacket"].tap()
         XCTAssertFalse(confirm.isEnabled)
         app.buttons["Cancel"].tap()
-        app.buttons["configure-items"].tap()
+        openConfiguration(in: app)
         XCTAssertEqual(app.buttons["select-item-leatherJacket"].value as? String, "Selected")
         let sun = app.buttons["select-item-sunglasses"]
         reveal(sun, in: app)
@@ -642,6 +735,15 @@ final class ItemHomeUITests: XCTestCase {
         app.launchArguments = ["-ui-test-scenario", scenario, "-ui-test-home-mode", mode] + flags
         app.launch()
         return app
+    }
+
+    @MainActor
+    private func openConfiguration(in app: XCUIApplication) {
+        let gear = app.buttons["configure-items"]
+        reveal(gear, in: app)
+        XCTAssertTrue(gear.isHittable)
+        gear.tap()
+        XCTAssertTrue(app.buttons["confirm-item-selection"].waitForExistence(timeout: 5))
     }
 
     @MainActor

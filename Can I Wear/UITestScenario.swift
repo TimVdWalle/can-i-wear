@@ -185,10 +185,13 @@ enum UITestScenario {
             let missingSky = scenario == "items-unavailable" || (scenario == "items-uncertain" && hour == 14)
             return HourlyWeather(
                 timestamp: start.addingTimeInterval(Double(hour - startHour) * 3_600), timezoneIdentifier: "UTC",
-                actualTemperatureCelsius: scenario == "items-no-jacket" ? nil : 12,
+                actualTemperatureCelsius: scenario == "items-no-jacket" ? nil
+                    : scenario == "items-combined-reasons" && hour >= 18 ? 24 : 12,
                 apparentTemperatureCelsius: nil, precipitationAmountMillimeters: amount,
                 precipitationType: PrecipitationType.none, precipitationChanceFraction: 0,
-                isDaylight: hour < 19, skyCondition: missingSky ? nil : sun ? .clear : .overcast
+                fogOrMistCondition: scenario == "items-combined-reasons" && hour == 19 ? .fog : nil,
+                isDaylight: hour < 19, skyCondition: missingSky ? nil : sun ? .clear : .overcast,
+                uvIndex: scenario == "items-combined-reasons" && hour == 15 ? 6 : nil
             )
         }
         let forecast = NormalizedForecast(hours: hours, metadata: ForecastMetadata(fetchedAt: now, location: location))
@@ -220,6 +223,12 @@ private struct UITestWeatherProvider: WeatherProvider {
 }
 
 private struct UITestLocalityResolver: LocalityResolving {
-    func locality(for location: LocationIdentity) async -> String? { "Ghent" }
+    func locality(for location: LocationIdentity) async -> String? {
+        let arguments = ProcessInfo.processInfo.arguments
+        guard let index = arguments.firstIndex(of: "-ui-test-locality"), arguments.indices.contains(index + 1) else {
+            return "Ghent"
+        }
+        return arguments[index + 1]
+    }
 }
 #endif
