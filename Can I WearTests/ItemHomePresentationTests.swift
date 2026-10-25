@@ -6,9 +6,11 @@ import UIKit
 
 struct ItemHomePresentationTests {
     @MainActor
-    @Test func overviewArtworkIsBundledAndNoPaletteIsRedInBothAppearances() {
+    @Test func originalArtworkIsAvailableAndNoPaletteIsRedInBothAppearances() {
+        #expect(UIImage(named: "LeatherJacket") != nil)
         for item in PredefinedItem.allCases where item != .leatherJacket {
-            #expect(UIImage(named: "Overview-\(item.rawValue)") != nil)
+            #expect(UIImage(systemName: item.symbolName) != nil)
+            #expect(UIImage(named: "Overview-\(item.rawValue)") == nil)
         }
         for appearance in [UIUserInterfaceStyle.light, .dark] {
             let traits = UITraitCollection(userInterfaceStyle: appearance)

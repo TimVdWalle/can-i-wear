@@ -53,7 +53,7 @@ struct ItemOverviewView: View {
     }
 
     private var hint: some View {
-        Text("Tap an item for detail").font(.caption).foregroundStyle(.secondary)
+        Text("Tap an item for detail").font(.footnote).foregroundStyle(.secondary)
     }
 
     private var daypartKey: some View {
@@ -66,7 +66,7 @@ struct ItemOverviewView: View {
                 .frame(maxWidth: .infinity)
             }
         }
-        .font(.caption2)
+        .font(.footnote)
         .accessibilityElement(children: .combine)
     }
 
@@ -75,18 +75,19 @@ struct ItemOverviewView: View {
         let planningNote = item.evaluation != nil && missingPlanningContext(item.id)
             ? "Earlier periods unavailable in this forecast." : nil
         return Button { onSelect(item.id) } label: {
-            VStack(alignment: .leading, spacing: 8) {
+            VStack(alignment: .leading, spacing: 6) {
                 ItemSummaryView(presentation: item, overviewLayout: layout, qualifier: item.heroQualifier(dayParts: parts))
                 if layout == .gallery { Spacer(minLength: 0) }
                 if item.evaluation != nil {
                     OverviewDayPartsView(dayParts: parts, isGallery: layout == .gallery, showsRanges: columns == 1)
                     if let planningNote {
                         Text(planningNote)
-                            .font(.caption).foregroundStyle(.secondary)
+                            .font(.footnote).foregroundStyle(.secondary)
                     }
                 }
             }
-            .padding(12)
+            .padding(.horizontal, 12)
+            .padding(.vertical, 8)
             .frame(maxWidth: .infinity, maxHeight: .infinity, alignment: .topLeading)
             .background(HomeStyle.card, in: RoundedRectangle(cornerRadius: HomeStyle.cardRadius))
             .contentShape(RoundedRectangle(cornerRadius: HomeStyle.cardRadius))
@@ -104,7 +105,6 @@ private struct OverviewDayPartsView: View {
     let isGallery: Bool
     let showsRanges: Bool
     @Environment(\.dynamicTypeSize) private var typeSize
-    @ScaledMetric(relativeTo: .caption2) private var galleryLabelSize = 9
 
     var body: some View {
         if typeSize.isAccessibilitySize {
@@ -117,14 +117,14 @@ private struct OverviewDayPartsView: View {
     private var cards: some View {
         ForEach(Array(dayParts.enumerated()), id: \.element.id) { index, part in
             VStack(spacing: 2) {
-                Text(part.label)
-                    .font(isGallery && !showsRanges ? .system(size: galleryLabelSize, weight: .semibold) : .caption2.weight(.medium))
+                Text(isGallery && !showsRanges ? compactLabel(part.dayPart) : part.label)
+                    .font(.footnote.weight(.medium))
                     .opacity(part.isPast ? 0.48 : 1)
                 if showsRanges {
-                    Text(part.timeRangeLabel).font(.caption2.monospacedDigit())
+                    Text(part.timeRangeLabel).font(.footnote.monospacedDigit())
                         .foregroundStyle(.secondary).opacity(part.isPast ? 0.48 : 1)
                 }
-                Text(part.statusTitle).font(.caption.bold()).foregroundStyle(HomeStyle.ink(part.tone))
+                Text(part.statusTitle).font(.footnote.bold()).foregroundStyle(HomeStyle.ink(part.tone))
             }
             .fixedSize(horizontal: false, vertical: true)
             .frame(maxWidth: .infinity)
@@ -133,6 +133,14 @@ private struct OverviewDayPartsView: View {
             .accessibilityElement(children: .ignore)
             .accessibilityLabel(part.accessibilityLabel)
             .accessibilityIdentifier("period-\(index)")
+        }
+    }
+
+    private func compactLabel(_ part: FixedDayPart) -> String {
+        switch part {
+        case .morning: "Morn."
+        case .afternoon: "Aft."
+        case .evening: "Eve."
         }
     }
 }

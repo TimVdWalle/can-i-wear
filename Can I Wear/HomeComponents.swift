@@ -7,7 +7,7 @@ enum HomeStyle {
     static let card = Color(uiColor: .secondarySystemGroupedBackground)
     static let artBackground = Color(uiColor: UIColor { traits in
         traits.userInterfaceStyle == .dark
-            ? UIColor(red: 0.82, green: 0.77, blue: 0.71, alpha: 1)
+            ? UIColor(red: 0.27, green: 0.25, blue: 0.22, alpha: 1)
             : UIColor(red: 0.95, green: 0.93, blue: 0.90, alpha: 1)
     })
 

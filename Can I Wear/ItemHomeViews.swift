@@ -23,14 +23,11 @@ extension HomeStyle {
 struct ItemArtwork: View {
     let item: PredefinedItem
     var symbolInset: CGFloat = 8
-    var isOverview = false
 
     var body: some View {
         Group {
             if item == .leatherJacket {
                 Image("LeatherJacket").resizable().scaledToFit()
-            } else if isOverview {
-                Image("Overview-\(item.rawValue)").resizable().scaledToFit()
             } else {
                 Image(systemName: item.symbolName)
                     .resizable().scaledToFit().padding(symbolInset).foregroundStyle(.secondary)
@@ -133,8 +130,8 @@ struct ItemSummaryView: View {
 
     var body: some View {
         if isGallery {
-            VStack(alignment: .leading, spacing: 10) {
-                overviewArtwork.frame(height: 96)
+            VStack(alignment: .leading, spacing: 8) {
+                overviewArtwork.frame(height: 80)
                 copy
             }
         } else {
@@ -157,26 +154,28 @@ struct ItemSummaryView: View {
     }
 
     private var overviewArtwork: some View {
-        ItemArtwork(item: presentation.id, isOverview: true)
+        ItemArtwork(item: presentation.id)
             .padding(6)
             .frame(maxWidth: .infinity)
             .background(HomeStyle.artBackground, in: RoundedRectangle(cornerRadius: 16))
     }
 
     private var copy: some View {
-        VStack(alignment: .leading, spacing: isOverview ? 4 : 8) {
+        VStack(alignment: .leading, spacing: isOverview ? 2 : 8) {
             HStack(spacing: 10) {
                 if typeSize.isAccessibilitySize && !isGallery {
-                    ItemArtwork(item: presentation.id, isOverview: isOverview).frame(width: 56, height: 70)
+                    ItemArtwork(item: presentation.id).frame(width: 56, height: 70)
                 }
                 Text(presentation.id.name).font(isOverview ? .headline : .title3.bold())
             }
             heroStatus
             if let qualifier {
-                Text(qualifier).font(.caption.weight(.semibold).monospacedDigit())
+                Text(qualifier).font((isOverview ? Font.footnote : .caption).weight(.semibold).monospacedDigit())
             }
-            Text(presentation.reason).font(isOverview ? .caption : .subheadline).foregroundStyle(.secondary)
-            if let note = presentation.uncertaintyNote { Text(note).font(.caption).foregroundStyle(.secondary) }
+            Text(presentation.reason).font(.subheadline).foregroundStyle(.secondary)
+            if let note = presentation.uncertaintyNote {
+                Text(note).font(isOverview ? .footnote : .caption).foregroundStyle(.secondary)
+            }
         }
         .fixedSize(horizontal: false, vertical: true)
         .frame(maxWidth: .infinity, alignment: .leading)

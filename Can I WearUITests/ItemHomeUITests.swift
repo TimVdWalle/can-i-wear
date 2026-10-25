@@ -231,9 +231,9 @@ final class ItemHomeUITests: XCTestCase {
             XCTAssertGreaterThan(second.frame.minX, first.frame.maxX)
             XCTAssertGreaterThanOrEqual(third.frame.minY, first.frame.maxY)
             XCTAssertEqual(third.frame.minX, first.frame.minX, accuracy: 1)
-            XCTAssertTrue(app.frame.insetBy(dx: 0, dy: 44).contains(app.buttons["item-card-raincoat"].frame),
-                          "Four ordinary gallery cards must be readable in the initial viewport")
             capture(app, "D-075 — \(count)-item gallery")
+            XCTAssertTrue(app.frame.insetBy(dx: 0, dy: 44).contains(app.buttons["item-card-raincoat"].frame),
+                          "Four ordinary gallery cards must be readable in the initial viewport: \(app.buttons["item-card-raincoat"].frame)")
             for item in items {
                 let card = app.buttons["item-card-\(item)"]
                 reveal(card, in: app)
@@ -290,6 +290,39 @@ final class ItemHomeUITests: XCTestCase {
         XCTAssertTrue(final.isHittable)
         final.tap()
         XCTAssertTrue(app.scrollViews["item-detail"].waitForExistence(timeout: 5))
+    }
+
+    @MainActor
+    func testOverviewReadabilityWithPhoneSelectionAndLargerGalleryText() {
+        let app = launch("items-mixed", flags: [
+            "-ui-test-items", "leatherJacket,sunglasses,gloves", "-home_introduction_visible", "NO"
+        ])
+        XCTAssertTrue(app.buttons["item-card-leatherJacket"].waitForExistence(timeout: 5))
+        let viewport = app.frame.insetBy(dx: 0, dy: 44)
+        for item in ["leatherJacket", "sunglasses", "gloves"] {
+            let card = app.buttons["item-card-\(item)"]
+            XCTAssertTrue(viewport.contains(card.frame), "The phone's three items must remain fully visible")
+            assertNamedDayparts(in: card, finishedParts: 0)
+        }
+        capture(app, "Restored icons and larger copy — phone selection")
+        app.terminate()
+
+        let larger = launch("items-uncertain", flags: [
+            "-ui-test-items", "leatherJacket,sweater,raincoat,sunglasses", "-home_introduction_visible", "NO",
+            "-UIPreferredContentSizeCategoryName", "UICTContentSizeCategoryXXXL"
+        ])
+        let first = larger.buttons["item-card-leatherJacket"]
+        XCTAssertTrue(first.waitForExistence(timeout: 5))
+        XCTAssertEqual(first.frame.width, larger.frame.width - 32, accuracy: 1)
+        let sun = larger.buttons["item-card-sunglasses"]
+        reveal(sun, in: larger)
+        XCTAssertTrue(sun.isHittable)
+        XCTAssertTrue(sun.label.contains("One forecast hour is uncertain"))
+        XCTAssertLessThanOrEqual(sun.frame.width, larger.frame.width - 32)
+        assertNamedDayparts(in: sun, finishedParts: 0)
+        capture(larger, "Restored icons and larger copy — XXXL gallery reflow")
+        sun.tap()
+        XCTAssertTrue(larger.scrollViews["item-detail"].waitForExistence(timeout: 5))
     }
 
     @MainActor
@@ -588,13 +621,13 @@ final class ItemHomeUITests: XCTestCase {
     }
 
     @MainActor
-    private func assertNamedDayparts(in scope: XCUIElement) {
+    private func assertNamedDayparts(in scope: XCUIElement, finishedParts: Int = 2) {
         let first = scope.descendants(matching: .any)["period-0"]
         for (index, name, range) in [(0, "Morning", "06–12"), (1, "Afternoon", "12–18"), (2, "Evening", "18–24")] {
             let part = scope.descendants(matching: .any)["period-\(index)"]
             XCTAssertTrue(part.exists)
             XCTAssertTrue(part.label.contains("\(name), \(range)"), part.label)
-            XCTAssertEqual(part.label.contains("finished for today"), index < 2)
+            XCTAssertEqual(part.label.contains("finished for today"), index < finishedParts)
             XCTAssertEqual(part.frame.minY, first.frame.minY, accuracy: 1, "The three dayparts must share one row")
             XCTAssertEqual(part.frame.width, first.frame.width, accuracy: 1)
             XCTAssertLessThanOrEqual(part.frame.height, 150, "Standard-size dayparts must not expand into unused screen space")

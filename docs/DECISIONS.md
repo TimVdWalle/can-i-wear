@@ -444,6 +444,8 @@ This supersedes D-068's universal stacked-A overview and D-074's compact-artwork
 
 **Execution boundary:** The user requested a saved handoff so the session can be compacted before implementation. This records the final design choices; no app implementation or phone installation was performed or is to start as part of this handoff step. Resume from `docs/prototypes/multi-item-layouts/IMPLEMENTATION_HANDOFF.md` when the user continues.
 
+**Post-install correction (2026-10-24):** The user rejected the substituted overview illustrations and requested restoring the original icons, also reporting that some text is too small. Reuse the existing Leather Jacket asset and catalog SF Symbols throughout; enlarge overview weather reasons and supporting/daypart text rather than shrinking them for density. Keep the approved A/C routing, larger artwork bounds, red NO palette and recommendation behavior. Compact gallery daypart labels may abbreviate the names alongside the full shared name/range key and full accessibility descriptions.
+
 ## Not yet decided
 
 The following are intentionally NOT decisions:
