@@ -1,14 +1,14 @@
 # Can I Wear — Weather Logic
 
 > Status: ACTIVE
-> Last updated: 2026-10-22
+> Last updated: 2026-10-25
 > Source of truth: YES
 
 ## Goal
 
 Convert local weather forecast data into clear, item-specific advice while preserving leather-jacket protection.
 
-This is the rule reference for hourly classification, remaining-day summary and meaningful periods. The leather-jacket foundation follows D-023/D-024/D-026/D-029/D-046/D-055/D-056; additional item policies are specified below. Domain implementation/validation status is in `TODO.md`, separate from pending multi-item Home integration. The logic should be deterministic, testable and easy to tune. `DECISIONS.md` retains the approval and supersession history.
+This is the rule reference for hourly classification, remaining-day summary and meaningful periods. The leather-jacket foundation follows D-023/D-024/D-026/D-029/D-046/D-055/D-056; additional item policies are specified below. Domain/Home implementation and validation status is in `TODO.md`; Phase 4 is accepted, with deferred manual checks retained there. The logic should be deterministic, testable and easy to tune. `DECISIONS.md` retains the approval and supersession history.
 
 ## Core rule priorities
 

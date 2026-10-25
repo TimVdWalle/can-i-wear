@@ -1,7 +1,7 @@
 # Can I Wear — Technical Specification
 
 > Status: ACTIVE
-> Last updated: 2026-10-24
+> Last updated: 2026-10-25
 > Source of truth: YES
 
 ## Technical goal
@@ -147,9 +147,9 @@ The weather provider must be replaceable.
 
 The implemented Phase 3 Home Screen presentation carries the existing `DailyEvaluation` hourly results alongside `DayPeriodEngine` output from the same evaluation/request. The jacket hero reuses `HourlyRecommendation.mostProtective`; SwiftUI does not aggregate weather or apply thresholds. It directly presents the mapped status and reason without a question or second action sentence. Raw hours retain timestamps/timezone and inferred-gap identity, distinct from consolidated periods. Bundled item artwork has no remote dependency. `HomePresentationMode` centrally selects Guided or Compact presentation without changing these outputs; Guided is the default.
 
-For Phase 4, D-060 replaces the universal daily YES/MAYBE/NO presentation with an explicit verdict and timing; this is approved future work, not implemented by this documentation. Keep the daily advice's meaning and supporting time intervals distinct from its display wording and from raw hourly levels. SwiftUI must present evaluated item-specific advice, not select a best/worst hour by parsing copy or inspecting an item's display name. Preserve the jacket's most-protective evaluation and the raw-hour/consolidated-period distinction.
+Phase 4 carries semantic daily advice and supporting intervals separately from display wording and raw hourly levels. D-060 established explicit verdict/timing semantics; D-072/D-074/D-075 subsequently restore short visual answers without changing those meanings. SwiftUI presents evaluated item-specific advice, not a best/worst hour selected by parsing copy or inspecting an item's display name. Preserve the jacket's most-protective evaluation and the raw-hour/consolidated-period distinction. Current implementation/acceptance evidence is in `TODO.md`.
 
-D-072 subsequently restores the large YES/MAYBE/NO single-item/detail hero with optional exception qualifiers; the explicit daily verdict/timing remains in multi-item overview cards. Map the existing semantic verdict separately from overview copy. Derive jacket exceptions from evaluated advice compared with the displayed dayparts, respecting protective periods and inferred uncertainty; never alter evaluation or present a raw safe blip inside protective avoidance as a safe interval.
+D-072 restores the large YES/MAYBE/NO single-item/detail hero with optional exception qualifiers; D-074/D-075 extend the short-answer presentation to the overview. Map the existing semantic verdict separately from overview copy. Derive jacket exceptions from evaluated advice compared with the displayed dayparts, respecting protective periods and inferred uncertainty; never alter evaluation or present a raw safe blip inside protective avoidance as a safe interval.
 
 D-073 keeps item planning-display evaluations separate from remaining-day `itemResults`. Derive the planning window using the existing forecast-timezone 06:00 start and each item's unchanged engine/grouping, reusing the same normalized forecast. Every item's Home/overview/detail row reuses the fixed Morning/Afternoon/Evening boundaries and `DayPartsView`. Non-jacket contiguous advice is clipped into those cards without a new aggregation algorithm; preserve short intervals and uncertainty. Jacket daypart evaluation stays unchanged. Carry display context through refresh/fallback/selection updates; never use its daily verdict/count as the current answer. If earlier coverage is unavailable, preserve remaining advice and mark unsupported dayparts unavailable. No new network request, cache schema or freshness policy is needed.
 
@@ -222,6 +222,8 @@ SwiftLint uses a focused rule set in `.swiftlint.yml`, including its default com
 
 Each invocation saves logs and a PASS/FAIL status under a unique `.build/verification/` directory. Successful test profiles also save `Tests.xcresult`, a target coverage summary, and per-file/function data in `coverage.json`. Inspect changed recommendation, grouping, cache, and provider logic for uncovered branches; no arbitrary global percentage is treated as proof of correctness. `.build/` is ignored by Git. Simulator/fixture success is not live-provider, visual, or physical-device acceptance. The agent's completion gate is maintained in [AI_RULES.md](AI_RULES.md#13-run-the-verification-gate-before-completion).
 
+HUP, INT and TERM explicitly exit with 129, 130 and 143 respectively. The EXIT footer preserves that failure status rather than using a preceding successful command to print PASS. An interrupted test run does not proceed to successful-run coverage collection. Tooling regressions exercise all four profiles with both shell-only and process-group interruption, independently of real app test results (ISS-007).
+
 ## UX performance
 
 Optimize for perceived responsiveness:
@@ -252,9 +254,9 @@ V1 has no account requirement and no need for a personal profile.
 - final bundle identifiers;
 - production weather provider and terms for distribution.
 
-## Technical constraints for approved future work (not yet implemented)
+## Technical constraints for multi-item and future work
 
-Scope, ordering and open choices are maintained in [ROADMAP.md](ROADMAP.md); implementation gates are in [IMPLEMENTATION_PLAN.md](IMPLEMENTATION_PLAN.md). These constraints apply only when the relevant work is approved:
+Scope, ordering and open choices are maintained in [ROADMAP.md](ROADMAP.md); implementation gates are in [IMPLEMENTATION_PLAN.md](IMPLEMENTATION_PLAN.md), with actual completion in `TODO.md`. The Phase 4 contracts below are implemented/accepted; later-feature constraints apply only when that work is approved:
 
 - Multiple item rules must stay centrally defined and testable. Do not change jacket thresholds or introduce a general-purpose rules engine without approval.
 - D-067 setup is stored by `ItemSelectionStore`: **`item_selection_completed`**, Boolean, centrally registered default false, and **`selected_item_ids`**, an array of `PredefinedItem.rawValue` strings in catalog order. Fresh installs select nothing. Only a nonempty confirmed selection sets completion true; unknown/duplicate saved IDs are filtered, and an empty valid selection cannot bypass setup even with a true flag. Editing uses a local draft; Cancel or sheet dismissal does not save it. No location/weather load starts before first confirmation. The header gear reopens selection; Home routes by the saved selected-item count.

@@ -1,7 +1,7 @@
 # Can I Wear — Decisions
 
 > Status: ACTIVE
-> Last updated: 2026-10-24
+> Last updated: 2026-10-25
 > Source of truth: YES
 
 This file records decisions that AI and developers must not casually reopen.
@@ -452,7 +452,6 @@ The following are intentionally NOT decisions:
 - detailed labels/palette/layout beyond the approved Home directions, including outcomes not specified by D-060;
 - analytics/telemetry;
 - final bundle identifiers;
-- remaining concrete Phase 4.1 presentation cases and faithful provider-signal mapping/validation; algorithms, useful-hour minimum, launch assignments, missing-input handling, layout A, grouping, initial/minimum selection and Raincoat precipitation scope are decided in D-063–D-071;
 - exact first widget design;
 - specific creation/template mechanism for basic custom items;
 - exact user-facing item-group labels and the configuration UX explaining their different daily behaviors (Phase 8.1; D-060 supersedes D-059; D-061 approves internal working labels only);

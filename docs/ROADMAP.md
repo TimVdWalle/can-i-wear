@@ -1,7 +1,7 @@
 # Can I Wear — Implementation Phases & Roadmap
 
 > Status: ACTIVE
-> Last updated: 2026-10-20
+> Last updated: 2026-10-25
 > Source of truth: YES
 
 ## Version and milestone rule
@@ -29,19 +29,18 @@ Current location → live weather → deterministic leather-jacket recommendatio
 
 Daily/hourly evaluation; meaningful periods and conservative noise consolidation; rain/temperature/fog protection for leather; safe caching, failure handling and pull-to-refresh; opt-in local diagnostics. Original thresholds and test evidence remain authoritative and are not rewritten for new items.
 
-## Phase 3 — Core app polish (next execution phase)
+## Phase 3 — Core app polish (accepted; historical)
 
-Polish the already implemented single-item flow: permissions, errors, speed, accessibility, language, interactions and presentation. Preserve Phase 3 tasks 3.1–3.5 and their quality evidence. Phase 4 will subsequently adapt the approved design for several items.
+Polished the single-item flow: permissions, errors, speed, accessibility, language, interactions and presentation. Phase 3 was accepted on 2026-10-18; evidence and unperformed manual follow-up remain in `TODO.md`, not inferred as passed.
 
-D-046 approves the reference-based single-item Home Screen for Phase 3 implementation. Broader recovery, performance and real-device accessibility gates remain pending; detail views and multi-item/multi-location layouts are not decided by this screen.
+D-046 and subsequent Home decisions established the single-item foundation. Later multi-item changes follow their own approved decisions; multi-location design remains a future gate.
 
-## Phase 4 — Predefined multi-item support (required before first release)
+## Phase 4 — Predefined multi-item support (accepted; first-release requirement)
 
-- The collection, daily algorithms/useful-hour minimum, launch assignments, missing-input handling, grouping and all-precipitation Raincoat scope are approved through D-058/D-062–D-071. Finish concrete presentation review and faithful provider-signal mapping/validation at 4.1 rather than reopening settled choices or inventing per-item daily algorithms. The detailed rule contract belongs in `WEATHER_LOGIC.md`; D-068 chooses layout A and D-070 settles initial/minimum item selection.
-- Refactor the item/rules representation enough to support multiple predefined items with their own sensible rules and short explanations. Preserve all approved jacket-protection behavior; do **not** apply leather thresholds blindly to other items.
-- Support the existing current-location, remaining-day/meaningful-period recommendation for supported items.
-- D-067 adds focused item configuration before first Home and through a header gear thereafter. One selected item retains the existing Home layout/variants; several use the new Guided-Home-based overview. Prototype visuals and the setup reset contract must be reviewed before app implementation; this is not broad settings.
-- Design and validate the approved compact overview with explicit daily verdicts and timing (D-058/D-060). Fixed-item policies may be predefined; a user-facing group taxonomy is not required for Phase 4. Remaining behavior and concrete presentation cases stay gated in 4.1.
+- All four subphases and latest visual/interaction follow-ups are accepted as of 2026-10-25; evidence and explicitly deferred manual validation remain in `TODO.md`. Acceptance is not a public-release or deferred-check pass.
+- Seven predefined items use their approved hourly rules and two shared daily policies, preserving leather protection. The rule contract is maintained in `WEATHER_LOGIC.md`, not reopened at later feature gates.
+- Current-location recommendations share one forecast. First-launch selection and the header gear provide focused item configuration, not broad settings.
+- D-075 retains single-item Home for one selection, mini heroes for 2–3 and a gallery for 4+, with matching detail. Current presentation requirements are in `UX.md`; user-facing group naming/configuration remains deferred to 8.1.
 - No user-created items, personalized thresholds, accounts, saved cities or notifications yet.
 
 ## Phase 5 — First-release iOS widget

@@ -4,6 +4,7 @@ import json
 import os
 from pathlib import Path
 import shutil
+import signal
 import subprocess
 import sys
 import tempfile
@@ -24,6 +25,16 @@ with open(os.environ['TOOL_CALLS'], 'a') as log:
     log.write(json.dumps([name, args]) + '\\n')
 if name == os.environ.get('FAIL_TOOL'):
     sys.exit(7)
+if name == os.environ.get('INTERRUPT_TOOL') and (
+        name != 'xcodebuild' or args[-1] == 'test'):
+    import signal
+    signum = getattr(signal, os.environ['INTERRUPT_SIGNAL'])
+    if os.environ['INTERRUPT_TARGET'] == 'group':
+        os.killpg(os.getpgrp(), signum)
+    else:
+        os.kill(os.getppid(), signum)
+    # Even a successful child must not turn the interrupted gate into a pass.
+    sys.exit(0)
 if name == 'xcrun':
     print('{"targets": []}' if '--json' in args else 'fixture coverage')
 """
@@ -47,7 +58,8 @@ class VerificationTests(unittest.TestCase):
         self.calls_file = self.root / "calls.jsonl"
         self.env = dict(os.environ, PATH=f"{self.bin}:/usr/bin:/bin",
                         TOOL_CALLS=str(self.calls_file))
-        for name in ("FAIL_TOOL", "VERIFY_DESTINATION"):
+        for name in ("FAIL_TOOL", "VERIFY_DESTINATION", "INTERRUPT_TOOL",
+                     "INTERRUPT_SIGNAL", "INTERRUPT_TARGET"):
             self.env.pop(name, None)
 
     def verify(self, *args, fail_tool=None):
@@ -56,6 +68,7 @@ class VerificationTests(unittest.TestCase):
         return subprocess.run(
             ["/bin/bash", str(self.root / "scripts/verify.sh"), *args],
             cwd="/", env=self.env, text=True, capture_output=True, timeout=30,
+            start_new_session=True,
         )
 
     def calls(self, name):
@@ -130,6 +143,26 @@ class VerificationTests(unittest.TestCase):
         self.assertNotEqual(result.returncode, 0)
         self.assertEqual(self.calls("xcrun"), [])
         self.assertEqual(list(self.root.glob(".build/verification/code.*/coverage.json")), [])
+
+    def test_interruption_never_reports_pass_or_collects_coverage(self):
+        for profile, tool in (("docs", "git"), ("static", "swiftlint"),
+                              ("code", "xcodebuild"), ("full", "xcodebuild")):
+            for signum in (signal.SIGHUP, signal.SIGINT, signal.SIGTERM):
+                for target in ("parent", "group"):
+                    with self.subTest(profile=profile, signal=signum.name, target=target):
+                        self.calls_file.unlink(missing_ok=True)
+                        self.env.update(INTERRUPT_TOOL=tool, INTERRUPT_SIGNAL=signum.name,
+                                        INTERRUPT_TARGET=target)
+                        result = self.verify(profile)
+                        self.assertEqual(result.returncode, 128 + signum, result.stdout + result.stderr)
+                        self.assertNotIn("PASS:", result.stdout + result.stderr)
+                        statuses = list(self.root.glob(f".build/verification/{profile}.*/status.txt"))
+                        self.assertTrue(statuses)
+                        for status in statuses:
+                            self.assertIn(f"FAIL: {profile} profile", status.read_text())
+                            self.assertNotIn("PASS:", status.read_text())
+                        self.assertEqual(self.calls("xcrun"), [])
+                        self.assertEqual(list(self.root.glob(".build/verification/*/coverage.json")), [])
 
     def test_invalid_arguments_fail_and_help_has_no_side_effects(self):
         for args in (("unknown",), ("code", "extra")):

@@ -1,7 +1,7 @@
 # Can I Wear — Product Specification
 
 > Status: ACTIVE
-> Last updated: 2026-10-24
+> Last updated: 2026-10-25
 > Source of truth: YES
 
 ## Initial real-device user story (historical foundation)
@@ -146,10 +146,10 @@ Implementation details are secondary to these outcomes.
 ## First public release: multiple predefined items and widget (Phases 4–7)
 
 - The approved initial seven-item collection is Leather Jacket, Warm Coat, Sweater, Raincoat, Sunglasses, Shorts and Gloves (D-058).
-- Retain the shared weather-fit perspective “Is today a good day for [item]?”, expressed through explicit daily verdicts and timing (D-060), not a universal daily YES/MAYBE/NO label. Each item has its own appropriate, testable rules; preserve all original leather-protection policy and provenance/cache guardrails.
-- D-067 adds first-launch item selection and a header gear reopening focused item configuration. One selected item uses the existing single-item Home layout and its presentation variants; multiple selected items use D-068's approved **A: cards with daypart previews**, showing only selected items. Select a card for full item detail. Use current Guided Home styling; sample copy/defaults and unresolved presentation cases are not automatically approved by this direction choice.
+- Retain the shared weather-fit perspective “Is today a good day for [item]?”. D-072/D-074/D-075 amend D-060's daily presentation to YES/MAYBE/NO with short reasons and necessary qualifiers, preserving distinct daily meaning and detailed timing/accessibility. Each item has appropriate, testable rules; preserve all original leather-protection policy and provenance/cache guardrails.
+- D-067 adds first-launch item selection and a header gear reopening focused item configuration. D-075 retains the single-item Home for one selection, uses mini heroes for 2–3 and an item gallery for 4+, showing only selected items. Select a card for matching item detail. Current presentation requirements are maintained above and in `UX.md`; historical prototype samples are not additional product requirements.
 - D-070 starts a fresh first launch with no items preselected. Enable Continue only with at least one selected item; the later configuration page also requires at least one selected item before saving. An empty selection cannot be saved.
-- The approved hourly rules, daily algorithms, useful-hour minimum, launch assignments, required-input/gap handling, D-069 grouping and D-071 Raincoat total-precipitation scope are in [WEATHER_LOGIC.md](WEATHER_LOGIC.md). Remaining concrete presentation review and faithful signal mapping/validation stay at Phase 4.1; settled rules and D-070 selector behavior are not open choices.
+- The approved hourly rules, daily algorithms, useful-hour minimum, launch assignments, required-input/gap handling, D-069 grouping and D-071 Raincoat total-precipitation scope are in [WEATHER_LOGIC.md](WEATHER_LOGIC.md). Phase 4 presentation/mapping acceptance is complete as recorded in `TODO.md`; settled rules and D-070 selector behavior are not open choices. Deferred manual checks are not claimed as passed.
 - Include an iOS home-screen widget; its form and content remain **TBD in Phase 5.1**.
 - Use current device location and today's relevant hours for first release. No user-created items, saved cities, notification feature or editable rules required for release.
 

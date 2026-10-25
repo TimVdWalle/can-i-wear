@@ -1,7 +1,7 @@
 # Can I Wear — UX
 
 > Status: ACTIVE
-> Last updated: 2026-10-24
+> Last updated: 2026-10-25
 > Source of truth: YES
 
 ## Core UX goal
@@ -112,11 +112,7 @@ Recent cached data may be used according to the centralized freshness policy.
 
 ## Open UX decisions
 
-- labels/palette/layout beyond this approved Home Screen;
-- loading presentation;
-- stale-data wording;
-- permission-denied wording;
-- accessibility details.
+The existing Home and recovery presentation is accepted through Phases 3–4; historical descriptions above are not new decision blockers. Outstanding UX choices concern future surfaces (especially the Phase 5.1 widget) and genuinely unspecified outcomes beyond approved behavior. Deferred manual accessibility/recovery observations remain in `TODO.md`, not silently passed or reopened product decisions.
 
 ## Debug diagnostics
 

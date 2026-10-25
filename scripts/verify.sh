@@ -38,15 +38,21 @@ printf 'Verification profile: %s\nResults: %s\n' "$profile" "$run_dir"
 # Invoked by the EXIT trap; ShellCheck cannot resolve trap callbacks (SC2329).
 # shellcheck disable=SC2329
 finish() {
-    status=$?
+    local status="$1"
     if [[ $status -eq 0 ]]; then
         printf 'PASS: %s profile\n' "$profile" | tee "$run_dir/status.txt"
     else
         printf 'FAIL: %s profile (exit %s). See %s\n' "$profile" "$status" "$run_dir" \
             | tee "$run_dir/status.txt" >&2
     fi
+    exit "$status"
 }
-trap 'finish' EXIT
+trap 'finish "$?"' EXIT
+# An unhandled signal can enter EXIT with the last command's successful status.
+# Set an explicit failure before the footer, even if a child exits successfully.
+trap 'exit 129' HUP
+trap 'exit 130' INT
+trap 'exit 143' TERM
 
 require() {
     if ! command -v "$1" >/dev/null 2>&1; then

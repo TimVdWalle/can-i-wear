@@ -1,7 +1,7 @@
 # Can I Wear — Complete Implementation Plan
 
 > Status: ACTIVE — agreed scope plus gated, sometimes provisional future execution
-> Last updated: 2026-10-24
+> Last updated: 2026-10-25
 > Source of truth: execution detail subordinate to the existing truth files
 
 ## Authority and execution rules
@@ -417,6 +417,8 @@ Goal: remove measured/user-visible friction without adding unapproved features.
 Goal: expand the already implemented jacket-only experience to a **small user-approved predefined collection** before public release. Preserve the existing jacket engine and its approved rules. Do not introduce custom-item editing or a generic advanced rules builder simply because more items are needed.
 
 ### 4.1 — Approve initial item collection and multi-item UX
+
+**Status (2026-10-25): Complete.** Final D-075 original-icon/readability presentation accepted by the user; prior provider/rule validation is recorded in `TODO.md`. The decision-progress and remaining-gate descriptions below retain the original planning sequence, not current blockers. Phase 4.1–4.4 and the post-phase visual/interaction follow-ups are accepted; manual accessibility/recovery checks remain deferred. Next feature gate is 5.1.
 
 - **Type:** Product/UX decision gate.
 - **Objective:** Confirm which predefined items the first release supports, what each item's recommendation means and how users view several items.
