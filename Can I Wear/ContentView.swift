@@ -13,11 +13,6 @@ struct ContentView: View {
     private let homePresentationModeOverride: HomePresentationMode?
 
     init() {
-        #if DEBUG
-        // Development installs expose the local diagnostics shortcut by default.
-        // The release build remains controlled by the opt-in Settings switch.
-        UserDefaults.standard.set(true, forKey: DebugSettings.enabledKey)
-        #endif
         let preferences = AppConfiguration.currentHomePresentationPreferences()
         homePresentationModeOverride = nil
         _guidedHomeEnabled = State(initialValue: preferences.guidedHomeEnabled)
@@ -147,16 +142,20 @@ struct ContentView: View {
 
     private var header: some View {
         VStack(alignment: .leading, spacing: 8) {
-            ViewThatFits(in: .horizontal) {
-                HStack(spacing: 8) {
-                    homeTitle.fixedSize()
-                    Spacer(minLength: 0)
-                    locality.fixedSize()
-                }
-                VStack(alignment: .trailing, spacing: 4) {
-                    homeTitle.frame(maxWidth: .infinity, alignment: .leading)
-                    locality
-                        .multilineTextAlignment(.trailing)
+            if selection.selectedItems.count > 1, case .result = model.state {
+                homeTitle
+            } else {
+                ViewThatFits(in: .horizontal) {
+                    HStack(spacing: 8) {
+                        homeTitle.fixedSize()
+                        Spacer(minLength: 0)
+                        locality.fixedSize()
+                    }
+                    VStack(alignment: .trailing, spacing: 4) {
+                        homeTitle.frame(maxWidth: .infinity, alignment: .leading)
+                        locality
+                            .multilineTextAlignment(.trailing)
+                    }
                 }
             }
             if homePresentationMode == .guided {
@@ -229,7 +228,6 @@ struct ContentView: View {
 
     private var footerControls: some View {
         HStack(spacing: 8) {
-            configureItems
             if model.diagnostics.isEnabled {
                 Button {
                     isShowingDiagnostics = true
@@ -243,6 +241,7 @@ struct ContentView: View {
                 .accessibilityLabel("Diagnostics")
                 .accessibilityIdentifier("diagnostics-button")
             }
+            configureItems
         }
         .foregroundStyle(.secondary)
         // Keep symbols inside their touch targets; attribution still scales fully.
@@ -306,6 +305,7 @@ struct ContentView: View {
                         item != .leatherJacket && planningEvaluation(item, from: presentation) == nil
                             && presentation.evaluationHour != nil
                     },
+                    locality: { locality },
                     onSelect: { detailItem = $0 }
                 )
             }

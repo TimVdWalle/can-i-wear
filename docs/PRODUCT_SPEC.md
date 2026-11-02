@@ -1,7 +1,7 @@
 # Can I Wear — Product Specification
 
 > Status: ACTIVE
-> Last updated: 2026-10-25
+> Last updated: 2026-11-02
 > Source of truth: YES
 
 ## Initial real-device user story (historical foundation)
@@ -67,7 +67,9 @@ The current contract is D-060's explicit advice meaning and time scope with the 
 - Use item name → YES/MAYBE/NO → short weather reason on single Home, overview and detail. Keep necessary brief-usefulness, jacket-exception and uncertainty qualifications; do not add a routine second verdict/timing sentence or recap every period. Detailed timing remains in dayparts/hourly output and accessible descriptions.
 - Preserve item-specific meaning: useful during enough remaining hours is not all-day suitability, and not-needed is not unsafe. Accessible summaries must convey that meaning and time scope; shared visual labels must not silently collapse the distinction.
 - Every item's single Home, overview preview and matching detail retains Morning (06–12) / Afternoon (12–18) / Evening (18–24), with past context subdued but status typography preserved. This planning context does not add past hours to the remaining-day daily answer. Missing earlier inputs stay unavailable and cannot invalidate valid remaining advice.
+- D-081/D-082/D-083 supersede D-079's artwork accents across single Home/detail, mini heroes and gallery: keep existing layouts and remove only separate artwork backgrounds, including neutral backgrounds. D-080 supersedes the stronger daypart fills with softer cards/distinct status pills and a darker subdued finished treatment across these surfaces. These changes await the user's final implementation go. Status values, readable typography and accessible meaning remain unchanged; visual details belong in `UX.md`. These approvals do not authorize a broader screen redesign.
 - Non-jacket dayparts show one summary badge under the [approved display rule](WEATHER_LOGIC.md#fixed-daypart-display-summaries-d-074). A positive daypart means useful sometime, not all six hours. Exact advice and uncertainty remain in accessible descriptions and the shared compact hourly timeline, not stacked intervals inside cards. Jacket protective grouping remains unchanged.
+- D-087 refines only the finished dark-appearance grays and internal multi-item daypart spacing; preserve active/unavailable colors, light palette and all other UI/behavior. The approved reference and presentation details are in `UX.md`.
 - Use one of the **two approved shared daily aggregation policies (D-063/D-064)**: Can I wear items use the worst hour; Should I wear items need enough useful hours, not merely the best hour. All launch-item assignments are approved in D-065. Do not force one algorithm onto all items or invent a separate daily algorithm per item. The assignments, approved useful-hour threshold and qualified single-hour outcome are maintained in [WEATHER_LOGIC.md](WEATHER_LOGIC.md#two-shared-daily-aggregation-policies-d-063).
 - Streamline/reuse presentation wording across both behaviors where it remains clear. Common wording does not mean common aggregation: dayparts/hourly detail explain suitable/unsuitable or useful/not-needed intervals. A positive daily usefulness result is not an all-day suitability claim.
 - No visible item-group labels are required to interpret the predefined collection. Fixed-item behavior can be predefined while remaining separable from UI copy; exact grouping labels and the configuration explanation are deferred to custom items in Phase 8.1, not settled by D-059's historical wording.

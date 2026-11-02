@@ -1,7 +1,7 @@
 # Can I Wear — Decisions
 
 > Status: ACTIVE
-> Last updated: 2026-10-25
+> Last updated: 2026-11-02
 > Source of truth: YES
 
 This file records decisions that AI and developers must not casually reopen.
@@ -458,6 +458,71 @@ Use the space recovered from the separate location row to add breathing room wit
 **Decision (2026-10-25):** The user approved the D-077 direction and requested removing **“Tap an item for detail”**, equal-height artwork backgrounds (including Sunglasses), and only one explanation sentence. Remove the visual tap hint, retaining full-card button/accessibility action semantics. Overview artwork backgrounds must fill their shared stage regardless of the asset/symbol's aspect ratio; preserve the original artwork and its aspect fit.
 
 Use one concise weather explanation in each item summary, combining actual weather reasons and any inferred-hour uncertainty rather than concatenating complete sentences or dropping relevant hazards. Necessary brief-usefulness and jacket-exception timing remain short qualifiers, not redundant explanation sentences; full evaluated meaning/timing remains accessible and in detail. Natural text wrapping is still allowed. Existing whitespace, footer configuration, dayparts, fonts, daily/hourly algorithms, thresholds and provider/cache/selection behavior remain unchanged.
+
+### D-079 — Daypart-driven artwork tint and clearly finished dayparts
+**Decision (2026-10-25):** The user requested green item-artwork backgrounds when all three displayed dayparts are YES, and red backgrounds when all three are NO. Derive this accent from the three actual Morning/Afternoon/Evening statuses, including finished dayparts, not from the remaining-day hero answer. Mixed, MAYBE or unavailable dayparts do not receive a unanimous green/red artwork accent. Apply this to single-item Home, both multi-item overview layouts and matching detail, including larger-text artwork.
+
+Strengthen the green/red background tint on current/future dayparts. Once a daypart's entire interval has ended, render its background, metadata and status in a clearly muted gray treatment while retaining readable, identically sized status text, its actual YES/MAYBE/NO value and accessible “finished for today” meaning. This supersedes D-052/D-073/D-075 only where they require past status ink to retain the active semantic color; do not shrink the badge text or remove past context. Dayparts remain noninteractive, rather than becoming disabled controls.
+
+This is presentation only. Preserve all daily/hourly evaluation, aggregation, coverage/uncertainty, planning-versus-remaining-day scope, provider/cache/selection behavior, existing layout geometry and original artwork. The artwork accent is not an all-day suitability claim or a replacement for the daily answer/necessary qualifiers.
+
+### D-080 — Softer daypart cards and distinct status pills; implementation held
+**Decision (2026-10-28):** The user approved **Proposal 01 — Softer dayparts**, saved at `docs/prototypes/daypart-polish/daypart-proposal.png`, and explicitly required this treatment across **all dayparts**, particularly both multi-item layouts, not just the single-item example.
+
+Use soft green/amber/red current/future card tints with stronger color concentrated in a distinct rounded YES/MAYBE/NO status pill. Finished dayparts use a darker, subdued neutral card and pill with muted icon, label, time and status; keep the actual answer readable with unchanged status size/weight. The approved prototype intentionally keeps finished status text brighter than the uploaded reference for readability. Retain noninteractive dayparts and accessible “finished for today” meaning.
+
+Apply the visual treatment consistently to single-item Home, matching detail, **2–3-item mini heroes and 4+-item gallery**, across all seven items. Preserve each layout's appropriate density, existing metadata/key conventions, scalable text and viewport/reflow requirements; approval of the full-size example is not a request to enlarge every gallery tile. Existing single-item dayparts need no unrelated redesign if already consistent. Adapt the dark reference accessibly to light/increased-contrast appearances. This supersedes D-079's stronger active daypart fills and refines its finished-daypart appearance, not the artwork accent policy.
+
+**Execution boundary:** Approval is design-only. **Do not implement until the user gives the final implementation go.** No app/test changes, build, simulator run or installation are authorized by this approval. Artwork-background removal and the broader screenshot/header layout remain separate pending prototype reviews; they are not approved by this daypart decision. Preserve all recommendation, coverage/uncertainty, planning-versus-remaining-day, provider/cache and selection behavior. The prototype uses illustrative statuses, not live forecast data or native-app validation.
+
+### D-081 — Lock the existing single-item hero without an artwork background
+**Decision (2026-10-28):** The user approved the revised single-item image-edit prototype and explicitly locked its **hero card** as the desired appearance. Approved references: `docs/prototypes/hero-polish/single-only-comparison.png` (right side) and `single-only-after.png` in the same directory.
+
+Keep the existing single-item Home/matching-detail hero layout: original artwork, its size and position, main rounded card, item-name/status/reason hierarchy, typography, spacing and existing aligned status symbol/text. **Remove only the artwork's separate background**, whether semantic green/red or neutral; artwork sits directly on the main card. Apply to every selected item using this single-item/detail hero, including accessible layouts. Do not redraw/reposition the circle/check/cross or resize text/artwork as part of this change.
+
+This supersedes D-079's artwork accents for single-item Home/detail only. Multi-item mini heroes and gallery artwork remain subject to separate prototype approval. The rejected initial three-layout Proposal 02 is not an approved layout or reference. Approval is limited to the hero; the unchanged header/dayparts/hourly content in the revised image is context, not approval to undo D-080 or change other screen requirements.
+
+**Execution boundary:** Record the design now; **wait for the user's final implementation go** before app/test changes, builds, simulator runs or installation. The approved reference is an edited existing native capture, not an implemented/validated app change. Preserve recommendations, qualifiers, accessibility, provider/cache and selection behavior.
+
+### D-082 — Mini heroes without separate artwork backgrounds
+**Decision (2026-10-28):** The user approved the focused **2–3-item mini-hero** comparison: `docs/prototypes/hero-polish/mini-only-comparison.png` (right side), with `mini-only-after.png` as the edited capture alone.
+
+Remove only each mini hero's separate artwork background, whether green/red or neutral, so original artwork sits directly on its main card. Keep artwork size/position, text, alignment, card dimensions/spacing, count-adaptive routing and navigation unchanged. Apply to every item in both two- and three-item mini-hero layouts, including accessible reflow. This supersedes D-078's painted artwork-background requirement and D-079's artwork accents for mini heroes only; keep the artwork-stage bounds/aspect fit. D-081 already governs single Home/detail; gallery artwork removal is still awaiting its own review.
+
+The comparison intentionally leaves the native dayparts unchanged to isolate artwork-background removal; it does **not** undo D-080's independently approved daypart styling. This is approval of an image-edit prototype, not implementation or app validation. **Wait for the user's final implementation go** before app/test edits, builds, simulator runs or installation. Preserve recommendations, qualifiers, accessibility, provider/cache and selection behavior.
+
+### D-083 — Gallery without separate artwork backgrounds
+**Decision (2026-10-28):** The user approved the focused **4+-item gallery** comparison: `docs/prototypes/hero-polish/gallery-only-comparison.png` (right side), with `gallery-only-after.png` as the edited capture alone.
+
+Remove only each gallery item's separate artwork background, whether green/red or neutral. Original artwork sits directly on the main card. Preserve artwork size/position and aspect fit, text/typography/alignment, card/grid dimensions/spacing, shared daypart key, count-adaptive routing, scrolling and detail navigation. Apply to every item in gallery layouts, including narrow/accessibility reflow. This supersedes D-078's painted artwork-background requirement and D-079's artwork accents for the gallery, not its artwork-stage bounds. Together D-081/D-082/D-083 approve background removal across single Home/detail, mini heroes and gallery; they do not approve further redesign.
+
+The comparison leaves dayparts unchanged only to isolate the artwork change; D-080's independently approved daypart styling remains required. This is approval of an edited native capture, not implemented/validated app behavior. **Wait for the user's final implementation go** before app/test edits, builds, simulator runs or installation. Preserve recommendations, qualifiers, accessibility, provider/cache and selection behavior.
+
+### D-084 — Configuration is the rightmost footer control
+**Decision (2026-10-28):** The user approved requested change **5** in `docs/prototypes/home-chrome/changes-456-proposal.png`: swap the footer controls so enabled diagnostics appears **left of configuration**, and the configure-items gear is rightmost. Apply the shared footer order on single- and multi-item Home; the single-item exception in change 4 concerns only location placement. When debugging is off, show only configuration, still on the right. Retain D-077's normal scrolling footer, attribution, accessible labels, non-overlapping ≥44-point targets and adaptive reflow. Do not enable debugging or change its policy. This refines D-077's footer arrangement only.
+
+**Implementation held until the user's final go.** The prototype is an edited native capture, not app implementation/validation. The location placement shown in the same image (**change 4**) is **not approved**; its trailing alignment remains under review.
+
+### D-085 — Remove the gallery's shared daypart/hour key
+**Decision (2026-10-28):** The user approved requested change **6** in `docs/prototypes/home-chrome/changes-456-proposal.png`: remove the entire shared **Morning 06–12 / Afternoon 12–18 / Evening 18–24** key above the 4+-item gallery, reclaiming its vertical space without resizing or redesigning the item cards. Do not replace it with another legend. This supersedes D-075's shared-key presentation and D-083's requirement to preserve that key, not the gallery/card geometry itself.
+
+Keep each item's three daypart previews and their names/statuses, full names/ranges/actual advice in accessibility and matching detail, and existing inline ranges where a narrow/single-column layout already shows them. Do not change fixed boundaries, daily/hourly recommendations, uncertainty or D-080's approved styling. Single-item Home and 2–3-item mini heroes do not lose their time labels.
+
+**Implementation held until the user's final go.** Approval covers the shared key removal only, not the still-unapproved location placement in the same image. No app/test edits, build, simulator run or installation are authorized by D-084/D-085.
+
+### D-086 — Multi-item locality beside the section heading, using the selected inset alignment
+**Decision (2026-10-28):** After reviewing alignment variants for requested change **4**, the user explicitly selected **the exact placement from the blue-guide prototype, without the blue guides**. The intervening outer-card-edge variant was rejected. Saved clean reference: `docs/prototypes/home-chrome/location-inset-clean-proposal.png`, with `mini-location-inset-clean.png` and `gallery-location-inset-clean.png` in the same directory. Do not make another optical/rightward alignment adjustment or render review guides in the app.
+
+On both multi-item Home layouts, move the locality and existing pin from the app-title row to the right of **“Your items today”**, at the same section-heading level. Its trailing edge follows the inset content/daypart-tile edge below, **not the outer rounded card edge**, as shown in the selected reference. Preserve the current locality styling and section-heading copy; the original request's “your items for today” does not independently request renaming it. Reflow long localities/larger text without clipping or shrinking essential text. **Do not change locality placement in the single-item layout.** This supersedes D-076/D-077's app-title-row locality placement only for multi-item Home; header scrolling, Guided/Compact behavior and all other approved screen requirements remain unchanged.
+
+This resolves the location-alignment review left open in D-084/D-085; their footer/key decisions and D-080–D-083 remain approved. The clean reference preserves the selected placement and removes only the review guides; its unchanged dayparts do not undo D-080. **Implementation remains held until the user's final go.** Edited-capture review is not native implementation/validation, permission to install, or a recommendation/provider/cache/selection change.
+
+### D-087 — Lighter finished grays and roomier overview dayparts
+**Decision (2026-11-02):** The user approved `prototypes/daypart-refinement/comparison.png` and explicitly authorized implementing **only** those two refinements. In dark appearance, replace near-black finished dayparts with the prototype's neutral-gray card/pill and readable muted ink, consistently on single Home, matching detail, mini heroes and gallery. Preserve light-appearance colors and active/unavailable advice colors.
+
+Within both multi-item overview layouts only, increase daypart stack spacing from 2 to 4 points, vertical tile padding from 5 to 8 points, and add 3-point vertical status-pill padding. Allow the resulting natural card growth; preserve fonts, artwork, horizontal placement, existing viewport/reflow checks and all other spacing/layout. Single-item/detail geometry remains unchanged. This refines D-080's finished palette and overview density only; no recommendation, provider/cache, selection, copy, header/footer or navigation changes. No phone installation is requested by this authorization.
+
+**No-scroll follow-up (2026-11-02):** When native verification exposed a 35-point Guided three-mini-hero overflow, the user explicitly rejected even a small scroll and requested a fix. Retain the approved daypart interiors and all existing viewport assertions. Rebalance only mini-hero outer vertical padding and hero-to-daypart gaps to recover the necessary space without shrinking fonts/artwork or changing other surfaces, header/footer, attribution or behavior. This narrowly amends the preceding other-spacing preservation; it does not authorize a broader redesign. Open-Meteo attribution remains required.
 
 ## Not yet decided
 

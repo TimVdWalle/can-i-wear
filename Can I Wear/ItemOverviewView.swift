@@ -6,10 +6,11 @@ nonisolated enum ItemOverviewLayout {
 }
 
 /// D-075: count chooses the design; available space only changes its column count.
-struct ItemOverviewView: View {
+struct ItemOverviewView<Locality: View>: View {
     let items: [ItemHomePresentation]
     let dayParts: (PredefinedItem) -> [FixedDayPartPresentation]
     let missingPlanningContext: (PredefinedItem) -> Bool
+    @ViewBuilder var locality: () -> Locality
     let onSelect: (PredefinedItem) -> Void
     @Environment(\.dynamicTypeSize) private var typeSize
     @State private var width: CGFloat = 0
@@ -20,7 +21,6 @@ struct ItemOverviewView: View {
     var body: some View {
         VStack(alignment: .leading, spacing: 10) {
             heading
-            if layout == .gallery && columns == 2 { daypartKey }
             Grid(horizontalSpacing: 12, verticalSpacing: 12) {
                 ForEach(0..<((items.count + columns - 1) / columns), id: \.self) { row in
                     GridRow(alignment: .top) {
@@ -41,22 +41,24 @@ struct ItemOverviewView: View {
     }
 
     private var heading: some View {
-        Text("Your items today").font(.headline).accessibilityAddTraits(.isHeader)
-            .accessibilityIdentifier(layout == .gallery ? "item-gallery" : "item-mini-heroes")
-    }
-
-    private var daypartKey: some View {
-        HStack(spacing: 4) {
-            ForEach(FixedDayPart.allCases, id: \.self) { part in
-                VStack(spacing: 2) {
-                    Text(part.label).fontWeight(.medium)
-                    Text(part.timeRangeLabel).foregroundStyle(.secondary)
-                }
-                .frame(maxWidth: .infinity)
+        ViewThatFits(in: .horizontal) {
+            HStack(spacing: 8) {
+                headingTitle.fixedSize()
+                Spacer(minLength: 0)
+                locality().fixedSize()
+            }
+            VStack(alignment: .trailing, spacing: 4) {
+                headingTitle.frame(maxWidth: .infinity, alignment: .leading)
+                locality().multilineTextAlignment(.trailing)
             }
         }
-        .font(.footnote)
-        .accessibilityElement(children: .combine)
+        // D-086: the selected reference aligns to the tiles, 12pt inside the card edge.
+        .padding(.trailing, 12)
+    }
+
+    private var headingTitle: some View {
+        Text("Your items today").font(.headline).accessibilityAddTraits(.isHeader)
+            .accessibilityIdentifier(layout == .gallery ? "item-gallery" : "item-mini-heroes")
     }
 
     private func card(_ item: ItemHomePresentation) -> some View {
@@ -64,7 +66,7 @@ struct ItemOverviewView: View {
         let planningNote = item.evaluation != nil && missingPlanningContext(item.id)
             ? "Earlier periods unavailable in this forecast." : nil
         return Button { onSelect(item.id) } label: {
-            VStack(alignment: .leading, spacing: 10) {
+            VStack(alignment: .leading, spacing: layout == .miniHeroes ? 6 : 10) {
                 ItemSummaryView(presentation: item, overviewLayout: layout, qualifier: item.heroQualifier(dayParts: parts))
                 if layout == .gallery { Spacer(minLength: 0) }
                 if item.evaluation != nil {
@@ -76,7 +78,7 @@ struct ItemOverviewView: View {
                 }
             }
             .padding(.horizontal, 12)
-            .padding(.vertical, 10)
+            .padding(.vertical, layout == .miniHeroes ? 6 : 10)
             .frame(maxWidth: .infinity, maxHeight: .infinity, alignment: .topLeading)
             .background(HomeStyle.card, in: RoundedRectangle(cornerRadius: HomeStyle.cardRadius))
             .contentShape(RoundedRectangle(cornerRadius: HomeStyle.cardRadius))
@@ -89,7 +91,7 @@ struct ItemOverviewView: View {
     }
 }
 
-private struct OverviewDayPartsView: View {
+struct OverviewDayPartsView: View {
     let dayParts: [FixedDayPartPresentation]
     let isGallery: Bool
     let showsRanges: Bool
@@ -105,20 +107,27 @@ private struct OverviewDayPartsView: View {
 
     private var cards: some View {
         ForEach(Array(dayParts.enumerated()), id: \.element.id) { index, part in
-            VStack(spacing: 2) {
+            VStack(spacing: 4) {
                 Text(isGallery && !showsRanges ? compactLabel(part.dayPart) : part.label)
                     .font(.footnote.weight(.medium))
-                    .opacity(part.isPast ? 0.48 : 1)
+                    .foregroundStyle(part.isPast ? HomeStyle.finishedDayPartInk : .primary)
                 if showsRanges {
                     Text(part.timeRangeLabel).font(.footnote.monospacedDigit())
-                        .foregroundStyle(.secondary).opacity(part.isPast ? 0.48 : 1)
+                        .foregroundStyle(part.isPast ? HomeStyle.finishedDayPartInk : .secondary)
                 }
-                Text(part.statusTitle).font(.footnote.bold()).foregroundStyle(HomeStyle.ink(part.tone))
+                Text(part.statusTitle).font(.footnote.bold())
+                    .foregroundStyle(HomeStyle.dayPartInk(part.tone, isPast: part.isPast))
+                    .padding(.vertical, 3)
+                    .frame(maxWidth: .infinity)
+                    .background {
+                        Capsule().fill(HomeStyle.dayPartBadgeFill(part.tone, isPast: part.isPast))
+                            .padding(.horizontal, 2)
+                    }
             }
             .fixedSize(horizontal: false, vertical: true)
             .frame(maxWidth: .infinity)
-            .padding(.vertical, 5)
-            .background(HomeStyle.ink(part.tone).opacity(part.isPast ? 0.04 : 0.09), in: RoundedRectangle(cornerRadius: 10))
+            .padding(.vertical, 8)
+            .background(HomeStyle.dayPartFill(part.tone, isPast: part.isPast), in: RoundedRectangle(cornerRadius: 10))
             .accessibilityElement(children: .ignore)
             .accessibilityLabel(part.accessibilityLabel)
             .accessibilityIdentifier("period-\(index)")

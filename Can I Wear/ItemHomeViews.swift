@@ -1,6 +1,69 @@
 import SwiftUI
 
 extension HomeStyle {
+    private static let unavailableDayPartInk = Color(uiColor: UIColor { traits in
+        UIColor(white: traits.userInterfaceStyle == .dark ? 0.60 : 0.38, alpha: 1)
+    })
+
+    static let finishedDayPartInk = Color(uiColor: UIColor { traits in
+        traits.userInterfaceStyle == .dark
+            ? UIColor(red: 190 / 255.0, green: 190 / 255.0, blue: 194 / 255.0, alpha: 1)
+            : UIColor(white: 0.38, alpha: 1)
+    })
+
+    static func dayPartFill(_ tone: ItemAdviceTone, isPast: Bool) -> Color {
+        Color(uiColor: UIColor { traits in
+            if isPast {
+                return traits.userInterfaceStyle == .dark
+                    ? UIColor(red: 50 / 255.0, green: 50 / 255.0, blue: 54 / 255.0, alpha: 1)
+                    : UIColor(white: 0.93, alpha: 1)
+            }
+            if traits.userInterfaceStyle == .dark {
+                switch tone {
+                case .positive: return UIColor(red: 0.10, green: 0.18, blue: 0.13, alpha: 1)
+                case .caution: return UIColor(red: 0.19, green: 0.15, blue: 0.09, alpha: 1)
+                case .negative: return UIColor(red: 0.20, green: 0.12, blue: 0.13, alpha: 1)
+                case .neutral: return .secondarySystemGroupedBackground
+                }
+            }
+            switch tone {
+            case .positive: return UIColor(red: 0.92, green: 0.96, blue: 0.93, alpha: 1)
+            case .caution: return UIColor(red: 0.99, green: 0.96, blue: 0.90, alpha: 1)
+            case .negative: return UIColor(red: 0.99, green: 0.93, blue: 0.94, alpha: 1)
+            case .neutral: return .secondarySystemGroupedBackground
+            }
+        })
+    }
+
+    static func dayPartBadgeFill(_ tone: ItemAdviceTone, isPast: Bool) -> Color {
+        Color(uiColor: UIColor { traits in
+            if isPast {
+                return traits.userInterfaceStyle == .dark
+                    ? UIColor(red: 65 / 255.0, green: 65 / 255.0, blue: 70 / 255.0, alpha: 1)
+                    : UIColor(white: 0.87, alpha: 1)
+            }
+            if traits.userInterfaceStyle == .dark {
+                switch tone {
+                case .positive: return UIColor(red: 0.12, green: 0.27, blue: 0.18, alpha: 1)
+                case .caution: return UIColor(red: 0.31, green: 0.22, blue: 0.09, alpha: 1)
+                case .negative: return UIColor(red: 0.31, green: 0.13, blue: 0.14, alpha: 1)
+                case .neutral: return UIColor(white: 0.14, alpha: 1)
+                }
+            }
+            switch tone {
+            case .positive: return UIColor(red: 0.83, green: 0.92, blue: 0.86, alpha: 1)
+            case .caution: return UIColor(red: 0.97, green: 0.89, blue: 0.74, alpha: 1)
+            case .negative: return UIColor(red: 0.97, green: 0.84, blue: 0.86, alpha: 1)
+            case .neutral: return .systemGroupedBackground
+            }
+        })
+    }
+
+    static func dayPartInk(_ tone: ItemAdviceTone, isPast: Bool) -> Color {
+        if isPast { return finishedDayPartInk }
+        return tone == .neutral ? unavailableDayPartInk : ink(tone)
+    }
+
     static func ink(_ tone: ItemAdviceTone) -> Color {
         switch tone {
         case .positive: ink(RecommendationLevel.okay)
@@ -157,7 +220,6 @@ struct ItemSummaryView: View {
         ItemArtwork(item: presentation.id)
             .padding(6)
             .frame(maxWidth: .infinity, maxHeight: .infinity)
-            .background(HomeStyle.artBackground, in: RoundedRectangle(cornerRadius: 16))
     }
 
     private var copy: some View {

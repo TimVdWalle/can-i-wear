@@ -5,11 +5,6 @@ enum HomeStyle {
     static let cardRadius: CGFloat = 22
     static let background = Color(uiColor: .systemGroupedBackground)
     static let card = Color(uiColor: .secondarySystemGroupedBackground)
-    static let artBackground = Color(uiColor: UIColor { traits in
-        traits.userInterfaceStyle == .dark
-            ? UIColor(red: 0.27, green: 0.25, blue: 0.22, alpha: 1)
-            : UIColor(red: 0.95, green: 0.93, blue: 0.90, alpha: 1)
-    })
 
     static func ink(_ level: RecommendationLevel) -> Color {
         Color(uiColor: UIColor { traits in
@@ -146,8 +141,7 @@ struct DayPartCardView: View {
         VStack(spacing: isOverview ? 3 : 6) {
             Image(systemName: dayPart.symbolName)
                 .font(isOverview ? .subheadline.weight(.light) : .title3.weight(.light))
-                .foregroundStyle(.secondary)
-                .opacity(detailOpacity)
+                .foregroundStyle(dayPart.isPast ? HomeStyle.finishedDayPartInk : .secondary)
                 .accessibilityHidden(true)
             Text(dayPart.label)
                 .font(isOverview ? .caption.weight(.medium) : .subheadline.weight(.medium))
@@ -155,25 +149,17 @@ struct DayPartCardView: View {
                 .minimumScaleFactor(0.72)
                 .allowsTightening(true)
                 .frame(maxWidth: .infinity)
-                .opacity(detailOpacity)
+                .foregroundStyle(dayPart.isPast ? HomeStyle.finishedDayPartInk : .primary)
             Text(dayPart.timeRangeLabel)
                 .font(isOverview ? .caption2.monospacedDigit() : .caption.monospacedDigit())
-                .foregroundStyle(.secondary)
+                .foregroundStyle(dayPart.isPast ? HomeStyle.finishedDayPartInk : .secondary)
                 .lineLimit(1)
-                .opacity(detailOpacity)
             status
         }
         .padding(.horizontal, 6)
         .padding(.vertical, isOverview ? 6 : 10)
         .frame(maxWidth: .infinity, maxHeight: .infinity)
-        .background {
-            RoundedRectangle(cornerRadius: 16)
-                .fill(HomeStyle.card)
-                .overlay {
-                    RoundedRectangle(cornerRadius: 16)
-                        .fill(statusColor.opacity(dayPart.isPast ? 0.04 : 0.09))
-                }
-        }
+        .background(HomeStyle.dayPartFill(dayPart.tone, isPast: dayPart.isPast), in: RoundedRectangle(cornerRadius: 16))
         .accessibilityElement(children: .ignore)
         .accessibilityLabel(dayPart.accessibilityLabel)
     }
@@ -182,30 +168,12 @@ struct DayPartCardView: View {
         Text(dayPart.statusTitle)
             .font(.subheadline.bold())
             .lineLimit(1)
-            .foregroundStyle(statusInk)
+            .fixedSize(horizontal: true, vertical: false)
+            .foregroundStyle(HomeStyle.dayPartInk(dayPart.tone, isPast: dayPart.isPast))
             .padding(.horizontal, 4)
             .frame(maxWidth: .infinity, minHeight: 32)
-            .background(statusColor.opacity(dayPart.isPast ? 0.08 : 0.16), in: Capsule())
-    }
-
-    private var statusInk: Color {
-        HomeStyle.ink(dayPart.tone)
-    }
-
-    private var statusColor: Color {
-        if dayPart.item == .leatherJacket {
-            return dayPart.recommendation.map { HomeStyle.color($0.level) } ?? .secondary
-        }
-        switch dayPart.itemSummaryLevel {
-        case .yes: return .green
-        case .maybe: return .orange
-        case .no: return .red
-        case nil: return .secondary
-        }
-    }
-
-    private var detailOpacity: Double {
-        dayPart.isPast ? 0.48 : 1
+            .background(HomeStyle.dayPartBadgeFill(dayPart.tone, isPast: dayPart.isPast), in: Capsule())
+            .accessibilityIdentifier("daypart-status")
     }
 }
 
@@ -221,7 +189,10 @@ struct DayPartsView: View {
     @ViewBuilder
     var body: some View {
         Group {
-            if typeSize.isAccessibilitySize {
+            if typeSize >= .accessibility3 {
+                // Keep MAYBE at its full status size instead of truncating it in half-width cards.
+                VStack(spacing: 8) { cards }
+            } else if typeSize.isAccessibilitySize {
                 LazyVGrid(columns: [GridItem(.flexible()), GridItem(.flexible())], spacing: 8) {
                     cards
                 }

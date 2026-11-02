@@ -20,7 +20,7 @@ enum UITestScenario {
         else { return nil }
 
         let scenario = arguments[flagIndex + 1]
-        UserDefaults.standard.set(scenario == "diagnostics", forKey: DebugSettings.enabledKey)
+        UserDefaults.standard.set(scenario == "diagnostics" || arguments.contains("-ui-test-debug"), forKey: DebugSettings.enabledKey)
         if arguments.contains("-ui-test-reset-selection") {
             UserDefaults.standard.removeObject(forKey: AppConfiguration.selectedItemIDsKey)
             UserDefaults.standard.set(false, forKey: AppConfiguration.itemSelectionCompletedKey)
@@ -162,6 +162,7 @@ enum UITestScenario {
         case "items-early-morning": currentHour = 0
         case "items-last-hour", "items-evening-sun": currentHour = 23
         case "items-late-evening": currentHour = 22
+        case "items-daypart-colors": currentHour = 12
         default: currentHour = 9
         }
         let now = start.addingTimeInterval(Double(currentHour - startHour) * 3_600 + 1_800)
@@ -172,7 +173,7 @@ enum UITestScenario {
             case "items-evening-sun": sun = hour == 18
             case "items-brief": sun = hour == 12
             case "items-separated": sun = hour == 12 || hour == 14
-            case "items-borderline", "items-uncertain", "items-unavailable": sun = false
+            case "items-borderline", "items-uncertain", "items-unavailable", "items-daypart-colors": sun = false
             default: sun = (12..<15).contains(hour)
             }
             let amount: Double = scenario == "items-jacket-four-periods" ? ((9..<12).contains(hour) || hour >= 18 ? 1 : 0)
@@ -181,7 +182,7 @@ enum UITestScenario {
                 : scenario == "items-late-evening" ? ((18..<22).contains(hour) ? 1 : 0)
                 : scenario == "items-borderline"
                 ? ((14..<16).contains(hour) ? 0.1 : 0)
-                : (["items-uncertain", "items-unavailable", "items-brief"].contains(scenario) ? 0 : ((15..<18).contains(hour) ? 1 : 0))
+                : (["items-uncertain", "items-unavailable", "items-brief", "items-daypart-colors"].contains(scenario) ? 0 : ((15..<18).contains(hour) ? 1 : 0))
             let missingSky = scenario == "items-unavailable" || (scenario == "items-uncertain" && hour == 14)
             return HourlyWeather(
                 timestamp: start.addingTimeInterval(Double(hour - startHour) * 3_600), timezoneIdentifier: "UTC",

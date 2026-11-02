@@ -125,7 +125,7 @@ final class Can_I_WearUITests: XCTestCase {
             XCTAssertGreaterThanOrEqual(gear.frame.height, 44)
             XCTAssertGreaterThanOrEqual(diagnostics.frame.width, 44)
             XCTAssertGreaterThanOrEqual(diagnostics.frame.height, 44)
-            XCTAssertLessThanOrEqual(gear.frame.maxX, diagnostics.frame.minX)
+            XCTAssertLessThanOrEqual(diagnostics.frame.maxX, gear.frame.minX)
             XCTAssertFalse(attribution.frame.intersects(gear.frame))
             XCTAssertFalse(attribution.frame.intersects(diagnostics.frame))
             XCTAssertLessThanOrEqual(attribution.frame.width, app.frame.width - 32)
@@ -395,7 +395,7 @@ final class Can_I_WearUITests: XCTestCase {
     }
 
     @MainActor
-    func testLargestDynamicTypeUsesAReadableTwoColumnDayPartGrid() {
+    func testLargestDynamicTypeKeepsDaypartsReadableAndScrollable() {
         let app = XCUIApplication()
         app.launchArguments = [
             "-ui-test-scenario", "many-periods",

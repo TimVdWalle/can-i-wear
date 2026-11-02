@@ -8,6 +8,21 @@ struct DebugDiagnosticsTests {
     private let currentHour = Date(timeIntervalSince1970: 1_791_201_600)
     private let location = LocationIdentity(latitude: 50.85, longitude: 4.35)
 
+    @Test func normalHomeInitializationPreservesTheSavedDebugChoice() {
+        let defaults = UserDefaults.standard
+        let original = defaults.object(forKey: DebugSettings.enabledKey)
+        defer {
+            if let original { defaults.set(original, forKey: DebugSettings.enabledKey) }
+            else { defaults.removeObject(forKey: DebugSettings.enabledKey) }
+        }
+        // Synchronous MainActor work: no other test can interleave a standard-domain edit here.
+        for enabled in [false, true] {
+            defaults.set(enabled, forKey: DebugSettings.enabledKey)
+            _ = ContentView()
+            #expect(defaults.bool(forKey: DebugSettings.enabledKey) == enabled)
+        }
+    }
+
     @Test func debugDefaultsOffBoundsHistoryAndClearsWhenDisabled() {
         let (defaults, suite) = isolatedDefaults()
         defer { defaults.removePersistentDomain(forName: suite) }

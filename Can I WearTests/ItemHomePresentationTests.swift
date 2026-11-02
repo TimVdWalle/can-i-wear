@@ -6,9 +6,9 @@ import UIKit
 
 struct ItemHomePresentationTests {
     @MainActor
-    @Test func overviewArtworkBackgroundsFillTheirSharedStagesForEveryItem() throws {
+    @Test func overviewArtworkSitsDirectlyOnTheMainCardForEveryItem() throws {
         for scheme in [ColorScheme.light, .dark] {
-            let swatch = ImageRenderer(content: HomeStyle.artBackground.frame(width: 1, height: 1).environment(\.colorScheme, scheme))
+            let swatch = ImageRenderer(content: HomeStyle.card.frame(width: 1, height: 1).environment(\.colorScheme, scheme))
             swatch.scale = 1
             let expected = try pixel(#require(swatch.uiImage), at: .zero)
             for layout in [ItemOverviewLayout.miniHeroes, .gallery] {
@@ -16,16 +16,17 @@ struct ItemHomePresentationTests {
                     let display = try presentation([.yes, .yes], item: item)
                     let renderer = ImageRenderer(content: ItemSummaryView(presentation: display, overviewLayout: layout)
                         .frame(width: layout == .miniHeroes ? 358 : 173, height: layout == .miniHeroes ? 180 : 340, alignment: .topLeading)
+                        .background(HomeStyle.card)
                         .environment(\.dynamicTypeSize, .large).environment(\.colorScheme, scheme))
                     renderer.scale = 1
                     let image = try #require(renderer.uiImage)
-                    // Sample the background beyond the wide symbol, not its icon pixels or rounded corners.
+                    // Preserve the stage geometry, but no longer paint a separate artwork background.
                     let points = layout == .miniHeroes
                         ? [CGPoint(x: 8, y: 12), CGPoint(x: 8, y: 84)]
                         : [CGPoint(x: 8, y: 12), CGPoint(x: 8, y: 68)]
                     for point in points {
                         let actual = try pixel(image, at: point)
-                        #expect(actual == expected, "\(item) \(layout) \(scheme) background must fill its shared artwork stage at \(point)")
+                        #expect(actual == expected, "\(item) \(layout) \(scheme) artwork must sit on the main card at \(point)")
                     }
                 }
             }

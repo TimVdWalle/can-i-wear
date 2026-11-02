@@ -100,6 +100,25 @@ final class ItemHomeUITests: XCTestCase {
     }
 
     @MainActor
+    func testLargestTextMaybeDaypartPillsKeepTheirFullWordAndSize() {
+        let app = launch("diagnostics", flags: [
+            "-UIPreferredContentSizeCategoryName", "UICTContentSizeCategoryAccessibilityXXXL"
+        ])
+        XCTAssertTrue(app.descendants(matching: .any)["recommendation-hero"].waitForExistence(timeout: 5))
+        for index in 0..<3 {
+            let card = app.descendants(matching: .any)["period-\(index)"]
+            reveal(card, in: app)
+            XCTAssertTrue(card.isHittable)
+            XCTAssertEqual(card.frame.width, app.frame.width - 32, accuracy: 1)
+            let status = card.staticTexts["daypart-status"]
+            XCTAssertEqual(status.label, "MAYBE")
+            XCTAssertGreaterThan(status.frame.width, 160, "The largest-text answer must not be truncated or scaled down")
+            XCTAssertLessThanOrEqual(status.frame.width, card.frame.width - 12)
+        }
+        capture(app, "D-080 — largest-text MAYBE pills without truncation")
+    }
+
+    @MainActor
     func testQualifiersHighlightLateEveningAndEarlyMorningExceptions() {
         for (scenario, answer, qualifier, evening) in [
             ("items-late-evening", "YES", "Suitable 22:00–24:00", "NO"),
@@ -159,6 +178,34 @@ final class ItemHomeUITests: XCTestCase {
         XCTAssertTrue(confirm.isEnabled) // Replay preserves selection, not a fresh-install reset.
         XCTAssertEqual(app.buttons["select-item-leatherJacket"].value as? String, "Selected")
         XCTAssertEqual(app.buttons["select-item-sunglasses"].value as? String, "Selected")
+    }
+
+    @MainActor
+    func testSoftDaypartsAndFinishedContextAcrossSingleMiniGalleryAndDetail() {
+        for items in ["leatherJacket", "sunglasses", "leatherJacket,sunglasses,gloves", "leatherJacket,sweater,sunglasses,shorts"] {
+            let app = launch("items-daypart-colors", flags: ["-ui-test-items", items, "-home_introduction_visible", "NO"])
+            let single = !items.contains(",")
+            let first = items.components(separatedBy: ",")[0]
+            let scope = single ? app.descendants(matching: .any)["recommendation-hero"] : app.buttons["item-card-\(first)"]
+            XCTAssertTrue(scope.waitForExistence(timeout: 5))
+            assertNamedDayparts(in: single ? app : scope, finishedParts: 1)
+            if !single {
+                let minimumHeight: CGFloat = items.components(separatedBy: ",").count >= 4 ? 56 : 76
+                for index in 0..<3 {
+                    let part = scope.descendants(matching: .any)["period-\(index)"]
+                    XCTAssertGreaterThanOrEqual(part.frame.height, minimumHeight, "Keep the approved label/pill breathing room")
+                }
+            }
+            capture(app, "D-080–D-086 — soft dayparts and finished Morning, \(items)")
+            if !single {
+                scope.tap()
+                let detail = app.scrollViews["item-detail"]
+                XCTAssertTrue(detail.waitForExistence(timeout: 5))
+                assertNamedDayparts(in: detail, finishedParts: 1)
+                capture(app, "D-080–D-083 — matching detail and finished Morning")
+            }
+            app.terminate()
+        }
     }
 
     @MainActor
@@ -229,12 +276,17 @@ final class ItemHomeUITests: XCTestCase {
             ], mode: mode)
             XCTAssertTrue(app.buttons["item-card-leatherJacket"].waitForExistence(timeout: 5))
             let title = app.staticTexts["home-title"]
+            let heading = app.staticTexts["item-gallery"]
             let locality = app.descendants(matching: .any)["weather-locality"]
             let gear = app.buttons["configure-items"]
             capture(app, "D-077 — uncluttered scrolling header, \(mode)")
             XCTAssertTrue(locality.label.contains("Ghent"))
-            XCTAssertLessThanOrEqual(title.frame.maxX, locality.frame.minX)
-            XCTAssertEqual(title.frame.midY, locality.frame.midY, accuracy: 2)
+            XCTAssertGreaterThanOrEqual(locality.frame.minY, title.frame.maxY)
+            XCTAssertLessThanOrEqual(heading.frame.maxX, locality.frame.minX)
+            XCTAssertEqual(heading.frame.midY, locality.frame.midY, accuracy: 2)
+            XCTAssertEqual(locality.frame.maxX, app.buttons["item-card-warmCoat"].frame.maxX - 12, accuracy: 1)
+            XCTAssertEqual(app.descendants(matching: .any).matching(identifier: "weather-locality").count, 1)
+            XCTAssertFalse(app.staticTexts["06–12"].exists, "No shared name/hour key in the two-column gallery")
             XCTAssertEqual(app.staticTexts["home-purpose"].exists, mode == "guided")
             XCTAssertGreaterThanOrEqual(gear.frame.minY, app.buttons["item-card-gloves"].frame.maxY)
             XCTAssertFalse(gear.isHittable, "The footer must not float over the initial gallery")
@@ -244,12 +296,42 @@ final class ItemHomeUITests: XCTestCase {
             XCTAssertGreaterThanOrEqual(gear.frame.height, 44)
             XCTAssertEqual(gear.frame.midY, attribution.frame.midY, accuracy: 2)
             XCTAssertLessThanOrEqual(attribution.frame.maxX, gear.frame.minX)
+            XCTAssertFalse(app.buttons["diagnostics-button"].exists, "Debug remains opt-in")
             XCTAssertFalse(title.isHittable, "The header must scroll away, not become sticky")
             capture(app, "D-077 — scrolling footer configuration, \(mode)")
             // The padded corner must work too, not only the small gear glyph.
             gear.coordinate(withNormalizedOffset: CGVector(dx: 0.1, dy: 0.1)).tap()
             XCTAssertTrue(app.buttons["confirm-item-selection"].waitForExistence(timeout: 5))
             app.buttons["Cancel"].tap()
+            app.terminate()
+        }
+    }
+
+    @MainActor
+    func testSelectedInsetLocationAndRightmostConfigurationAcrossHomeLayouts() {
+        for items in ["leatherJacket", "leatherJacket,sunglasses", "leatherJacket,sweater,sunglasses,shorts"] {
+            let app = launch("items-daypart-colors", flags: [
+                "-ui-test-items", items, "-home_introduction_visible", "NO", "-ui-test-debug"
+            ])
+            let single = !items.contains(",")
+            let first = single ? app.descendants(matching: .any)["recommendation-hero"] : app.buttons["item-card-leatherJacket"]
+            XCTAssertTrue(first.waitForExistence(timeout: 5))
+            let locality = app.descendants(matching: .any)["weather-locality"]
+            let heading = app.staticTexts[single ? "home-title" : (items.components(separatedBy: ",").count >= 4 ? "item-gallery" : "item-mini-heroes")]
+            XCTAssertEqual(locality.frame.midY, heading.frame.midY, accuracy: 2)
+            XCTAssertEqual(locality.frame.maxX, app.frame.maxX - (single ? 16 : 28), accuracy: 1)
+            XCTAssertEqual(app.descendants(matching: .any).matching(identifier: "weather-locality").count, 1)
+            capture(app, "D-086 — selected location alignment, \(items)")
+            let gear = app.buttons["configure-items"]
+            reveal(gear, in: app)
+            let debug = app.buttons["diagnostics-button"]
+            XCTAssertTrue(debug.isHittable)
+            XCTAssertTrue(gear.isHittable)
+            XCTAssertGreaterThanOrEqual(debug.frame.width, 44)
+            XCTAssertGreaterThanOrEqual(debug.frame.height, 44)
+            XCTAssertLessThanOrEqual(debug.frame.maxX, gear.frame.minX)
+            XCTAssertEqual(gear.frame.maxX, app.frame.maxX - 16, accuracy: 1)
+            capture(app, "D-084 — rightmost configuration, \(items)")
             app.terminate()
         }
     }
@@ -298,6 +380,10 @@ final class ItemHomeUITests: XCTestCase {
                     XCTAssertGreaterThanOrEqual(card.frame.minY - previousBottom, 12, "Keep breathing room between cards")
                 }
                 XCTAssertGreaterThanOrEqual(card.frame.height, 150, "Keep artwork and daypart context, not compressed rows")
+                for index in 0..<3 {
+                    let part = card.descendants(matching: .any)["period-\(index)"]
+                    XCTAssertGreaterThanOrEqual(part.frame.height, 76, "Fit must retain the approved roomy daypart interiors")
+                }
                 previousBottom = card.frame.maxY
             }
             capture(app, "D-075 — three mini heroes, \(mode)")
