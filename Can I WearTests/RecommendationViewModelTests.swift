@@ -34,6 +34,8 @@ struct RecommendationViewModelTests {
             weatherProvider: FixedWeatherProvider(result: .failure(.unavailable)),
             locationCache: LocationCache(store: deniedStore),
             weatherCache: WeatherCache(store: deniedStore),
+            diagnostics: makeTestDiagnostics(),
+            localityResolver: StubGeocodingResolver(),
             now: { self.now }
         )
         let weatherStore = MemoryCacheDataStore()
@@ -42,6 +44,8 @@ struct RecommendationViewModelTests {
             weatherProvider: FixedWeatherProvider(result: .failure(.network)),
             locationCache: LocationCache(store: weatherStore),
             weatherCache: WeatherCache(store: weatherStore),
+            diagnostics: makeTestDiagnostics(),
+            localityResolver: StubGeocodingResolver(),
             now: { self.now }
         )
 
@@ -68,6 +72,8 @@ struct RecommendationViewModelTests {
                 weatherProvider: weatherProvider,
                 locationCache: LocationCache(store: store),
                 weatherCache: WeatherCache(store: store),
+                diagnostics: makeTestDiagnostics(),
+                localityResolver: StubGeocodingResolver(),
                 now: { self.now }
             )
 
@@ -124,6 +130,8 @@ struct RecommendationViewModelTests {
             weatherProvider: weatherProvider,
             locationCache: LocationCache(store: store),
             weatherCache: WeatherCache(store: store),
+            diagnostics: makeTestDiagnostics(),
+            localityResolver: StubGeocodingResolver(),
             now: { self.now }
         )
 
@@ -147,6 +155,8 @@ struct RecommendationViewModelTests {
             weatherProvider: FixedWeatherProvider(result: .success(forecast())),
             locationCache: locationCache,
             weatherCache: WeatherCache(store: store),
+            diagnostics: makeTestDiagnostics(),
+            localityResolver: StubGeocodingResolver(),
             now: { self.now }
         )
 
@@ -168,6 +178,8 @@ struct RecommendationViewModelTests {
             weatherProvider: provider,
             locationCache: LocationCache(store: store),
             weatherCache: WeatherCache(store: store),
+            diagnostics: makeTestDiagnostics(),
+            localityResolver: StubGeocodingResolver(),
             now: { self.now }
         )
 
@@ -191,11 +203,14 @@ struct RecommendationViewModelTests {
             weatherProvider: provider,
             locationCache: LocationCache(store: store),
             weatherCache: WeatherCache(store: store),
+            diagnostics: makeTestDiagnostics(),
+            localityResolver: StubGeocodingResolver(),
             now: { self.now }
         )
 
         let load = Task { await model.loadIfNeeded() }
-        while await provider.requestCount == 0 { await Task.yield() }
+        defer { load.cancel() }
+        try await waitUntil("the weather request to start") { await provider.requestCount > 0 }
 
         #expect(model.state.result?.isUsingSavedWeather == true)
         #expect(model.state.result?.isRefreshing == true)
@@ -204,7 +219,7 @@ struct RecommendationViewModelTests {
         #expect(model.state.result?.isUsingSavedWeather == false)
     }
 
-    @Test func weatherAtNinetyMinutesIsShownWhileOverNinetyIsNot() async {
+    @Test func weatherAtNinetyMinutesIsShownWhileOverNinetyIsNot() async throws {
         let boundaryClock = LockedTestClock(now)
         let boundaryStore = MemoryCacheDataStore()
         await LocationCache(store: boundaryStore).save(locationReading())
@@ -217,11 +232,14 @@ struct RecommendationViewModelTests {
             weatherProvider: boundaryProvider,
             locationCache: LocationCache(store: boundaryStore),
             weatherCache: WeatherCache(store: boundaryStore),
+            diagnostics: makeTestDiagnostics(),
+            localityResolver: StubGeocodingResolver(),
             now: { boundaryClock.value }
         )
 
         let boundaryLoad = Task { await boundary.loadIfNeeded() }
-        while await boundaryProvider.requestCount == 0 { await Task.yield() }
+        defer { boundaryLoad.cancel() }
+        try await waitUntil("the boundary weather request to start") { await boundaryProvider.requestCount > 0 }
         #expect(boundary.state.result?.isRefreshing == true)
         await boundaryProvider.complete(with: .failure(.network))
         await boundaryLoad.value
@@ -241,18 +259,21 @@ struct RecommendationViewModelTests {
             weatherProvider: expiredProvider,
             locationCache: LocationCache(store: expiredStore),
             weatherCache: WeatherCache(store: expiredStore),
+            diagnostics: makeTestDiagnostics(),
+            localityResolver: StubGeocodingResolver(),
             now: { self.now }
         )
 
         let expiredLoad = Task { await expired.loadIfNeeded() }
-        while await expiredProvider.requestCount == 0 { await Task.yield() }
+        defer { expiredLoad.cancel() }
+        try await waitUntil("the expired weather request to start") { await expiredProvider.requestCount > 0 }
         #expect(expired.state == .loading)
         await expiredProvider.complete(with: .failure(.network))
         await expiredLoad.value
         #expect(expired.state == .weatherDataExpired)
     }
 
-    @Test func pullToRefreshReacquiresLocationButMatchingWeatherWaitsFifteenMinutes() async {
+    @Test func pullToRefreshReacquiresLocationButMatchingWeatherWaitsFifteenMinutes() async throws {
         let clock = LockedTestClock(now)
         let store = MemoryCacheDataStore()
         await LocationCache(store: store).save(locationReading())
@@ -269,6 +290,7 @@ struct RecommendationViewModelTests {
             weatherProvider: provider,
             locationCache: LocationCache(store: store),
             weatherCache: WeatherCache(store: store),
+            diagnostics: makeTestDiagnostics(),
             localityResolver: FixedLocalityResolver(value: "Brussels"),
             now: { clock.value }
         )
@@ -283,7 +305,8 @@ struct RecommendationViewModelTests {
 
         clock.advance(by: 5 * 60)
         let refresh = Task { await model.manualRefresh() }
-        while await provider.requestCount == 0 { await Task.yield() }
+        defer { refresh.cancel() }
+        try await waitUntil("the manual weather request to start") { await provider.requestCount > 0 }
         await model.manualRefresh()
         #expect(await provider.requestCount == 1)
         #expect(locationProvider.requestCount == 2)
@@ -304,6 +327,7 @@ struct RecommendationViewModelTests {
         let model = RecommendationViewModel(
             locationProvider: locationProvider, weatherProvider: weatherProvider,
             locationCache: LocationCache(store: store), weatherCache: WeatherCache(store: store),
+            diagnostics: makeTestDiagnostics(),
             localityResolver: FixedLocalityResolver(value: "Brussels"), now: { self.now },
             initialState: .locationUnavailable
         )
@@ -327,6 +351,7 @@ struct RecommendationViewModelTests {
         let model = RecommendationViewModel(
             locationProvider: locationProvider, weatherProvider: provider,
             locationCache: locationCache, weatherCache: WeatherCache(store: store),
+            diagnostics: makeTestDiagnostics(),
             localityResolver: FixedLocalityResolver(value: "Antwerp"), now: { self.now }
         )
         await model.loadIfNeeded()
@@ -355,6 +380,7 @@ struct RecommendationViewModelTests {
             )),
             weatherProvider: provider,
             locationCache: LocationCache(store: store), weatherCache: WeatherCache(store: store),
+            diagnostics: makeTestDiagnostics(),
             localityResolver: FixedLocalityResolver(value: "Antwerp"), now: { self.now }
         )
         await model.loadIfNeeded()
@@ -372,7 +398,7 @@ struct RecommendationViewModelTests {
         #expect(model.state.result == nil)
     }
 
-    @Test func pullToRefreshDoesNotOverlapLocationAcquisition() async {
+    @Test func pullToRefreshDoesNotOverlapLocationAcquisition() async throws {
         let store = MemoryCacheDataStore()
         await LocationCache(store: store).save(locationReading())
         await WeatherCache(store: store).save(forecast())
@@ -381,15 +407,13 @@ struct RecommendationViewModelTests {
         let model = RecommendationViewModel(
             locationProvider: locationProvider, weatherProvider: weatherProvider,
             locationCache: LocationCache(store: store), weatherCache: WeatherCache(store: store),
+            diagnostics: makeTestDiagnostics(),
             localityResolver: FixedLocalityResolver(value: "Brussels"), now: { self.now }
         )
         await model.loadIfNeeded()
         let refresh = Task { await model.manualRefresh() }
-        for _ in 0..<1_000 {
-            if locationProvider.requestCount > 0 { break }
-            await Task.yield()
-        }
-        // Complete before asserting so a failed synchronization cannot strand the request.
+        defer { refresh.cancel() }
+        try await waitUntil("the manual location request to start") { locationProvider.requestCount > 0 }
         let requestCount = locationProvider.requestCount
         await model.manualRefresh()
         await model.appBecameActive()
@@ -412,6 +436,7 @@ struct RecommendationViewModelTests {
         let model = RecommendationViewModel(
             locationProvider: locationProvider, weatherProvider: provider,
             locationCache: LocationCache(store: store), weatherCache: WeatherCache(store: store),
+            diagnostics: makeTestDiagnostics(),
             localityResolver: FixedLocalityResolver(value: "Brussels"), now: { clock.value }
         )
         await model.loadIfNeeded()
@@ -442,6 +467,8 @@ struct RecommendationViewModelTests {
             weatherProvider: provider,
             locationCache: LocationCache(store: store),
             weatherCache: WeatherCache(store: store),
+            diagnostics: makeTestDiagnostics(),
+            localityResolver: StubGeocodingResolver(),
             now: { clock.value }
         )
         await model.loadIfNeeded()
@@ -466,6 +493,8 @@ struct RecommendationViewModelTests {
             weatherProvider: provider,
             locationCache: LocationCache(store: store),
             weatherCache: WeatherCache(store: store),
+            diagnostics: makeTestDiagnostics(),
+            localityResolver: StubGeocodingResolver(),
             now: { clock.value }
         )
         await model.loadIfNeeded()
@@ -491,6 +520,8 @@ struct RecommendationViewModelTests {
             weatherProvider: provider,
             locationCache: LocationCache(store: store),
             weatherCache: WeatherCache(store: store),
+            diagnostics: makeTestDiagnostics(),
+            localityResolver: StubGeocodingResolver(),
             now: { clock.value }
         )
 
@@ -508,18 +539,19 @@ struct RecommendationViewModelTests {
         #expect(await provider.requestCount == 3)
     }
 
-    @Test func presentsConciseResolvedLocality() async {
+    @Test func presentsConciseResolvedLocality() async throws {
         let model = RecommendationViewModel(
             locationProvider: fixedLocationProvider(),
             weatherProvider: FixedWeatherProvider(result: .success(forecast())),
             locationCache: LocationCache(store: MemoryCacheDataStore()),
             weatherCache: WeatherCache(store: MemoryCacheDataStore()),
+            diagnostics: makeTestDiagnostics(),
             localityResolver: FixedLocalityResolver(value: "Wenduine"),
             now: { self.now }
         )
 
         await model.loadIfNeeded()
-        while model.locality != "Wenduine" { await Task.yield() }
+        try await waitUntil("the concise locality lookup") { model.locality == "Wenduine" }
 
         #expect(model.locality == "Wenduine")
     }
@@ -536,11 +568,14 @@ struct RecommendationViewModelTests {
             weatherProvider: provider,
             locationCache: locationCache,
             weatherCache: weatherCache,
+            diagnostics: makeTestDiagnostics(),
+            localityResolver: StubGeocodingResolver(),
             now: { self.now }
         )
 
         let load = Task { await model.loadIfNeeded() }
-        while await provider.requestCount == 0 { await Task.yield() }
+        defer { load.cancel() }
+        try await waitUntil("the live replacement request to start") { await provider.requestCount > 0 }
 
         #expect(model.state.result?.weatherFetchedAt == now.addingTimeInterval(-20 * 60))
         #expect(model.state.result?.isUsingSavedWeather == true)
@@ -567,6 +602,8 @@ struct RecommendationViewModelTests {
             weatherProvider: FixedWeatherProvider(result: .failure(.network)),
             locationCache: locationCache,
             weatherCache: weatherCache,
+            diagnostics: makeTestDiagnostics(),
+            localityResolver: StubGeocodingResolver(),
             now: { self.now }
         )
 
@@ -590,6 +627,8 @@ struct RecommendationViewModelTests {
             weatherProvider: FixedWeatherProvider(result: .failure(.network)),
             locationCache: locationCache,
             weatherCache: weatherCache,
+            diagnostics: makeTestDiagnostics(),
+            localityResolver: StubGeocodingResolver(),
             now: { self.now }
         )
 
@@ -605,6 +644,8 @@ struct RecommendationViewModelTests {
             weatherProvider: SlowWeatherProvider(),
             locationCache: LocationCache(store: store),
             weatherCache: WeatherCache(store: store),
+            diagnostics: makeTestDiagnostics(),
+            localityResolver: StubGeocodingResolver(),
             now: { self.now },
             sleep: { _ in }
         )
@@ -614,6 +655,32 @@ struct RecommendationViewModelTests {
         #expect(model.state == .weatherUnavailable)
     }
 
+    @Test(arguments: [false, true])
+    func pendingWeatherProviderReleasesItsContinuationWhenCancelled(beforeRegistration: Bool) async throws {
+        let provider = PendingWeatherProvider()
+        let request = Task { try await provider.hourlyForecast(for: location) }
+        defer { request.cancel() }
+        if !beforeRegistration {
+            try await waitUntil("the pending weather continuation") { await provider.hasPendingRequest }
+        }
+        request.cancel()
+        await #expect(throws: WeatherProviderError.cancelled) { try await request.value }
+        #expect(await !provider.hasPendingRequest)
+    }
+
+    @Test(arguments: [false, true])
+    func pendingLocationProviderReleasesItsContinuationWhenCancelled(beforeRegistration: Bool) async throws {
+        let provider = PendingLocationProvider()
+        let request = Task { try await provider.currentLocation() }
+        defer { request.cancel() }
+        if !beforeRegistration {
+            try await waitUntil("the pending location continuation") { provider.hasPendingRequest }
+        }
+        request.cancel()
+        await #expect(throws: LocationProviderError.cancelled) { try await request.value }
+        #expect(!provider.hasPendingRequest)
+    }
+
     private func makeModel(forecast: NormalizedForecast) -> RecommendationViewModel {
         let store = MemoryCacheDataStore()
         return RecommendationViewModel(
@@ -621,6 +688,8 @@ struct RecommendationViewModelTests {
             weatherProvider: FixedWeatherProvider(result: .success(forecast)),
             locationCache: LocationCache(store: store),
             weatherCache: WeatherCache(store: store),
+            diagnostics: makeTestDiagnostics(),
+            localityResolver: StubGeocodingResolver(),
             now: { self.now }
         )
     }
@@ -698,18 +767,34 @@ private actor CountingWeatherProvider: WeatherProvider {
 @MainActor
 private final class PendingLocationProvider: LocationProvider {
     private(set) var requestCount = 0
-    private var continuation: CheckedContinuation<LocationReading, Never>?
+    private var continuation: CheckedContinuation<LocationReading, any Error>?
     private var completedReading: LocationReading?
+    var hasPendingRequest: Bool { continuation != nil }
 
     func currentLocation() async throws -> LocationReading {
         requestCount += 1
         if let completedReading { return completedReading }
-        return await withCheckedContinuation { continuation = $0 }
+        return try await withTaskCancellationHandler {
+            try await withCheckedThrowingContinuation { continuation in
+                guard !Task.isCancelled else {
+                    continuation.resume(throwing: LocationProviderError.cancelled)
+                    return
+                }
+                self.continuation = continuation
+            }
+        } onCancel: {
+            Task { @MainActor in self.cancel() }
+        }
     }
 
     func complete(with reading: LocationReading) {
         completedReading = reading
         continuation?.resume(returning: reading)
+        continuation = nil
+    }
+
+    private func cancel() {
+        continuation?.resume(throwing: LocationProviderError.cancelled)
         continuation = nil
     }
 }
@@ -746,16 +831,30 @@ private actor CountingResultWeatherProvider: WeatherProvider {
 private actor PendingWeatherProvider: WeatherProvider {
     private(set) var requestCount = 0
     private var continuation: CheckedContinuation<NormalizedForecast, any Error>?
+    var hasPendingRequest: Bool { continuation != nil }
 
     func hourlyForecast(for location: LocationIdentity) async throws -> NormalizedForecast {
         requestCount += 1
-        return try await withCheckedThrowingContinuation { continuation in
-            self.continuation = continuation
+        return try await withTaskCancellationHandler {
+            try await withCheckedThrowingContinuation { continuation in
+                guard !Task.isCancelled else {
+                    continuation.resume(throwing: WeatherProviderError.cancelled)
+                    return
+                }
+                self.continuation = continuation
+            }
+        } onCancel: {
+            Task { await self.cancel() }
         }
     }
 
     func complete(with result: Result<NormalizedForecast, WeatherProviderError>) {
         continuation?.resume(with: result.mapError { $0 as any Error })
+        continuation = nil
+    }
+
+    private func cancel() {
+        continuation?.resume(throwing: WeatherProviderError.cancelled)
         continuation = nil
     }
 }

@@ -4,6 +4,13 @@
 
 Keep stable IDs, priority, expected/observed behavior, acceptance and validation. Use **NEEDS DECISION** when expected behavior is undefined, **AWAITING VERIFICATION** while checks remain, and **RESOLVED** only after acceptance passes. Preserve resolved entries as regression history. Detailed run/install chronology is retained in [TODO.md](TODO.md).
 
+## ISS-014 [AWAITING VERIFICATION] — Fragile asynchronous waits and incidental geocoding in unit tests
+
+- **Priority:** P2 test reliability; app behavior unchanged.
+- **Observed/cause:** View-model/integration tests poll without deadlines, while location/diagnostic tests rely on fixed yield counts. Several model constructors omit the locality resolver or use default diagnostics, allowing incidental system geocoding. Pending fake providers/cache saves do not release their continuations on cancellation.
+- **Expected/acceptance:** Keep existing behavioral assertions and fixtures; use bounded, cancellation-aware synchronization, cancel spawned tasks on exit, and release pending continuations even if cancellation predates registration. Explicitly inject fake locality/place dependencies and isolate diagnostics from standard preferences. Add helper/cleanup regressions and pass the code verification gate; production/UI/tooling behavior stays unchanged.
+- **Implementation/validation:** Test-only fixes and regression coverage implemented; simulator verification pending.
+
 ## ISS-013 [RESOLVED] — Item detail hides necessary jacket timing qualifiers
 
 - **Priority:** P2 advice presentation.

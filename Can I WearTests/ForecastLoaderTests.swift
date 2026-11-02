@@ -104,10 +104,7 @@ struct ForecastLoaderTests {
         let loader = makeLoader(store: store, weather: weather, sleep: probe.sleep)
         let request = Task { try await loader.fetchLiveForecast(for: location) }
         defer { request.cancel() }
-        let deadline = ContinuousClock.now.advanced(by: .seconds(5))
-        while !(await weather.wasStarted), ContinuousClock.now < deadline {
-            try await Task.sleep(for: .milliseconds(1))
-        }
+        try await waitUntil("the cancellable weather provider to start") { await weather.wasStarted }
         request.cancel()
         do {
             _ = try await request.value

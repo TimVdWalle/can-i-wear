@@ -150,6 +150,7 @@ struct RecommendationRefreshTests {
         return RecommendationViewModel(
             locationProvider: FixedLocationProvider(result: .success(reading)), weatherProvider: weather,
             locationCache: LocationCache(store: store), weatherCache: WeatherCache(store: store),
+            diagnostics: makeTestDiagnostics(),
             localityResolver: RefreshTestLocalityResolver(), now: { clock.value }, automaticRefreshSleep: automaticRefreshSleep
         )
     }

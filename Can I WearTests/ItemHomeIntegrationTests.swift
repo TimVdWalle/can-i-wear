@@ -136,16 +136,32 @@ struct ItemHomeIntegrationTests {
                 identity: forecast.metadata.location, accuracyMeters: 10, timestamp: now
             ))), weatherProvider: weather,
             locationCache: LocationCache(store: store), weatherCache: WeatherCache(store: store),
+            diagnostics: makeTestDiagnostics(),
             localityResolver: ItemHomeTestLocalityResolver(), now: { now }
         )
         let load = Task { await model.loadIfNeeded() }
-        while !(await store.waitingToSave) { await Task.yield() }
+        defer { load.cancel() }
+        try await waitUntil("the accepted forecast cache save") { await store.hasPendingSave }
         model.updateSelectedItems([.sunglasses])
         await store.resumeSave()
         await load.value
         #expect(result(model)?.itemResults.map(\.item) == [.sunglasses])
         #expect(result(model)?.itemResults[0].evaluation?.verdict == .useful)
         #expect(await weather.requestCount == 1)
+    }
+
+    @Test(arguments: [false, true])
+    func deferredCacheSaveReleasesItsContinuationWhenCancelled(beforeRegistration: Bool) async throws {
+        let store = DeferredItemHomeCacheStore()
+        let save = Task { await store.set(Data([1]), forKey: WeatherCache.storageKey) }
+        defer { save.cancel() }
+        if !beforeRegistration {
+            try await waitUntil("the deferred cache continuation") { await store.hasPendingSave }
+        }
+        save.cancel()
+        await save.value
+        #expect(await !store.hasPendingSave)
+        #expect(await store.data(forKey: WeatherCache.storageKey) == nil)
     }
 
     @Test func lateNightKeepsPlanningPeriodsButDailyAnswersOnlyCountRemainingHours() async throws {
@@ -220,6 +236,7 @@ struct ItemHomeIntegrationTests {
                 identity: forecast.metadata.location, accuracyMeters: 10, timestamp: now()
             ))), weatherProvider: weather,
             locationCache: LocationCache(store: store), weatherCache: WeatherCache(store: store),
+            diagnostics: makeTestDiagnostics(),
             localityResolver: ItemHomeTestLocalityResolver(), now: now
         )
     }
@@ -259,12 +276,22 @@ private final class ItemHomeClock: @unchecked Sendable {
 private actor DeferredItemHomeCacheStore: CacheDataStore {
     private var values: [String: Data] = [:]
     private var continuation: CheckedContinuation<Void, Never>?
-    private(set) var waitingToSave = false
+    var hasPendingSave: Bool { continuation != nil }
     func data(forKey key: String) -> Data? { values[key] }
     func set(_ data: Data?, forKey key: String) async {
         if key == WeatherCache.storageKey, data != nil {
-            waitingToSave = true
-            await withCheckedContinuation { continuation = $0 }
+            await withTaskCancellationHandler {
+                await withCheckedContinuation { continuation in
+                    guard !Task.isCancelled else {
+                        continuation.resume()
+                        return
+                    }
+                    self.continuation = continuation
+                }
+            } onCancel: {
+                Task { await self.resumeSave() }
+            }
+            guard !Task.isCancelled else { return }
         }
         values[key] = data
     }

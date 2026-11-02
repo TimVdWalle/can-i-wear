@@ -69,7 +69,7 @@ struct DebugDiagnosticsTests {
         #expect(diagnostics.weatherSummary == nil)
     }
 
-    @Test func readableReportIncludesPlaceInputsWindDecisionsPeriodsAndEvents() async {
+    @Test func readableReportIncludesPlaceInputsWindDecisionsPeriodsAndEvents() async throws {
         let (defaults, suite) = isolatedDefaults()
         defer { defaults.removePersistentDomain(forName: suite) }
         defaults.set(true, forKey: DebugSettings.enabledKey)
@@ -86,7 +86,7 @@ struct DebugDiagnosticsTests {
             ageSeconds: 0,
             cacheStatus: "New reading • No saved location"
         )
-        for _ in 0..<5 { await Task.yield() }
+        try await waitUntil("the diagnostic place lookup") { diagnostics.place == "Wetstraat, Brussels" }
 
         let hour = HourlyWeather(
             timestamp: currentHour,
@@ -199,6 +199,7 @@ struct DebugDiagnosticsTests {
             locationCache: LocationCache(store: offStore),
             weatherCache: WeatherCache(store: offStore),
             diagnostics: offDiagnostics,
+            localityResolver: StubGeocodingResolver(),
             now: { self.now }
         )
         let onModel = RecommendationViewModel(
@@ -207,6 +208,7 @@ struct DebugDiagnosticsTests {
             locationCache: LocationCache(store: onStore),
             weatherCache: WeatherCache(store: onStore),
             diagnostics: onDiagnostics,
+            localityResolver: StubGeocodingResolver(),
             now: { self.now }
         )
 
@@ -235,6 +237,7 @@ struct DebugDiagnosticsTests {
             locationCache: LocationCache(store: store),
             weatherCache: WeatherCache(store: store),
             diagnostics: diagnostics,
+            localityResolver: StubGeocodingResolver(),
             now: { self.now },
             sleep: { _ in }
         )
@@ -251,7 +254,7 @@ struct DebugDiagnosticsTests {
         #expect(diagnostics.weatherSummary?.outcome == "Reused cached forecast")
     }
 
-    @Test func missingPlaceFallsBackWithoutBlockingOrExposingCoordinates() async {
+    @Test func missingPlaceFallsBackWithoutBlockingOrExposingCoordinates() async throws {
         let diagnostics = makeDiagnostics(enabled: true, place: nil)
         diagnostics.updateLocation(
             LocationReading(identity: location, accuracyMeters: 25, timestamp: now),
@@ -259,7 +262,7 @@ struct DebugDiagnosticsTests {
             ageSeconds: 0,
             cacheStatus: "Fresh"
         )
-        for _ in 0..<5 { await Task.yield() }
+        try await waitUntil("the missing-place fallback") { diagnostics.place == "City or region unavailable" }
 
         #expect(diagnostics.place == "City or region unavailable")
         #expect(diagnostics.events.contains {

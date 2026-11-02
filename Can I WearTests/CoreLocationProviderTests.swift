@@ -15,6 +15,7 @@ struct CoreLocationProviderTests {
         let client = FakeLocationClient(authorizationStatus: .authorizedWhenInUse)
         let provider = CoreLocationProvider(client: client, config: config, sleep: longSleep)
         let request = Task { try await provider.currentLocation() }
+        defer { request.cancel() }
         try await client.waitUntilStarted()
 
         client.send(location: CLLocation(
@@ -36,6 +37,7 @@ struct CoreLocationProviderTests {
         let client = FakeLocationClient(authorizationStatus: .authorizedWhenInUse)
         let provider = CoreLocationProvider(client: client, config: config, sleep: longSleep)
         let request = Task { try await provider.currentLocation() }
+        defer { request.cancel() }
         try await client.waitUntilStarted()
 
         for timestamp in [Date(timeIntervalSince1970: 1_700_000_000), Date().addingTimeInterval(-1), Date.distantFuture] {
@@ -112,6 +114,7 @@ struct CoreLocationProviderTests {
         let client = FakeLocationClient(authorizationStatus: .authorizedWhenInUse)
         let provider = CoreLocationProvider(client: client, config: config, sleep: longSleep)
         let request = Task { try await provider.currentLocation() }
+        defer { request.cancel() }
         try await client.waitUntilStarted()
 
         request.cancel()
@@ -162,10 +165,6 @@ private final class FakeLocationClient: LocationClient {
     }
 
     func waitUntilStarted() async throws {
-        for _ in 0..<1_000 {
-            if startCount > 0 { return }
-            await Task.yield()
-        }
-        try #require(startCount > 0, "Location acquisition did not start")
+        try await waitUntil("location acquisition to start") { self.startCount > 0 }
     }
 }
