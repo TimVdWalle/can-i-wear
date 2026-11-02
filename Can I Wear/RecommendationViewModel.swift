@@ -24,6 +24,7 @@ final class RecommendationViewModel {
     let diagnostics: DebugDiagnostics
 
     private let loader: ForecastLoader
+    private let loadDiagnostics: RecommendationLoadDiagnostics
     private let presentationBuilder: RecommendationPresentationBuilder
     private let itemEngine = MultiItemRecommendationEngine()
     private var refreshPolicy: RefreshPolicy
@@ -31,14 +32,7 @@ final class RecommendationViewModel {
     private let now: @Sendable () -> Date
     private let automaticRefreshSleep: Sleep
     private let isLifecycleManaged: Bool
-    private var latestLocation: LocationReading?
-    private var latestLocationSource = "Unavailable"
-    private var latestLocationCacheStatus = "Unavailable"
     private var latestForecast: NormalizedForecast?
-    private var latestWeatherTrigger = "Unavailable"
-    private var latestWeatherOutcome = "Unavailable"
-    private var latestWeatherCacheStatus = "Unavailable"
-    private var latestWeatherDuration: TimeInterval?
     private var isRequestInFlight = false
     private var localityLocation: LocationIdentity?
 
@@ -94,7 +88,11 @@ final class RecommendationViewModel {
         )
         self.presentationBuilder = RecommendationPresentationBuilder(dailyEngine: dailyEngine, periodEngine: periodEngine)
         self.refreshPolicy = RefreshPolicy(config: reuseConfig)
-        self.diagnostics = diagnostics ?? DebugDiagnostics()
+        let diagnostics = diagnostics ?? DebugDiagnostics()
+        self.diagnostics = diagnostics
+        self.loadDiagnostics = RecommendationLoadDiagnostics(
+            diagnostics: diagnostics, providerName: weatherProvider.diagnosticName, config: reuseConfig
+        )
         self.localityResolver = localityResolver ?? SystemLocalityResolver()
         self.now = now
         self.automaticRefreshSleep = automaticRefreshSleep
@@ -162,47 +160,31 @@ final class RecommendationViewModel {
 
     func manualRefresh() async {
         guard !isRequestInFlight else {
-            recordRefreshBlocked(title: "Manual refresh blocked", detail: "A location or weather request is already running.")
+            loadDiagnostics.manualRefreshBlocked()
             return
         }
         let currentTime = now()
         if let cooldown = refreshPolicy.manualRefreshBlockedUntil(at: currentTime) {
-            recordRefreshBlocked(
-                title: "Manual refresh blocked",
-                detail: "Available in \(RecommendationDiagnosticText.countdownText(cooldown.timeIntervalSince(currentTime))) after the previous failure."
-            )
+            loadDiagnostics.manualRefreshBlocked(remaining: cooldown.timeIntervalSince(currentTime))
             return
         }
 
-        diagnostics.record(
-            category: .weather,
-            outcome: .started,
-            title: "Manual refresh started",
-            detail: "The user pulled down to reacquire location, then check whether weather needs refreshing."
-        )
+        loadDiagnostics.manualRefreshStarted()
         await performLoad(trigger: .manual, forceLiveWeather: false)
     }
 
     func retry() async {
         guard !isRequestInFlight else {
-            recordRefreshBlocked(title: "Retry blocked", detail: "A request is already running.")
+            loadDiagnostics.retryBlocked()
             return
         }
         let currentTime = now()
         if let retryAvailableAt, retryAvailableAt > currentTime {
-            recordRefreshBlocked(
-                title: "Retry blocked",
-                detail: "Available in \(RecommendationDiagnosticText.countdownText(retryAvailableAt.timeIntervalSince(currentTime)))."
-            )
+            loadDiagnostics.retryBlocked(remaining: retryAvailableAt.timeIntervalSince(currentTime))
             return
         }
 
-        diagnostics.record(
-            category: .session,
-            outcome: .started,
-            title: "Retry requested",
-            detail: "The user requested a new location and weather attempt."
-        )
+        loadDiagnostics.retryRequested()
         await performLoad(trigger: .retry, forceLiveWeather: true)
     }
 
@@ -220,12 +202,7 @@ final class RecommendationViewModel {
         defer { isRequestInFlight = false }
 
         showLoadingPresentation()
-        diagnostics.record(
-            category: .session,
-            outcome: .started,
-            title: "Recommendation load",
-            detail: "\(trigger.diagnosticText) requested."
-        )
+        loadDiagnostics.loadStarted(trigger: trigger.diagnosticText)
 
         guard let location = await loadLocation(trigger: trigger) else { return }
 
@@ -238,24 +215,7 @@ final class RecommendationViewModel {
             let shouldFetch = refreshPolicy.shouldFetchWeather(age: cached.age, forced: forceLiveWeather)
             if !shouldFetch {
                 latestForecast = cached.forecast
-                latestWeatherTrigger = "Cache policy"
-                latestWeatherOutcome = "Refresh skipped"
-                latestWeatherCacheStatus = "Used; \(RecommendationDiagnosticText.ageText(cached.age)) old; refresh skipped"
-                latestWeatherDuration = nil
-                diagnostics.updateWeather(
-                    cached.forecast,
-                    provider: loader.weatherProviderName,
-                    trigger: latestWeatherTrigger,
-                    outcome: latestWeatherOutcome,
-                    durationSeconds: nil,
-                    cacheStatus: latestWeatherCacheStatus
-                )
-                diagnostics.record(
-                    category: .cache,
-                    outcome: .reused,
-                    title: "Weather cache used",
-                    detail: "\(RecommendationDiagnosticText.ageText(cached.age)) old; refresh skipped because weather is current for \(RecommendationDiagnosticText.ageText(refreshPolicy.refreshInterval))."
-                )
+                loadDiagnostics.weatherRefreshSkipped(cached.forecast, age: cached.age)
                 guard let presentation = makePresentation(
                     from: cached.forecast,
                     at: now(),
@@ -279,12 +239,7 @@ final class RecommendationViewModel {
             ) {
                 state = .result(presentation)
             }
-            diagnostics.record(
-                category: .cache,
-                outcome: .reused,
-                title: "Weather cache used",
-                detail: "\(RecommendationDiagnosticText.ageText(cached.age)) old; \(trigger == .manual ? "manual" : "background") refresh started."
-            )
+            loadDiagnostics.cachedWeatherRefreshing(age: cached.age, isManual: trigger == .manual)
         case .expired:
             state = .loading
         case .unavailable:
@@ -295,16 +250,11 @@ final class RecommendationViewModel {
 
         let liveForecast: NormalizedForecast
         let weatherStartedAt = now()
-        diagnostics.record(
-            category: .weather,
-            outcome: .started,
-            title: "Weather request",
-            detail: "\(trigger.diagnosticText) requested live weather. Timeout: \(RecommendationDiagnosticText.durationText(loader.weatherRequestTimeout.timeInterval))."
-        )
+        loadDiagnostics.weatherRequestStarted(trigger: trigger.diagnosticText)
         do {
             liveForecast = try await loader.fetchLiveForecast(for: location.identity)
         } catch WeatherProviderError.cancelled {
-            recordWeatherFailure("Request cancelled", startedAt: weatherStartedAt)
+            loadDiagnostics.weatherFailed("Request cancelled", duration: max(0, now().timeIntervalSince(weatherStartedAt)))
             finishWeatherFailure(
                 fallback: fallback,
                 otherwise: .idle,
@@ -313,7 +263,9 @@ final class RecommendationViewModel {
             )
             return
         } catch {
-            recordWeatherFailure(RecommendationDiagnosticText.weatherErrorText(error), startedAt: weatherStartedAt)
+            loadDiagnostics.weatherFailed(
+                RecommendationDiagnosticText.weatherErrorText(error), duration: max(0, now().timeIntervalSince(weatherStartedAt))
+            )
             finishWeatherFailure(
                 fallback: fallback,
                 otherwise: .weatherUnavailable,
@@ -325,26 +277,8 @@ final class RecommendationViewModel {
 
         let weatherDuration = max(0, now().timeIntervalSince(weatherStartedAt))
         latestForecast = liveForecast
-        latestWeatherTrigger = "Live refresh after location resolution"
-        latestWeatherOutcome = "Success"
-        latestWeatherCacheStatus = "Live response; saved after successful evaluation"
-        latestWeatherDuration = weatherDuration
         refreshPolicy.recordWeatherSuccess()
-        diagnostics.updateWeather(
-            liveForecast,
-            provider: loader.weatherProviderName,
-            trigger: latestWeatherTrigger,
-            outcome: latestWeatherOutcome,
-            durationSeconds: weatherDuration,
-            cacheStatus: latestWeatherCacheStatus
-        )
-        diagnostics.record(
-            category: .weather,
-            outcome: .success,
-            title: "Weather request",
-            detail: "Received \(liveForecast.hours.count) normalized hourly records from \(loader.weatherProviderName).",
-            durationSeconds: weatherDuration
-        )
+        loadDiagnostics.liveWeatherReceived(liveForecast, duration: weatherDuration)
 
         guard let presentation = makePresentation(
             from: liveForecast,
@@ -363,10 +297,7 @@ final class RecommendationViewModel {
         }
 
         if shouldRetainFallback(insteadOf: presentation, fallback: fallback, at: now()) {
-            diagnostics.record(
-                category: .evaluation, outcome: .failed, title: "Selected-item forecast unavailable",
-                detail: "The live response cannot advise on any selected item; retaining still-usable saved advice."
-            )
+            loadDiagnostics.selectedItemForecastUnavailable()
             finishWeatherFailure(
                 fallback: fallback, otherwise: .forecastIncomplete, whenExpired: .forecastIncomplete, trigger: trigger
             )
@@ -374,12 +305,7 @@ final class RecommendationViewModel {
         }
 
         await loader.saveAcceptedForecast(liveForecast)
-        diagnostics.record(
-            category: .cache,
-            outcome: .success,
-            title: "Weather cache save",
-            detail: "Saved the valid normalized forecast after evaluation."
-        )
+        loadDiagnostics.weatherSaved()
         finishSuccessfulLoad(presentation, forecast: liveForecast)
     }
 
@@ -424,27 +350,8 @@ final class RecommendationViewModel {
     }
 
     func refreshDebugSetting() {
-        let wasEnabled = diagnostics.isEnabled
-        diagnostics.refreshSetting()
-        guard !wasEnabled, diagnostics.isEnabled else { return }
-
-        if let latestLocation {
-            diagnostics.updateLocation(
-                latestLocation,
-                source: latestLocationSource,
-                ageSeconds: max(0, now().timeIntervalSince(latestLocation.timestamp)),
-                cacheStatus: latestLocationCacheStatus
-            )
-        }
+        guard loadDiagnostics.refreshSetting(forecast: latestForecast, at: now()) else { return }
         if let latestForecast {
-            diagnostics.updateWeather(
-                latestForecast,
-                provider: loader.weatherProviderName,
-                trigger: latestWeatherTrigger,
-                outcome: latestWeatherOutcome,
-                durationSeconds: latestWeatherDuration,
-                cacheStatus: latestWeatherCacheStatus
-            )
             _ = makePresentation(
                 from: latestForecast,
                 at: now(),
@@ -456,79 +363,35 @@ final class RecommendationViewModel {
     }
 
     private func loadLocation(trigger: LoadTrigger) async -> LocationReading? {
-        let requestReason: String
-        let cacheStatus: String
+        let cacheRejection: LocationCacheRejectionReason?
         switch await loader.locationSource(reacquire: trigger == .manual, at: now()) {
-        case .device(cacheRejection: nil):
-            requestReason = "Pull-to-refresh requires a new device fix instead of saved location."
-            cacheStatus = "Saved location bypassed for pull-to-refresh"
+        case .device(let reason):
+            cacheRejection = reason
+            if let reason { loadDiagnostics.locationCacheRejected(reason) }
         case .cached(let cachedLocation, let age):
-            latestLocation = cachedLocation
-            latestLocationSource = "Location cache"
-            latestLocationCacheStatus = "Reused: fresh and sufficiently accurate"
             resolveLocality(for: cachedLocation.identity)
-            diagnostics.updateLocation(
-                cachedLocation,
-                source: latestLocationSource,
-                ageSeconds: age,
-                cacheStatus: latestLocationCacheStatus
-            )
-            diagnostics.record(
-                category: .cache,
-                outcome: .reused,
-                title: "Location cache",
-                detail: "Reused a \(RecommendationDiagnosticText.durationText(age))-old reading with \(RecommendationDiagnosticText.accuracyText(cachedLocation.accuracyMeters))."
-            )
+            loadDiagnostics.reusedLocation(cachedLocation, age: age)
             return cachedLocation
-        case .device(cacheRejection: .some(let reason)):
-            requestReason = "Requested because the cache was not reusable: \(RecommendationDiagnosticText.locationCacheReason(reason))"
-            cacheStatus = RecommendationDiagnosticText.shortLocationCacheReason(reason)
-            diagnostics.record(
-                category: .cache,
-                outcome: .rejected,
-                title: "Location cache",
-                detail: RecommendationDiagnosticText.locationCacheReason(reason)
-            )
         }
 
         let startedAt = now()
-        diagnostics.record(
-            category: .location,
-            outcome: .started,
-            title: "Location request",
-            detail: requestReason
-        )
+        loadDiagnostics.locationRequestStarted(cacheRejection: cacheRejection)
         do {
             let location = try await loader.acquireLocation()
             let duration = max(0, now().timeIntervalSince(startedAt))
-            latestLocation = location
-            latestLocationSource = "Live device location"
-            latestLocationCacheStatus = "New reading • \(cacheStatus)"
             resolveLocality(for: location.identity)
-            diagnostics.updateLocation(
-                location,
-                source: latestLocationSource,
-                ageSeconds: max(0, now().timeIntervalSince(location.timestamp)),
-                cacheStatus: latestLocationCacheStatus
-            )
-            diagnostics.record(
-                category: .location,
-                outcome: .success,
-                title: "Location request",
-                detail: "Accepted and cached a reading with \(RecommendationDiagnosticText.accuracyText(location.accuracyMeters)).",
-                durationSeconds: duration
-            )
+            loadDiagnostics.acquiredLocation(location, cacheRejection: cacheRejection, at: now(), duration: duration)
             return location
         } catch LocationProviderError.permissionDenied {
-            recordLocationFailure("Permission denied", startedAt: startedAt)
+            loadDiagnostics.locationFailed("Permission denied", duration: max(0, now().timeIntervalSince(startedAt)))
             finishLocationFailure(.locationPermissionDenied, trigger: trigger)
             return nil
         } catch LocationProviderError.cancelled {
-            recordLocationFailure("Request cancelled", startedAt: startedAt)
+            loadDiagnostics.locationFailed("Request cancelled", duration: max(0, now().timeIntervalSince(startedAt)))
             finishLocationFailure(.idle, trigger: trigger)
             return nil
         } catch {
-            recordLocationFailure("\(error)", startedAt: startedAt)
+            loadDiagnostics.locationFailed("\(error)", duration: max(0, now().timeIntervalSince(startedAt)))
             finishLocationFailure(.locationUnavailable, trigger: trigger)
             return nil
         }
@@ -555,7 +418,7 @@ final class RecommendationViewModel {
               !loader.matchesForecastLocation(forecast, location: location) else { return }
         latestForecast = nil
         state = .loading
-        diagnostics.clearEvaluation()
+        loadDiagnostics.clearEvaluation()
     }
 
     private func cachedWeather(for location: LocationIdentity) async -> CachedWeatherLookup {
@@ -563,34 +426,13 @@ final class RecommendationViewModel {
         switch await loader.cachedWeather(for: location, at: currentTime) {
         case .valid(let forecast, let age, let distance):
             latestForecast = forecast
-            latestWeatherTrigger = "Cache policy"
-            latestWeatherOutcome = "Usable saved forecast"
-            latestWeatherCacheStatus = "\(RecommendationDiagnosticText.ageText(age)) old; location separation \(RecommendationDiagnosticText.distanceText(distance))"
-            latestWeatherDuration = nil
-            diagnostics.updateWeather(
-                forecast,
-                provider: loader.weatherProviderName,
-                trigger: latestWeatherTrigger,
-                outcome: latestWeatherOutcome,
-                durationSeconds: nil,
-                cacheStatus: latestWeatherCacheStatus
-            )
+            loadDiagnostics.cachedWeatherFound(forecast, age: age, distance: distance)
             return .usable(CachedWeather(forecast: forecast, age: age))
         case .expired(_, let age, let distance):
-            diagnostics.record(
-                category: .cache,
-                outcome: .rejected,
-                title: "Weather cache",
-                detail: "Rejected at \(RecommendationDiagnosticText.ageText(age)) old because the \(RecommendationDiagnosticText.ageText(refreshPolicy.maximumWeatherAge)) usable limit was exceeded; location separation \(RecommendationDiagnosticText.distanceText(distance))."
-            )
+            loadDiagnostics.weatherCacheExpired(age: age, distance: distance)
             return .expired
         case .unavailable(let reason):
-            diagnostics.record(
-                category: .cache,
-                outcome: .rejected,
-                title: "Weather cache",
-                detail: RecommendationDiagnosticText.weatherCacheReason(reason)
-            )
+            loadDiagnostics.weatherCacheUnavailable(reason)
             return .unavailable
         }
     }
@@ -605,12 +447,7 @@ final class RecommendationViewModel {
         if let fallback {
             let age = max(0, currentTime.timeIntervalSince(fallback.forecast.metadata.fetchedAt))
             guard refreshPolicy.isWeatherUsable(fetchedAt: fallback.forecast.metadata.fetchedAt, at: currentTime) else {
-                diagnostics.record(
-                    category: .cache,
-                    outcome: .rejected,
-                    title: "Weather fallback",
-                    detail: "The saved forecast crossed the \(RecommendationDiagnosticText.ageText(refreshPolicy.maximumWeatherAge)) limit while the request was running."
-                )
+                loadDiagnostics.fallbackExpired()
                 applyRetryCooldownIfNeeded(for: trigger)
                 state = expiredState
                 return
@@ -618,24 +455,7 @@ final class RecommendationViewModel {
 
             refreshPolicy.recordRefreshFailure(at: currentTime)
             latestForecast = fallback.forecast
-            latestWeatherTrigger = "Fallback after live request failure"
-            latestWeatherOutcome = "Reused cached forecast"
-            latestWeatherCacheStatus = "Refresh failed; using \(RecommendationDiagnosticText.ageText(age))-old saved weather"
-            latestWeatherDuration = nil
-            diagnostics.updateWeather(
-                fallback.forecast,
-                provider: loader.weatherProviderName,
-                trigger: latestWeatherTrigger,
-                outcome: latestWeatherOutcome,
-                durationSeconds: nil,
-                cacheStatus: latestWeatherCacheStatus
-            )
-            diagnostics.record(
-                category: .cache,
-                outcome: .reused,
-                title: "Weather fallback",
-                detail: "Refresh failed; retained the \(RecommendationDiagnosticText.ageText(age))-old saved forecast. Manual refresh is available again in \(RecommendationDiagnosticText.countdownText(refreshPolicy.failureCooldown))."
-            )
+            loadDiagnostics.reusedFallback(fallback.forecast, age: age)
             guard let cached = makePresentation(
                 from: fallback.forecast,
                 at: currentTime,
@@ -670,26 +490,10 @@ final class RecommendationViewModel {
             refreshFailed: refreshFailed,
             refreshAvailableAt: refreshPolicy.refreshAvailableAt(fetchedAt: forecast.metadata.fetchedAt)
         ) else {
-            diagnostics.record(
-                category: .evaluation,
-                outcome: .failed,
-                title: "Forecast evaluation",
-                detail: "Timezone or remaining-day coverage requirements were not met."
-            )
+            loadDiagnostics.evaluationFailed()
             return nil
         }
-        if let evaluation = output.jacketEvaluation {
-            diagnostics.updateEvaluation(forecast: forecast, evaluation: evaluation, periods: output.jacketPeriods)
-        } else {
-            diagnostics.clearEvaluation()
-        }
-        let itemResults = output.presentation.itemResults
-        diagnostics.record(
-            category: .evaluation,
-            outcome: .success,
-            title: "Recommendation periods",
-            detail: "Evaluated \(output.remainingHourCount) remaining hours; \(itemResults.filter { $0.evaluation != nil }.count) of \(itemResults.count) selected items have daily advice. Jacket diagnostics retain their own protective policy."
-        )
+        loadDiagnostics.evaluated(output, forecast: forecast)
         return output.presentation
     }
 
@@ -712,12 +516,7 @@ final class RecommendationViewModel {
         case .refresh:
             await performLoad(trigger: .automatic, forceLiveWeather: true)
         case .expire:
-            diagnostics.record(
-                category: .cache,
-                outcome: .rejected,
-                title: "Weather recommendation expired",
-                detail: "The displayed saved forecast crossed the \(RecommendationDiagnosticText.ageText(refreshPolicy.maximumWeatherAge)) usable limit."
-            )
+            loadDiagnostics.weatherExpired()
             state = .weatherDataExpired
         }
     }
@@ -752,21 +551,7 @@ final class RecommendationViewModel {
     private func applyRetryCooldownIfNeeded(for trigger: LoadTrigger) {
         guard trigger == .retry || trigger == .manual else { return }
         refreshPolicy.recordRetryFailure(at: now())
-        diagnostics.record(
-            category: .session,
-            outcome: .rejected,
-            title: "Retry cooldown",
-            detail: "Another retry is available in \(RecommendationDiagnosticText.countdownText(refreshPolicy.failureCooldown))."
-        )
-    }
-
-    private func recordRefreshBlocked(title: String, detail: String) {
-        diagnostics.record(
-            category: .weather,
-            outcome: .rejected,
-            title: title,
-            detail: detail
-        )
+        loadDiagnostics.retryCooldown()
     }
 
     private func resolveLocality(for location: LocationIdentity) {
@@ -778,34 +563,6 @@ final class RecommendationViewModel {
             guard let self, self.localityLocation == location else { return }
             self.locality = resolved ?? "Locality unavailable"
         }
-    }
-
-    private func recordLocationFailure(_ detail: String, startedAt: Date) {
-        diagnostics.record(
-            category: .error,
-            outcome: .failed,
-            title: "Location request",
-            detail: detail,
-            durationSeconds: max(0, now().timeIntervalSince(startedAt))
-        )
-    }
-
-    private func recordWeatherFailure(_ detail: String, startedAt: Date) {
-        diagnostics.record(
-            category: .error,
-            outcome: .failed,
-            title: "Weather request",
-            detail: detail,
-            durationSeconds: max(0, now().timeIntervalSince(startedAt))
-        )
-    }
-}
-
-nonisolated private extension Duration {
-    var timeInterval: TimeInterval {
-        let components = self.components
-        return TimeInterval(components.seconds)
-            + TimeInterval(components.attoseconds) / 1_000_000_000_000_000_000
     }
 }
 
