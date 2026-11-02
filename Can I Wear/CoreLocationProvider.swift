@@ -71,6 +71,7 @@ final class CoreLocationProvider: LocationProvider {
     private let sleep: Sleep
     private var continuation: CheckedContinuation<LocationReading, any Error>?
     private var timeoutTask: Task<Void, Never>?
+    private var acquisitionStartedAt: Date?
 
     convenience init(
         config: LocationAcquisitionConfig = AppConfiguration.locationAcquisition,
@@ -154,6 +155,7 @@ final class CoreLocationProvider: LocationProvider {
     private func startAcquiringLocation() {
         guard timeoutTask == nil else { return }
 
+        acquisitionStartedAt = Date()
         client.startUpdatingLocation(desiredAccuracy: config.requestedAccuracyMeters)
         timeoutTask = Task { @MainActor [weak self, config, sleep] in
             do {
@@ -168,8 +170,14 @@ final class CoreLocationProvider: LocationProvider {
     }
 
     private func received(_ locations: [CLLocation]) {
+        guard let acquisitionStartedAt, continuation != nil else { return }
+        let receivedAt = Date()
         guard let location = locations
-            .filter({ $0.horizontalAccuracy >= 0 })
+            .filter({
+                $0.horizontalAccuracy >= 0
+                    && $0.timestamp >= acquisitionStartedAt
+                    && $0.timestamp <= receivedAt
+            })
             .sorted(by: { $0.timestamp > $1.timestamp })
             .first(where: { $0.horizontalAccuracy <= config.maximumAcceptedAccuracyMeters })
         else {
@@ -203,6 +211,7 @@ final class CoreLocationProvider: LocationProvider {
         guard let continuation else { return }
 
         self.continuation = nil
+        acquisitionStartedAt = nil
         timeoutTask?.cancel()
         timeoutTask = nil
         client.stopUpdatingLocation()

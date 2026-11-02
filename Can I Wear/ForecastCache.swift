@@ -237,7 +237,7 @@ nonisolated enum WeatherCacheRejectionReason: Equatable, Sendable {
     case futureTimestamp(TimeInterval)
 }
 
-nonisolated private extension LocationIdentity {
+nonisolated extension LocationIdentity {
     var isValidCoordinate: Bool {
         latitude.isFinite && longitude.isFinite
             && (-90...90).contains(latitude)

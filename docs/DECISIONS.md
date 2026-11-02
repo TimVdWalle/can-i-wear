@@ -524,6 +524,11 @@ Within both multi-item overview layouts only, increase daypart stack spacing fro
 
 **No-scroll follow-up (2026-11-02):** When native verification exposed a 35-point Guided three-mini-hero overflow, the user explicitly rejected even a small scroll and requested a fix. Retain the approved daypart interiors and all existing viewport assertions. Rebalance only mini-hero outer vertical padding and hero-to-daypart gaps to recover the necessary space without shrinking fonts/artwork or changing other surfaces, header/footer, attribution or behavior. This narrowly amends the preceding other-spacing preservation; it does not authorize a broader redesign. Open-Meteo attribution remains required.
 
+### D-088 — Fresh location acquisition on pull-to-refresh
+**Decision (2026-11-02):** The user requested fixing stale device-location acceptance and making pull-to-refresh request new location data, fetching weather again when the location has changed. Incoming device fixes must belong to the current acquisition, not an earlier cached fix; keep D-021's accuracy, timeout and stop-after-success behavior. Normal automatic loads retain D-027's 30-minute location reuse.
+
+Pull-to-refresh bypasses the saved location even while weather is younger than 15 minutes. After location resolution, apply the existing 5 km forecast-location matching limit: fetch immediately for a nonmatching location, regardless of weather age; matching weather retains D-031's 15-minute refresh gate. Preserve single-request and 30-second post-failure cooldown protections. Never retain the previous location's recommendation as fallback after confirming a nonmatching location. This amends D-031's blanket pre-15-minute pull blocking; all other weather validity, recommendation and presentation rules remain unchanged.
+
 ## Not yet decided
 
 The following are intentionally NOT decisions:

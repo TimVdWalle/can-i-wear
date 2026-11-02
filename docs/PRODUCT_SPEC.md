@@ -26,6 +26,7 @@ Requirements:
 - obtained without continuous location tracking;
 - fast enough that normal app startup does not feel blocked unnecessarily;
 - if a sufficiently recent location can safely be reused, it may be used instead of obtaining a new fix.
+- pull-to-refresh requests a new device fix rather than reusing saved location; device fixes from before the current acquisition are not accepted (D-088).
 
 Exact freshness policy is intentionally configurable and can be tuned later.
 
@@ -112,7 +113,7 @@ If weather cannot be obtained:
 - do not invent a recommendation;
 - a recent cached weather result may be used if it is still considered reliable.
 - if the saved forecast is over 90 minutes old and live weather fails, show **“Weather unavailable”** with **“The saved forecast is too old to use. Connect to the internet and try again.”** and provide retry without showing the expired recommendation.
-- pull-to-refresh is available from 15 minutes, remains blocked while a request is active, and waits 30 seconds after failure; blocked attempts do not contact the provider. Per D-057, the Home Screen does not display a weather age/update/refresh-availability status line.
+- pull-to-refresh reacquires location, then refreshes matching weather from 15 minutes or fetches immediately when the new location is outside the existing 5 km forecast match (D-088). It remains blocked while a request is active and waits 30 seconds after failure; those blocked attempts contact neither provider. Never fall back to the old location's weather after confirming a nonmatching location. Per D-057, the Home Screen does not display a weather age/update/refresh-availability status line.
 
 Incomplete hourly coverage follows the conservative missing-hour policy in [WEATHER_LOGIC.md](WEATHER_LOGIC.md); beyond its single permitted inference, no daily recommendation may be shown.
 

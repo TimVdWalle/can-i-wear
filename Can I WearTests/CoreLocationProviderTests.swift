@@ -15,20 +15,63 @@ struct CoreLocationProviderTests {
         let client = FakeLocationClient(authorizationStatus: .authorizedWhenInUse)
         let provider = CoreLocationProvider(client: client, config: config, sleep: longSleep)
         let request = Task { try await provider.currentLocation() }
-        await Task.yield()
+        try await client.waitUntilStarted()
 
         client.send(location: CLLocation(
             coordinate: CLLocationCoordinate2D(latitude: 50.85, longitude: 4.35),
             altitude: 0,
             horizontalAccuracy: 25,
             verticalAccuracy: 0,
-            timestamp: Date(timeIntervalSince1970: 1_700_000_000)
+            timestamp: Date()
         ))
 
         let reading = try await request.value
         #expect(reading.identity == LocationIdentity(latitude: 50.85, longitude: 4.35))
         #expect(reading.accuracyMeters == 25)
         #expect(client.requestedAccuracy == 1_000)
+        #expect(client.stopCount == 1)
+    }
+
+    @Test func ignoresStaleAndFutureFixesUntilCurrentFixArrives() async throws {
+        let client = FakeLocationClient(authorizationStatus: .authorizedWhenInUse)
+        let provider = CoreLocationProvider(client: client, config: config, sleep: longSleep)
+        let request = Task { try await provider.currentLocation() }
+        try await client.waitUntilStarted()
+
+        for timestamp in [Date(timeIntervalSince1970: 1_700_000_000), Date().addingTimeInterval(-1), Date.distantFuture] {
+            client.send(location: CLLocation(
+                coordinate: CLLocationCoordinate2D(latitude: 50.85, longitude: 4.35),
+                altitude: 0, horizontalAccuracy: 25, verticalAccuracy: 0, timestamp: timestamp
+            ))
+            #expect(client.stopCount == 0)
+        }
+
+        let current = CLLocation(
+            coordinate: CLLocationCoordinate2D(latitude: 51.22, longitude: 4.40),
+            altitude: 0, horizontalAccuracy: 25, verticalAccuracy: 0, timestamp: Date()
+        )
+        client.send(location: current)
+        let reading = try await request.value
+        #expect(reading.identity == LocationIdentity(latitude: 51.22, longitude: 4.40))
+        #expect(reading.timestamp == current.timestamp)
+        #expect(client.stopCount == 1)
+    }
+
+    @Test func staleFixDoesNotPreventAcquisitionTimeout() async {
+        let client = FakeLocationClient(authorizationStatus: .authorizedWhenInUse)
+        let provider = CoreLocationProvider(client: client, config: config) { _ in
+            await MainActor.run {
+                client.send(location: CLLocation(
+                    coordinate: CLLocationCoordinate2D(latitude: 50.85, longitude: 4.35),
+                    altitude: 0, horizontalAccuracy: 25, verticalAccuracy: 0, timestamp: .distantPast
+                ))
+                #expect(client.stopCount == 0)
+            }
+        }
+
+        await #expect(throws: LocationProviderError.timedOut) {
+            try await provider.currentLocation()
+        }
         #expect(client.stopCount == 1)
     }
 
@@ -65,11 +108,11 @@ struct CoreLocationProviderTests {
         #expect(client.stopCount == 1)
     }
 
-    @Test func cancellationStopsUpdates() async {
+    @Test func cancellationStopsUpdates() async throws {
         let client = FakeLocationClient(authorizationStatus: .authorizedWhenInUse)
         let provider = CoreLocationProvider(client: client, config: config, sleep: longSleep)
         let request = Task { try await provider.currentLocation() }
-        await Task.yield()
+        try await client.waitUntilStarted()
 
         request.cancel()
 
@@ -116,5 +159,13 @@ private final class FakeLocationClient: LocationClient {
 
     func send(location: CLLocation) {
         onLocations?([location])
+    }
+
+    func waitUntilStarted() async throws {
+        for _ in 0..<1_000 {
+            if startCount > 0 { return }
+            await Task.yield()
+        }
+        try #require(startCount > 0, "Location acquisition did not start")
     }
 }

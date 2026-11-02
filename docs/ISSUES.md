@@ -4,6 +4,13 @@
 
 Keep stable IDs, priority, expected/observed behavior, acceptance and validation. Use **NEEDS DECISION** when expected behavior is undefined, **AWAITING VERIFICATION** while checks remain, and **RESOLVED** only after acceptance passes. Preserve resolved entries as regression history. Detailed run/install chronology is retained in [TODO.md](TODO.md).
 
+## ISS-012 [RESOLVED] — Stale device fixes and cached pull-to-refresh location
+
+- **Priority:** P1 location/weather correctness.
+- **Observed/cause:** Device-location callbacks checked accuracy but not age; the success test accepted a 2023 fix. Pull-to-refresh checked weather age before acquiring location and reused the 30-minute location cache, hiding movement to a different forecast area.
+- **Expected/acceptance:** D-088: reject fixes predating acquisition or in the future, keep waiting until success/timeout, and stop on completion. Pull-to-refresh reacquires location even with fresh weather, fetches for a nonmatching location, preserves matching-location weather age/concurrency/cooldown gates, and never restores mismatched advice after failure. Cover stale/fresh callbacks, timeout, matching/moved locations and failure/recovery without live network dependencies.
+- **Implementation/validation:** Acquisition-start/receipt timestamp bounds reject stale/future callbacks without ending acquisition. Pull-to-refresh bypasses location reuse (also from failure screens), resolves weather policy afterward and discards mismatched in-memory advice before fetching. Pre-fix `location-refresh-baseline-iphone13.xcresult` reproduced both defects. Final `bash scripts/verify.sh` passed in `code.vTabpQ/`: static checks, all 14 tooling tests, 195 unit/integration tests in 18 suites and coverage. Regressions cover stale/fresh/timeout, nearby/moved location, new-location request coordinates/cache replacement, mismatched-weather failure, recovery, concurrency and cooldown. Final separate Release build passed (`location-refresh-final-release.log`). Changed timestamp-filter, manual-refresh, location-load, mismatch-discard and cooldown functions have 100% function line coverage; assertions establish behavior, not that percentage alone. User explicitly excluded UI tests; no UI tests, phone installation or physical-device acceptance claimed.
+
 ## ISS-010 [AWAITING VERIFICATION] — Finished dayparts look near-black
 
 - **Priority:** P2 presentation.

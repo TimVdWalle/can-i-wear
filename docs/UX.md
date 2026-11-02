@@ -23,7 +23,7 @@ This is not a weather dashboard. Weather supports a quick **item recommendation*
 
 The recommendation screen shows a concise locality. Per D-057, it does not show a weather age, update, refresh-availability or saved-weather/cache-status line. Weather provenance remains available in opt-in diagnostics.
 
-The standard pull-down gesture refreshes weather once it is at least 15 minutes old. Pulling sooner, during a request or during the 30-second post-failure cooldown performs no network request. There is no separate Refresh button. Failure states without a usable recommendation retain **Try Again**, with a visible cooldown after a failed retry. The Home Screen omits refresh-availability status per D-057.
+The standard pull-down gesture requests a new device location, including while weather is fresh or no recommendation is available. Apply D-088's location-aware weather policy afterward: refresh matching weather once it is at least 15 minutes old; fetch immediately for a nonmatching location. During an active request or the 30-second post-failure cooldown, pulling starts neither location nor weather work. There is no separate Refresh button. Failure states without a usable recommendation retain **Try Again**, with a visible cooldown after failure. The Home Screen omits refresh-availability status per D-057.
 
 ## Information hierarchy
 

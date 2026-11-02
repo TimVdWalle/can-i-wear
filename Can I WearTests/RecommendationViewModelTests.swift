@@ -252,7 +252,7 @@ struct RecommendationViewModelTests {
         #expect(expired.state == .weatherDataExpired)
     }
 
-    @Test func pullToRefreshIsBlockedUntilFifteenMinutesAndWhileRunning() async {
+    @Test func pullToRefreshReacquiresLocationButMatchingWeatherWaitsFifteenMinutes() async {
         let clock = LockedTestClock(now)
         let store = MemoryCacheDataStore()
         await LocationCache(store: store).save(locationReading())
@@ -260,11 +260,16 @@ struct RecommendationViewModelTests {
             fetchedAt: now.addingTimeInterval(-10 * 60)
         ))
         let provider = PendingWeatherProvider()
+        let nearby = LocationReading(
+            identity: LocationIdentity(latitude: 50.86, longitude: 4.35), accuracyMeters: 25, timestamp: now
+        )
+        let locationProvider = CountingLocationProvider(reading: nearby)
         let model = RecommendationViewModel(
-            locationProvider: fixedLocationProvider(),
+            locationProvider: locationProvider,
             weatherProvider: provider,
             locationCache: LocationCache(store: store),
             weatherCache: WeatherCache(store: store),
+            localityResolver: FixedLocalityResolver(value: "Brussels"),
             now: { clock.value }
         )
         await model.loadIfNeeded()
@@ -272,12 +277,16 @@ struct RecommendationViewModelTests {
         let savedHours = model.state.result?.hours
         await model.manualRefresh()
         #expect(await provider.requestCount == 0)
+        #expect(locationProvider.requestCount == 1)
+        #expect(model.state.result?.isRefreshing == false)
+        #expect(await LocationCache(store: store).validReading(at: now) == nearby)
 
         clock.advance(by: 5 * 60)
         let refresh = Task { await model.manualRefresh() }
         while await provider.requestCount == 0 { await Task.yield() }
         await model.manualRefresh()
         #expect(await provider.requestCount == 1)
+        #expect(locationProvider.requestCount == 2)
         #expect(model.state.result?.isRefreshing == true)
         #expect(model.state.result?.hours == savedHours)
         #expect(model.state.result?.summary?.level == .okay)
@@ -286,6 +295,138 @@ struct RecommendationViewModelTests {
         await refresh.value
         #expect(model.state.result?.isRefreshing == false)
         #expect(model.state.result?.hours == savedHours)
+    }
+
+    @Test func pullToRefreshWithoutDisplayedForecastAcquiresLocationAndWeather() async {
+        let store = MemoryCacheDataStore()
+        let locationProvider = CountingLocationProvider(reading: locationReading())
+        let weatherProvider = CountingWeatherProvider(forecast: forecast())
+        let model = RecommendationViewModel(
+            locationProvider: locationProvider, weatherProvider: weatherProvider,
+            locationCache: LocationCache(store: store), weatherCache: WeatherCache(store: store),
+            localityResolver: FixedLocalityResolver(value: "Brussels"), now: { self.now },
+            initialState: .locationUnavailable
+        )
+
+        await model.manualRefresh()
+
+        #expect(locationProvider.requestCount == 1)
+        #expect(await weatherProvider.requestedLocations == [location])
+        #expect(model.state.result?.summary?.level == .okay)
+    }
+
+    @Test func pullToRefreshFetchesForMovedLocationEvenWithFreshWeather() async {
+        let store = MemoryCacheDataStore()
+        let locationCache = LocationCache(store: store)
+        await locationCache.save(locationReading())
+        await WeatherCache(store: store).save(forecast())
+        let moved = LocationIdentity(latitude: 51.22, longitude: 4.40)
+        let reading = LocationReading(identity: moved, accuracyMeters: 25, timestamp: now)
+        let locationProvider = CountingLocationProvider(reading: reading)
+        let provider = CountingWeatherProvider(forecast: forecast(location: moved, temperature: 24))
+        let model = RecommendationViewModel(
+            locationProvider: locationProvider, weatherProvider: provider,
+            locationCache: locationCache, weatherCache: WeatherCache(store: store),
+            localityResolver: FixedLocalityResolver(value: "Antwerp"), now: { self.now }
+        )
+        await model.loadIfNeeded()
+        #expect(locationProvider.requestCount == 0)
+        #expect(await provider.requestCount == 0)
+
+        await model.manualRefresh()
+
+        #expect(locationProvider.requestCount == 1)
+        #expect(await provider.requestedLocations == [moved])
+        #expect(await locationCache.validReading(at: now) == reading)
+        #expect(model.state.result?.summary?.level == .avoid)
+        #expect(model.state.result?.isRefreshing == false)
+        #expect(await WeatherCache(store: store).validForecast(at: now, for: moved)?.metadata.location == moved)
+    }
+
+    @Test func movedLocationFailureDoesNotRetainOrResurrectOldAdvice() async {
+        let store = MemoryCacheDataStore()
+        await LocationCache(store: store).save(locationReading())
+        await WeatherCache(store: store).save(forecast())
+        let moved = LocationIdentity(latitude: 51.22, longitude: 4.40)
+        let provider = CountingResultWeatherProvider(result: .failure(.network))
+        let model = RecommendationViewModel(
+            locationProvider: CountingLocationProvider(reading: LocationReading(
+                identity: moved, accuracyMeters: 25, timestamp: now
+            )),
+            weatherProvider: provider,
+            locationCache: LocationCache(store: store), weatherCache: WeatherCache(store: store),
+            localityResolver: FixedLocalityResolver(value: "Antwerp"), now: { self.now }
+        )
+        await model.loadIfNeeded()
+        #expect(model.state.result?.summary?.level == .okay)
+
+        await model.manualRefresh()
+
+        #expect(await provider.requestCount == 1)
+        #expect(model.state == .weatherUnavailable)
+        #expect(model.retryAvailableAt == now.addingTimeInterval(30))
+        await model.retry()
+        #expect(await provider.requestCount == 1)
+        model.updateSelectedItems([.sweater])
+        await model.appBecameActive()
+        #expect(model.state.result == nil)
+    }
+
+    @Test func pullToRefreshDoesNotOverlapLocationAcquisition() async {
+        let store = MemoryCacheDataStore()
+        await LocationCache(store: store).save(locationReading())
+        await WeatherCache(store: store).save(forecast())
+        let locationProvider = PendingLocationProvider()
+        let weatherProvider = CountingWeatherProvider(forecast: forecast())
+        let model = RecommendationViewModel(
+            locationProvider: locationProvider, weatherProvider: weatherProvider,
+            locationCache: LocationCache(store: store), weatherCache: WeatherCache(store: store),
+            localityResolver: FixedLocalityResolver(value: "Brussels"), now: { self.now }
+        )
+        await model.loadIfNeeded()
+        let refresh = Task { await model.manualRefresh() }
+        for _ in 0..<1_000 {
+            if locationProvider.requestCount > 0 { break }
+            await Task.yield()
+        }
+        // Complete before asserting so a failed synchronization cannot strand the request.
+        let requestCount = locationProvider.requestCount
+        await model.manualRefresh()
+        await model.appBecameActive()
+        locationProvider.complete(with: locationReading())
+        await refresh.value
+
+        #expect(requestCount == 1)
+        #expect(locationProvider.requestCount == 1)
+        #expect(await weatherProvider.requestCount == 0)
+        #expect(model.state.result?.isRefreshing == false)
+    }
+
+    @Test func failedLocationRefreshKeepsValidAdviceAndAppliesCooldown() async {
+        let clock = LockedTestClock(now)
+        let store = MemoryCacheDataStore()
+        await LocationCache(store: store).save(locationReading())
+        await WeatherCache(store: store).save(forecast())
+        let locationProvider = CountingResultLocationProvider(result: .failure(.timedOut))
+        let provider = CountingWeatherProvider(forecast: forecast())
+        let model = RecommendationViewModel(
+            locationProvider: locationProvider, weatherProvider: provider,
+            locationCache: LocationCache(store: store), weatherCache: WeatherCache(store: store),
+            localityResolver: FixedLocalityResolver(value: "Brussels"), now: { clock.value }
+        )
+        await model.loadIfNeeded()
+        await model.manualRefresh()
+
+        #expect(locationProvider.requestCount == 1)
+        #expect(await provider.requestCount == 0)
+        #expect(model.state.result?.summary?.level == .okay)
+        #expect(model.state.result?.refreshFailed == true)
+        #expect(model.state.result?.isRefreshing == false)
+        await model.manualRefresh()
+        #expect(locationProvider.requestCount == 1)
+        clock.advance(by: 30)
+        await model.manualRefresh()
+        #expect(locationProvider.requestCount == 2)
     }
 
     @Test func foregroundActivationRefreshesWeatherAtFifteenMinutes() async {
@@ -494,6 +635,7 @@ struct RecommendationViewModelTests {
 
     private func forecast(
         fetchedAt: Date? = nil,
+        location forecastLocation: LocationIdentity? = nil,
         amount: Double = 0,
         amounts: [Double]? = nil,
         chance: Double = 0,
@@ -517,7 +659,7 @@ struct RecommendationViewModelTests {
         }
         return NormalizedForecast(
             hours: hours,
-            metadata: ForecastMetadata(fetchedAt: fetchedAt ?? now, location: location)
+            metadata: ForecastMetadata(fetchedAt: fetchedAt ?? now, location: forecastLocation ?? location)
         )
     }
 }
@@ -540,6 +682,7 @@ private final class CountingLocationProvider: LocationProvider {
 private actor CountingWeatherProvider: WeatherProvider {
     let forecast: NormalizedForecast
     private(set) var requestCount = 0
+    private(set) var requestedLocations: [LocationIdentity] = []
 
     init(forecast: NormalizedForecast) {
         self.forecast = forecast
@@ -547,7 +690,42 @@ private actor CountingWeatherProvider: WeatherProvider {
 
     func hourlyForecast(for location: LocationIdentity) async throws -> NormalizedForecast {
         requestCount += 1
+        requestedLocations.append(location)
         return forecast
+    }
+}
+
+@MainActor
+private final class PendingLocationProvider: LocationProvider {
+    private(set) var requestCount = 0
+    private var continuation: CheckedContinuation<LocationReading, Never>?
+    private var completedReading: LocationReading?
+
+    func currentLocation() async throws -> LocationReading {
+        requestCount += 1
+        if let completedReading { return completedReading }
+        return await withCheckedContinuation { continuation = $0 }
+    }
+
+    func complete(with reading: LocationReading) {
+        completedReading = reading
+        continuation?.resume(returning: reading)
+        continuation = nil
+    }
+}
+
+@MainActor
+private final class CountingResultLocationProvider: LocationProvider {
+    let result: Result<LocationReading, LocationProviderError>
+    private(set) var requestCount = 0
+
+    init(result: Result<LocationReading, LocationProviderError>) {
+        self.result = result
+    }
+
+    func currentLocation() async throws -> LocationReading {
+        requestCount += 1
+        return try result.get()
     }
 }
 

@@ -1,7 +1,7 @@
 # Can I Wear — Technical Specification
 
 > Status: ACTIVE
-> Last updated: 2026-10-25
+> Last updated: 2026-11-02
 > Source of truth: YES
 
 ## Technical goal
@@ -109,6 +109,7 @@ Do not continuously track location.
 
 Preferred behavior:
 - request a sufficiently accurate current location;
+- accept only device fixes timestamped within the current acquisition, rejecting older and future-dated callbacks;
 - stop location work once a useful fix is obtained;
 - cache recent location;
 - reuse it when within the configured freshness policy.
@@ -126,7 +127,7 @@ Use cache to make startup resilient and reduce unnecessary requests.
 
 Cache freshness is configurable.
 
-Weather has separate centralized thresholds for refresh desirability (15 minutes) and maximum safe reuse (90 minutes inclusive). Load/foreground/active-boundary checks use these thresholds. Pull-to-refresh uses the same 15-minute gate, permits no concurrent request, and applies a centralized 30-second cooldown after failure. Saved weather remains visible during a permitted refresh and after refresh failure only while it remains within the maximum usable age.
+Weather has separate centralized thresholds for refresh desirability (15 minutes) and maximum safe reuse (90 minutes inclusive). Load/foreground/active-boundary checks use these thresholds. Under D-088, pull-to-refresh bypasses location reuse and obtains a current device fix before applying weather policy: matching weather uses the same 15-minute gate; a location outside the existing 5 km match fetches immediately, invalidating the old location's in-memory recommendation/fallback. It permits no concurrent request and applies a centralized 30-second cooldown after failure. Saved weather remains visible during a permitted refresh and after refresh failure only while it remains within the maximum usable age and matches the resolved location.
 
 ## Architecture
 
