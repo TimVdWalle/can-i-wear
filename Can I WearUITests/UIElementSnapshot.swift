@@ -4,10 +4,16 @@ import XCTest
 /// Create a new value after navigation, scrolling, rotation or any other UI change.
 @MainActor
 struct UIElementSnapshot {
+    let root: any XCUIElementSnapshot
     private let descendants: [any XCUIElementSnapshot]
 
     init(_ scope: XCUIElement) throws {
-        let root = try scope.snapshot()
+        self.init(try scope.snapshot())
+    }
+
+    /// Re-scope an already captured screen without another accessibility round trip.
+    init(_ root: any XCUIElementSnapshot) {
+        self.root = root
         var pending = root.children
         var descendants: [any XCUIElementSnapshot] = []
         while let child = pending.popLast() {

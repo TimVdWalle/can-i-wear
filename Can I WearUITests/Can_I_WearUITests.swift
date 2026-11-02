@@ -9,25 +9,25 @@ final class Can_I_WearUITests: XCTestCase {
     func testDisplaysOrderedRecommendationPeriods() throws {
         let app = launch(scenario: "periods")
 
-        let wear = app.descendants(matching: .any)["period-0"]
-        let caution = app.descendants(matching: .any)["period-1"]
         let avoid = app.descendants(matching: .any)["period-2"]
         XCTAssertTrue(avoid.waitForExistence(timeout: 3))
-        XCTAssertTrue(wear.exists)
-        XCTAssertTrue(caution.exists)
-        XCTAssertTrue(avoid.label.contains("Evening"))
-        XCTAssertTrue(avoid.label.contains("18–24"))
-        XCTAssertTrue(wear.label.contains("Morning"))
-        XCTAssertTrue(caution.label.contains("Afternoon"))
-        XCTAssertTrue(avoid.label.contains("NO"))
-        XCTAssertFalse(avoid.label.contains("Precipitation"))
-        XCTAssertTrue(wear.label.contains("YES"))
-        XCTAssertTrue(caution.label.contains("MAYBE"))
-        let hero = app.descendants(matching: .any)["recommendation-hero"]
+        let screen = try UIElementSnapshot(app)
+        let wearLabel = try screen.element("period-0").label
+        let cautionLabel = try screen.element("period-1").label
+        let avoidLabel = try screen.element("period-2").label
+        XCTAssertTrue(avoidLabel.contains("Evening"))
+        XCTAssertTrue(avoidLabel.contains("18–24"))
+        XCTAssertTrue(wearLabel.contains("Morning"))
+        XCTAssertTrue(cautionLabel.contains("Afternoon"))
+        XCTAssertTrue(avoidLabel.contains("NO"))
+        XCTAssertFalse(avoidLabel.contains("Precipitation"))
+        XCTAssertTrue(wearLabel.contains("YES"))
+        XCTAssertTrue(cautionLabel.contains("MAYBE"))
+        let hero = try screen.element("recommendation-hero")
         XCTAssertTrue(hero.label.contains("Leather Jacket. NO. Avoid during wet weather"))
         XCTAssertTrue(hero.label.contains("Wet weather is expected and could damage leather."))
-        XCTAssertTrue(app.descendants(matching: .any)["hour-0"].label.contains("06:00"))
-        XCTAssertTrue(app.descendants(matching: .any)["hour-17"].label.contains("NO"))
+        XCTAssertTrue(try screen.element("hour-0").label.contains("06:00"))
+        XCTAssertTrue(try screen.element("hour-17").label.contains("NO"))
         capture(app, name: "Home — mixed periods")
     }
 
@@ -106,7 +106,7 @@ final class Can_I_WearUITests: XCTestCase {
     }
 
     @MainActor
-    func testFooterConfigurationAndDiagnosticsDoNotOverlapAttribution() {
+    func testFooterConfigurationAndDiagnosticsDoNotOverlapAttribution() throws {
         for category in ["UICTContentSizeCategoryL", "UICTContentSizeCategoryAccessibilityXXXL"] {
             let app = XCUIApplication()
             app.launchArguments = [
@@ -117,18 +117,21 @@ final class Can_I_WearUITests: XCTestCase {
             let gear = app.buttons["configure-items"]
             XCTAssertTrue(gear.waitForExistence(timeout: 5))
             revealFooterControl(gear, in: app)
-            let attribution = app.buttons["weather-attribution"]
             let diagnostics = app.buttons["diagnostics-button"]
             XCTAssertTrue(gear.isHittable)
             XCTAssertTrue(diagnostics.isHittable)
-            XCTAssertGreaterThanOrEqual(gear.frame.width, 44)
-            XCTAssertGreaterThanOrEqual(gear.frame.height, 44)
-            XCTAssertGreaterThanOrEqual(diagnostics.frame.width, 44)
-            XCTAssertGreaterThanOrEqual(diagnostics.frame.height, 44)
-            XCTAssertLessThanOrEqual(diagnostics.frame.maxX, gear.frame.minX)
-            XCTAssertFalse(attribution.frame.intersects(gear.frame))
-            XCTAssertFalse(attribution.frame.intersects(diagnostics.frame))
-            XCTAssertLessThanOrEqual(attribution.frame.width, app.frame.width - 32)
+            let footer = try UIElementSnapshot(app)
+            let gearFrame = try footer.element("configure-items").frame
+            let debugFrame = try footer.element("diagnostics-button").frame
+            let attributionFrame = try footer.element("weather-attribution").frame
+            XCTAssertGreaterThanOrEqual(gearFrame.width, 44)
+            XCTAssertGreaterThanOrEqual(gearFrame.height, 44)
+            XCTAssertGreaterThanOrEqual(debugFrame.width, 44)
+            XCTAssertGreaterThanOrEqual(debugFrame.height, 44)
+            XCTAssertLessThanOrEqual(debugFrame.maxX, gearFrame.minX)
+            XCTAssertFalse(attributionFrame.intersects(gearFrame))
+            XCTAssertFalse(attributionFrame.intersects(debugFrame))
+            XCTAssertLessThanOrEqual(attributionFrame.width, footer.root.frame.width - 32)
             capture(app, name: "D-077 — footer with diagnostics, \(category)")
             gear.tap()
             XCTAssertTrue(app.buttons["confirm-item-selection"].waitForExistence(timeout: 5))
@@ -442,15 +445,6 @@ final class Can_I_WearUITests: XCTestCase {
     }
 
     @MainActor
-    func testLaunchPerformance() throws {
-        measure(metrics: [XCTApplicationLaunchMetric()]) {
-            let app = XCUIApplication()
-            app.launchArguments = ["-ui-test-scenario", "periods"]
-            app.launch()
-        }
-    }
-
-    @MainActor
     private func launch(
         scenario: String,
         homeMode: String = "compact",
@@ -466,5 +460,24 @@ final class Can_I_WearUITests: XCTestCase {
         }
         app.launch()
         return app
+    }
+}
+
+/// Run separately without coverage; this measures deterministic fixture readiness, not live GPS/network latency.
+final class LaunchPerformanceTests: XCTestCase {
+    override func setUpWithError() throws { continueAfterFailure = false }
+
+    @MainActor
+    func testLaunchToRecommendationReady() {
+        XCUIDevice.shared.orientation = .portrait
+        let app = XCUIApplication()
+        app.launchArguments = [
+            "-ui-test-scenario", "periods", "-ui-test-home-mode", "compact",
+            "-UIPreferredContentSizeCategoryName", "UICTContentSizeCategoryL"
+        ]
+        measure(metrics: [XCTApplicationLaunchMetric(waitUntilResponsive: true), XCTClockMetric()]) {
+            app.launch()
+            XCTAssertTrue(app.descendants(matching: .any)["recommendation-hero"].waitForExistence(timeout: 5))
+        }
     }
 }

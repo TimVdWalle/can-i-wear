@@ -4,15 +4,17 @@ set -euo pipefail
 
 usage() {
     cat <<'HELP'
-Usage: bash scripts/verify.sh [docs|static|code|full]
+Usage: bash scripts/verify.sh [docs|static|code|full|performance]
 
   docs    Check unstaged and staged diffs for whitespace errors.
   static  Also run ShellCheck, tooling tests, SwiftLint, and plist validation.
   code    Default: static checks + simulator unit/integration tests + coverage.
-  full    Static checks + Release build + all unit/integration/UI tests + coverage.
+  full    Static checks + Release build + all functional tests + coverage.
+  performance  Separate fixture launch/readiness benchmark, without coverage.
 
 Setup: bash scripts/setup-tools.sh
 Override simulator: VERIFY_DESTINATION='platform=iOS Simulator,name=iPhone 16e,OS=latest'
+Compare benchmark: VERIFY_PERFORMANCE_BASELINE='/path/to/performance.json'
 Logs, coverage, and result bundles: .build/verification/<unique run directory>/
 HELP
 }
@@ -24,7 +26,7 @@ fi
 profile="${1:-code}"
 case "$profile" in
     -h|--help) usage; exit 0 ;;
-    docs|static|code|full) ;;
+    docs|static|code|full|performance) ;;
     *) usage >&2; exit 2 ;;
 esac
 
@@ -39,7 +41,9 @@ printf 'Verification profile: %s\nResults: %s\n' "$profile" "$run_dir"
 # shellcheck disable=SC2329
 finish() {
     local status="$1"
-    if [[ $status -eq 0 ]]; then
+    if [[ $status -eq 0 && "$profile" == performance && -z "${VERIFY_PERFORMANCE_BASELINE:-}" ]]; then
+        printf 'MEASURED: performance profile (no regression baseline)\n' | tee "$run_dir/status.txt"
+    elif [[ $status -eq 0 ]]; then
         printf 'PASS: %s profile\n' "$profile" | tee "$run_dir/status.txt"
     else
         printf 'FAIL: %s profile (exit %s). See %s\n' "$profile" "$status" "$run_dir" \
@@ -64,8 +68,11 @@ require() {
 run() {
     local label="$1"
     shift
+    local started=$SECONDS status=0
     printf '\nChecking %s\n' "$label"
-    "$@" 2>&1 | tee "$run_dir/$label.log"
+    "$@" 2>&1 | tee "$run_dir/$label.log" || status=$?
+    printf '%s\t%s\t%s\n' "$label" "$((SECONDS - started))" "$status" >> "$run_dir/timings.tsv"
+    return "$status"
 }
 
 failures=0
@@ -90,7 +97,7 @@ require swiftlint
 require plutil
 require python3
 check shellcheck shellcheck scripts/*.sh
-check tooling-tests python3 -m unittest discover -s scripts/tests
+check tooling-tests python3 scripts/test-tooling.py
 check swiftlint-version swiftlint version
 check swiftlint swiftlint lint --config .swiftlint.yml --strict --no-cache
 plist_index=0
@@ -123,10 +130,26 @@ fi
 test_options=(-parallel-testing-enabled NO -enableCodeCoverage YES)
 if [[ "$profile" == code ]]; then
     test_options+=(-only-testing:"Can I WearTests")
+elif [[ "$profile" == performance ]]; then
+    test_options=(-parallel-testing-enabled NO -enableCodeCoverage NO
+        -only-testing:"Can I WearUITests/LaunchPerformanceTests")
+else
+    test_options+=(-skip-testing:"Can I WearUITests/LaunchPerformanceTests")
 fi
 bundle="$run_dir/Tests.xcresult"
 if run tests xcodebuild "${common[@]}" -configuration Debug \
     "${test_options[@]}" -resultBundlePath "$bundle" test; then
+    if [[ "$profile" == performance ]]; then
+        check performance-metrics xcrun xcresulttool get test-results metrics --path "$bundle" \
+            --test-id 'LaunchPerformanceTests/testLaunchToRecommendationReady()'
+        check performance-summary xcrun xcresulttool get test-results summary --path "$bundle"
+        comparison=(python3 scripts/check-performance.py "$run_dir")
+        if [[ -n "${VERIFY_PERFORMANCE_BASELINE:-}" ]]; then
+            comparison+=("$VERIFY_PERFORMANCE_BASELINE")
+        fi
+        check performance-comparison "${comparison[@]}"
+        exit "$((failures > 0))"
+    fi
     check coverage xcrun xccov view --report --only-targets "$bundle"
     check coverage-files xcrun xccov view --report --files-for-target "Can I Wear.app" "$bundle"
     if ! xcrun xccov view --report --json "$bundle" > "$run_dir/coverage.json"; then
