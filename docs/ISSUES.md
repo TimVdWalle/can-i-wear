@@ -4,12 +4,19 @@
 
 Keep stable IDs, priority, expected/observed behavior, acceptance and validation. Use **NEEDS DECISION** when expected behavior is undefined, **AWAITING VERIFICATION** while checks remain, and **RESOLVED** only after acceptance passes. Preserve resolved entries as regression history. Detailed run/install chronology is retained in [TODO.md](TODO.md).
 
-## ISS-014 [AWAITING VERIFICATION] — Fragile asynchronous waits and incidental geocoding in unit tests
+## ISS-015 [AWAITING VERIFICATION] — Avoidable waits and repeated scrolling in UI tests
+
+- **Priority:** P2 development/test speed; app behavior unchanged.
+- **Observed/cause:** Settings repeats XCTest existence waits for already-present controls. The landscape-selection reveal helper can exhaust its 16-drag budget after a hittable target stops moving at the scroll boundary, causing hundreds of redundant accessibility queries.
+- **Expected/acceptance:** Preserve all functional scenarios, assertion limits, screenshots, real Settings edits and persistence/navigation checks. Avoid polling delays for already-present elements while retaining existing wait timeouts; stop redundant boundary scrolling only for a live hittable target. Compare the same focused tests before/after on one serial, coverage-enabled simulator and pass the full verification gate. No production or verification-script changes.
+- **Implementation/validation:** Controlled baseline passes both tests in 185.109s. Test-only optimizations and regressions implemented. The first after-run passes landscape in 27.142s (75.597s before; 33→4 drags) but fails Settings navigation after removing its original search waits; it is not a verification pass. Those navigation waits are restored, stable-control fast paths retained, and Settings explicitly starts in portrait. Focused revalidation/full gate pending; evidence is in `ui-interaction-speed.c4lr3do7/`.
+
+## ISS-014 [RESOLVED] — Fragile asynchronous waits and incidental geocoding in unit tests
 
 - **Priority:** P2 test reliability; app behavior unchanged.
 - **Observed/cause:** View-model/integration tests poll without deadlines, while location/diagnostic tests rely on fixed yield counts. Several model constructors omit the locality resolver or use default diagnostics, allowing incidental system geocoding. Pending fake providers/cache saves do not release their continuations on cancellation.
 - **Expected/acceptance:** Keep existing behavioral assertions and fixtures; use bounded, cancellation-aware synchronization, cancel spawned tasks on exit, and release pending continuations even if cancellation predates registration. Explicitly inject fake locality/place dependencies and isolate diagnostics from standard preferences. Add helper/cleanup regressions and pass the code verification gate; production/UI/tooling behavior stays unchanged.
-- **Implementation/validation:** Test-only fixes and regression coverage implemented; simulator verification pending.
+- **Implementation/validation:** `bash scripts/verify.sh` passed in `code.E5K3Bl/`: static checks, all 28 tooling tests, Debug simulator build, 241 unit/integration tests in 25 suites and coverage. New regressions cover immediate/eventual completion, descriptive timeout, cancellation before/during a wait, standard-debug-setting isolation, and pending weather/location/cache cleanup before/after continuation registration. Coverage confirms zero calls to `SystemLocalityResolver.locality` and `SystemPlaceResolver.place` in this run. Existing behavioral assertions remain; production/UI/project/tooling sources are unchanged. No UI tests, device installation or physical acceptance performed for this test-only fix.
 
 ## ISS-013 [RESOLVED] — Item detail hides necessary jacket timing qualifiers
 

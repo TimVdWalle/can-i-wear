@@ -1,5 +1,13 @@
 import XCTest
 
+extension XCUIElement {
+    /// Keep XCTest's bounded wait for late elements, without its polling delay for an existing one.
+    @MainActor
+    func existsOrWait(timeout: TimeInterval) -> Bool {
+        exists || waitForExistence(timeout: timeout)
+    }
+}
+
 /// A single public XCTest snapshot for assertions on an unchanged screen.
 /// Create a new value after navigation, scrolling, rotation or any other UI change.
 @MainActor

@@ -655,22 +655,22 @@ final class ItemHomeUITests: XCTestCase {
         let app = launch("items-setup", flags: ["-ui-test-reset-selection"])
         XCUIDevice.shared.orientation = .landscapeLeft
         let confirm = app.buttons["confirm-item-selection"]
-        XCTAssertTrue(confirm.waitForExistence(timeout: 5))
+        XCTAssertTrue(confirm.existsOrWait(timeout: 5))
         app.buttons["select-item-leatherJacket"].tap()
         confirm.tap()
-        XCTAssertTrue(app.descendants(matching: .any)["recommendation-hero"].waitForExistence(timeout: 5))
-        openConfiguration(in: app)
+        XCTAssertTrue(app.descendants(matching: .any)["recommendation-hero"].existsOrWait(timeout: 5))
+        XCTAssertTrue(openConfiguration(in: app), "Stop scrolling once the live footer target is reached")
         app.buttons["select-item-leatherJacket"].tap()
         XCTAssertFalse(confirm.isEnabled)
         app.buttons["Cancel"].tap()
-        openConfiguration(in: app)
+        XCTAssertTrue(openConfiguration(in: app), "Do not exhaust the drag budget at the scroll boundary")
         XCTAssertEqual(app.buttons["select-item-leatherJacket"].value as? String, "Selected")
         let sun = app.buttons["select-item-sunglasses"]
         reveal(sun, in: app)
         sun.tap()
         capture(app, "Landscape selector — draft before save")
         confirm.tap()
-        XCTAssertTrue(app.buttons["item-card-leatherJacket"].waitForExistence(timeout: 5))
+        XCTAssertTrue(app.buttons["item-card-leatherJacket"].existsOrWait(timeout: 5))
         XCTAssertTrue(app.buttons["item-card-sunglasses"].exists)
     }
 
@@ -774,6 +774,8 @@ final class ItemHomeUITests: XCTestCase {
         ])
         let jacket = app.buttons["item-card-leatherJacket"]
         XCTAssertTrue(jacket.waitForExistence(timeout: 5))
+        XCTAssertTrue(jacket.existsOrWait(timeout: 0), "An already-present element needs no polling delay")
+        XCTAssertFalse(app.buttons["missing-wait-regression"].existsOrWait(timeout: 0), "Never claim a missing element exists")
         let screen = try UIElementSnapshot(app)
         let overview = UIElementSnapshot(try screen.element("item-card-leatherJacket"))
         assertSameFrame(overview.root.frame, jacket.frame)
@@ -892,16 +894,19 @@ final class ItemHomeUITests: XCTestCase {
     }
 
     @MainActor
-    private func openConfiguration(in app: XCUIApplication) {
+    @discardableResult
+    private func openConfiguration(in app: XCUIApplication) -> Bool {
         let gear = app.buttons["configure-items"]
-        reveal(gear, in: app)
+        let reachedTarget = reveal(gear, in: app)
         XCTAssertTrue(gear.isHittable)
         gear.tap()
-        XCTAssertTrue(app.buttons["confirm-item-selection"].waitForExistence(timeout: 5))
+        XCTAssertTrue(app.buttons["confirm-item-selection"].existsOrWait(timeout: 5))
+        return reachedTarget
     }
 
     @MainActor
-    private func reveal(_ element: XCUIElement, in app: XCUIApplication) {
+    @discardableResult
+    private func reveal(_ element: XCUIElement, in app: XCUIApplication) -> Bool {
         // This helper only scrolls a stable screen: viewport/footer geometry does not change.
         let appFrame = app.frame
         var viewport = appFrame.insetBy(dx: 8, dy: 60)
@@ -915,15 +920,23 @@ final class ItemHomeUITests: XCTestCase {
         let to = app.coordinate(withNormalizedOffset: CGVector(
             dx: 0.5, dy: (viewport.minY + viewport.height * 0.2 - appFrame.minY) / appFrame.height
         ))
+        var previousHittableFrame: CGRect?
         for _ in 0..<16 {
             if element.exists, element.isHittable {
                 let frame = element.frame
-                if viewport.contains(CGPoint(x: frame.midX, y: frame.midY)) { return }
+                // At the scroll boundary the inset can be unreachable in landscape.
+                // A stationary, live hittable target needs no further identical drags;
+                // callers still check hittability and perform the real interaction.
+                if viewport.contains(CGPoint(x: frame.midX, y: frame.midY)) || frame == previousHittableFrame { return true }
+                previousHittableFrame = frame
+            } else {
+                previousHittableFrame = nil
             }
             // Hittability alone is insufficient for off-screen controls in landscape.
             // Drag inside the visible scroll region, not over a sticky footer or sheet chrome.
             from.press(forDuration: 0.05, thenDragTo: to)
         }
+        return false
     }
 
     @MainActor

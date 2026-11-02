@@ -146,6 +146,7 @@ final class Can_I_WearUITests: XCTestCase {
 
     @MainActor
     func testSystemSettingsToggleIsReflectedWhenAppBecomesActive() throws {
+        XCUIDevice.shared.orientation = .portrait
         let app = XCUIApplication()
         app.launchArguments = ["-ui-test-scenario", "periods"]
         app.launch()
@@ -154,19 +155,22 @@ final class Can_I_WearUITests: XCTestCase {
         let settings = XCUIApplication(bundleIdentifier: "com.apple.Preferences")
         settings.launch()
         let apps = settings.staticTexts["Apps"]
-        for _ in 0..<5 where !apps.exists {
+        for _ in 0..<5 {
+            if apps.exists { break }
             let back = settings.navigationBars.buttons.element(boundBy: 0)
             if back.exists {
                 back.tap()
             }
         }
-        for _ in 0..<12 where !apps.isHittable {
+        for _ in 0..<12 {
+            if apps.isHittable { break }
             settings.swipeUp()
         }
         XCTAssertTrue(apps.isHittable)
         apps.tap()
 
         // Search rather than swiping past the C section while Settings loads its app list.
+        // Retain navigation waits here: Settings can expose rows while search is still reflowing.
         let appSearch = settings.searchFields.firstMatch
         XCTAssertTrue(appSearch.waitForExistence(timeout: 10))
         appSearch.tap()
@@ -177,11 +181,11 @@ final class Can_I_WearUITests: XCTestCase {
         appRow.tap()
 
         let debugSwitch = settings.switches["Debug Enabled"]
-        XCTAssertTrue(debugSwitch.waitForExistence(timeout: 5))
+        XCTAssertTrue(debugSwitch.existsOrWait(timeout: 5))
         let guidedHomeSwitch = settings.switches["Guided Home"]
-        XCTAssertTrue(guidedHomeSwitch.waitForExistence(timeout: 5))
+        XCTAssertTrue(guidedHomeSwitch.existsOrWait(timeout: 5))
         let introductionSwitch = settings.switches["Show How It Works"]
-        XCTAssertTrue(introductionSwitch.waitForExistence(timeout: 5))
+        XCTAssertTrue(introductionSwitch.existsOrWait(timeout: 5))
         if switchIsOn(introductionSwitch) {
             toggle(introductionSwitch)
         }
@@ -194,29 +198,29 @@ final class Can_I_WearUITests: XCTestCase {
         XCTAssertFalse(switchIsOn(debugSwitch))
 
         app.activate()
-        XCTAssertTrue(app.descendants(matching: .any)["recommendation-hero"].waitForExistence(timeout: 5))
+        XCTAssertTrue(app.descendants(matching: .any)["recommendation-hero"].existsOrWait(timeout: 5))
         XCTAssertFalse(app.staticTexts["How it works"].exists)
         XCTAssertFalse(app.staticTexts["home-purpose"].exists)
         XCTAssertFalse(app.staticTexts["day-parts-heading"].exists)
 
         settings.activate()
-        XCTAssertTrue(introductionSwitch.waitForExistence(timeout: 5))
-        XCTAssertTrue(guidedHomeSwitch.waitForExistence(timeout: 5))
+        XCTAssertTrue(introductionSwitch.existsOrWait(timeout: 5))
+        XCTAssertTrue(guidedHomeSwitch.existsOrWait(timeout: 5))
         XCTAssertFalse(switchIsOn(guidedHomeSwitch))
         toggle(introductionSwitch)
         toggle(debugSwitch)
         XCTAssertTrue(switchIsOn(debugSwitch), "Switch value: \(String(describing: debugSwitch.value))")
 
         app.activate()
-        XCTAssertTrue(app.buttons["diagnostics-button"].waitForExistence(timeout: 5))
-        XCTAssertTrue(app.staticTexts["How it works"].waitForExistence(timeout: 5))
-        XCTAssertTrue(app.staticTexts["home-purpose"].waitForExistence(timeout: 5))
-        XCTAssertTrue(app.staticTexts["day-parts-heading"].waitForExistence(timeout: 5))
+        XCTAssertTrue(app.buttons["diagnostics-button"].existsOrWait(timeout: 5))
+        XCTAssertTrue(app.staticTexts["How it works"].existsOrWait(timeout: 5))
+        XCTAssertTrue(app.staticTexts["home-purpose"].existsOrWait(timeout: 5))
+        XCTAssertTrue(app.staticTexts["day-parts-heading"].existsOrWait(timeout: 5))
 
         settings.activate()
-        XCTAssertTrue(debugSwitch.waitForExistence(timeout: 5))
-        XCTAssertTrue(guidedHomeSwitch.waitForExistence(timeout: 5))
-        XCTAssertTrue(introductionSwitch.waitForExistence(timeout: 5))
+        XCTAssertTrue(debugSwitch.existsOrWait(timeout: 5))
+        XCTAssertTrue(guidedHomeSwitch.existsOrWait(timeout: 5))
+        XCTAssertTrue(introductionSwitch.existsOrWait(timeout: 5))
         XCTAssertTrue(switchIsOn(guidedHomeSwitch))
         XCTAssertTrue(switchIsOn(introductionSwitch))
         toggle(guidedHomeSwitch)
@@ -229,8 +233,8 @@ final class Can_I_WearUITests: XCTestCase {
         XCTAssertFalse(app.staticTexts["How it works"].exists)
 
         settings.activate()
-        XCTAssertTrue(guidedHomeSwitch.waitForExistence(timeout: 5))
-        XCTAssertTrue(introductionSwitch.waitForExistence(timeout: 5))
+        XCTAssertTrue(guidedHomeSwitch.existsOrWait(timeout: 5))
+        XCTAssertTrue(introductionSwitch.existsOrWait(timeout: 5))
         XCTAssertFalse(switchIsOn(guidedHomeSwitch))
         XCTAssertFalse(switchIsOn(introductionSwitch))
         if !switchIsOn(guidedHomeSwitch) {
@@ -245,7 +249,7 @@ final class Can_I_WearUITests: XCTestCase {
         let disappeared = NSPredicate(format: "exists == false")
         expectation(for: disappeared, evaluatedWith: diagnostics)
         waitForExpectations(timeout: 5)
-        XCTAssertTrue(app.staticTexts["day-parts-heading"].waitForExistence(timeout: 5))
+        XCTAssertTrue(app.staticTexts["day-parts-heading"].existsOrWait(timeout: 5))
         verifyItemSetupReset(app: app, settings: settings)
     }
 
@@ -253,10 +257,13 @@ final class Can_I_WearUITests: XCTestCase {
     private func verifyItemSetupReset(app: XCUIApplication, settings: XCUIApplication) {
         revealFooterControl(app.buttons["configure-items"], in: app)
         app.buttons["configure-items"].tap()
-        XCTAssertTrue(app.buttons["Cancel"].waitForExistence(timeout: 5))
+        XCTAssertTrue(app.buttons["Cancel"].existsOrWait(timeout: 5))
         settings.activate()
         let reset = settings.switches["Reset Item Setup"]
-        for _ in 0..<5 where !reset.isHittable { settings.swipeUp() }
+        for _ in 0..<5 {
+            if reset.isHittable { break }
+            settings.swipeUp()
+        }
         XCTAssertTrue(reset.isHittable)
         XCTAssertFalse(switchIsOn(reset))
         toggle(reset)
@@ -264,7 +271,7 @@ final class Can_I_WearUITests: XCTestCase {
 
         app.activate()
         let confirm = app.buttons["confirm-item-selection"]
-        XCTAssertTrue(confirm.waitForExistence(timeout: 5))
+        XCTAssertTrue(confirm.existsOrWait(timeout: 5))
         XCTAssertEqual(confirm.label, "Continue")
         XCTAssertFalse(app.buttons["Cancel"].exists)
         XCTAssertFalse(confirm.isEnabled)
@@ -276,13 +283,13 @@ final class Can_I_WearUITests: XCTestCase {
         app.buttons["select-item-leatherJacket"].tap()
         XCTAssertTrue(confirm.isEnabled)
         confirm.tap()
-        XCTAssertTrue(app.buttons["configure-items"].waitForExistence(timeout: 5))
+        XCTAssertTrue(app.buttons["configure-items"].existsOrWait(timeout: 5))
 
         settings.activate()
-        XCTAssertTrue(reset.waitForExistence(timeout: 5))
+        XCTAssertTrue(reset.existsOrWait(timeout: 5))
         XCTAssertFalse(switchIsOn(reset))
         app.activate()
-        XCTAssertTrue(app.buttons["configure-items"].waitForExistence(timeout: 5))
+        XCTAssertTrue(app.buttons["configure-items"].existsOrWait(timeout: 5))
         XCTAssertFalse(confirm.exists)
 
         app.terminate()
@@ -291,17 +298,17 @@ final class Can_I_WearUITests: XCTestCase {
         XCTAssertTrue(switchIsOn(reset))
         app.launchArguments += ["-ui-test-preserve-selection"]
         app.launch()
-        XCTAssertTrue(confirm.waitForExistence(timeout: 5))
+        XCTAssertTrue(confirm.existsOrWait(timeout: 5))
         XCTAssertEqual(confirm.label, "Continue")
         XCTAssertFalse(confirm.isEnabled)
         XCTAssertEqual(app.buttons["select-item-leatherJacket"].value as? String, "Not selected")
         app.buttons["select-item-leatherJacket"].tap()
         XCTAssertTrue(confirm.isEnabled)
         confirm.tap()
-        XCTAssertTrue(app.buttons["configure-items"].waitForExistence(timeout: 5))
+        XCTAssertTrue(app.buttons["configure-items"].existsOrWait(timeout: 5))
         app.terminate()
         app.launch()
-        XCTAssertTrue(app.buttons["configure-items"].waitForExistence(timeout: 5))
+        XCTAssertTrue(app.buttons["configure-items"].existsOrWait(timeout: 5))
         XCTAssertFalse(confirm.exists)
     }
 
