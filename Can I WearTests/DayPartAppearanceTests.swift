@@ -11,13 +11,15 @@ struct DayPartAppearanceTests {
             for layout in [ItemOverviewLayout?.none, .miniHeroes, .gallery] {
                 for level in [ItemAdviceLevel?.some(.yes), .some(.maybe), .some(.no), .none] {
                     let display: ItemHomePresentation
+                    let parts: [FixedDayPartPresentation]
                     if let level {
-                        display = try fixture(Array(repeating: level, count: 18), item: .sunglasses).0
+                        (display, parts) = try fixture(Array(repeating: level, count: 18), item: .sunglasses)
                     } else {
                         display = ItemHomePresentation(result: ItemForecastResult(item: .sunglasses, evaluation: nil))
+                        parts = []
                     }
                     for size in [DynamicTypeSize.large, .accessibility3] {
-                        let image = try render(ItemSummaryView(presentation: display, overviewLayout: layout),
+                        let image = try render(ItemSummaryView(presentation: display, dayParts: parts, overviewLayout: layout),
                                                scheme: scheme, width: 358, height: 420, typeSize: size)
                         let colors = try pixels(image)
                         let sample = colors[12 * 358 + 8]

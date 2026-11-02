@@ -14,7 +14,9 @@ struct ItemHomePresentationTests {
             for layout in [ItemOverviewLayout.miniHeroes, .gallery] {
                 for item in PredefinedItem.allCases {
                     let display = try presentation([.yes, .yes], item: item)
-                    let renderer = ImageRenderer(content: ItemSummaryView(presentation: display, overviewLayout: layout)
+                    let evaluation = try #require(display.evaluation)
+                    let parts = FixedDayPartPresentation.make(from: evaluation, at: evaluation.interval.start)
+                    let renderer = ImageRenderer(content: ItemSummaryView(presentation: display, dayParts: parts, overviewLayout: layout)
                         .frame(width: layout == .miniHeroes ? 358 : 173, height: layout == .miniHeroes ? 180 : 340, alignment: .topLeading)
                         .background(HomeStyle.card)
                         .environment(\.dynamicTypeSize, .large).environment(\.colorScheme, scheme))
@@ -457,6 +459,81 @@ struct ItemHomePresentationTests {
         #expect(display.heroQualifier(dayParts: parts) == "Avoid 00:00–06:00")
         let (uniform, uniformParts) = try jacketHome(Array(repeating: .yes, count: 24))
         #expect(uniform.heroQualifier(dayParts: uniformParts) == nil)
+    }
+
+    @MainActor
+    @Test func sharedSummaryPreservesExceptionTimingAndAccessibleMeaningInEveryLayout() throws {
+        let (early, earlyParts) = try jacketHome(
+            Array(repeating: .no, count: 6) + Array(repeating: .yes, count: 18)
+        )
+        let (late, lateParts) = try jacketHome(
+            Array(repeating: .yes, count: 6) + Array(repeating: .no, count: 10) + [.yes, .yes], currentHourOffset: 16
+        )
+        var levels = Array(repeating: ItemAdviceLevel.yes, count: 18)
+        levels[7] = .maybe
+        let (within, withinParts) = try jacketHome(levels)
+        let brief = try presentation([.no, .yes, .no], item: .sunglasses)
+        for (display, parts, expected) in [
+            (early, earlyParts, "Avoid 00:00–06:00"),
+            (late, lateParts, "Suitable 22:00–24:00"),
+            (within, withinParts, "Advice changes within dayparts"),
+            (brief, [], "Briefly useful · 22:00–23:00")
+        ] {
+            for layout in [ItemOverviewLayout?.none, .miniHeroes, .gallery] {
+                let summary = ItemSummaryView(presentation: display, dayParts: parts, overviewLayout: layout)
+                #expect(summary.qualifier == expected)
+                #expect(summary.heroAccessibilityLabel.contains(expected))
+                #expect(summary.heroAccessibilityLabel.contains(display.title))
+                #expect(display.overviewAccessibilityLabel(dayParts: parts).contains(expected))
+            }
+        }
+    }
+
+    @MainActor
+    @Test func sharedSummaryDoesNotInventUniformOrUnavailableTimingOrSafeBlips() throws {
+        let (uniform, uniformParts) = try jacketHome(Array(repeating: .yes, count: 24))
+        var levels = Array(repeating: ItemAdviceLevel.no, count: 18)
+        levels[7] = .yes
+        let (protected, protectedParts) = try jacketHome(levels)
+        let unavailable = ItemHomePresentation(result: ItemForecastResult(item: .leatherJacket, evaluation: nil))
+        for layout in [ItemOverviewLayout?.none, .miniHeroes, .gallery] {
+            for (display, parts) in [(uniform, uniformParts), (protected, protectedParts), (unavailable, [])] {
+                let summary = ItemSummaryView(presentation: display, dayParts: parts, overviewLayout: layout)
+                #expect(summary.qualifier == nil)
+                #expect(summary.heroAccessibilityLabel == display.heroAccessibilityLabel(qualifier: nil))
+            }
+        }
+    }
+
+    @MainActor
+    @Test func sharedSummaryRendersTheExceptionInsteadOfOnlyAnnouncingIt() throws {
+        let (display, parts) = try jacketHome(
+            Array(repeating: .no, count: 6) + Array(repeating: .yes, count: 18)
+        )
+        let captures = FileManager.default.temporaryDirectory.appendingPathComponent("qualifier-regression", isDirectory: true)
+        try FileManager.default.createDirectory(at: captures, withIntermediateDirectories: true)
+        for scheme in [ColorScheme.light, .dark] {
+            for layout in [ItemOverviewLayout?.none, .miniHeroes, .gallery] {
+                func image(dayParts: [FixedDayPartPresentation], typeSize: DynamicTypeSize = .accessibility3) throws -> UIImage {
+                    let renderer = ImageRenderer(content:
+                        ItemSummaryView(presentation: display, dayParts: dayParts, overviewLayout: layout)
+                            .frame(width: 358).fixedSize(horizontal: false, vertical: true)
+                            .background(HomeStyle.card)
+                            .environment(\.dynamicTypeSize, typeSize).environment(\.colorScheme, scheme))
+                    renderer.scale = 1
+                    return try #require(renderer.uiImage)
+                }
+                let withTiming = try image(dayParts: parts)
+                let withoutContext = try image(dayParts: [])
+                #expect(withTiming.size.height > withoutContext.size.height + 12,
+                        "The visible qualifier needs its own readable line in \(String(describing: layout)) \(scheme)")
+                let name = "\(layout.map { String(describing: $0) } ?? "single-detail")-\(scheme)"
+                try #require(withTiming.pngData()).write(to: captures.appendingPathComponent("\(name)-large-text.png"))
+                try #require(image(dayParts: parts, typeSize: .large).pngData())
+                    .write(to: captures.appendingPathComponent("\(name)-standard.png"))
+            }
+        }
+        print("Qualifier regression captures: \(captures.path)")
     }
 
     private func jacketHome(

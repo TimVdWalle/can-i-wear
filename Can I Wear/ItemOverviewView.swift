@@ -67,7 +67,7 @@ struct ItemOverviewView<Locality: View>: View {
             ? "Earlier periods unavailable in this forecast." : nil
         return Button { onSelect(item.id) } label: {
             VStack(alignment: .leading, spacing: layout == .miniHeroes ? 6 : 10) {
-                ItemSummaryView(presentation: item, overviewLayout: layout, qualifier: item.heroQualifier(dayParts: parts))
+                ItemSummaryView(presentation: item, dayParts: parts, overviewLayout: layout)
                 if layout == .gallery { Spacer(minLength: 0) }
                 if item.evaluation != nil {
                     OverviewDayPartsView(dayParts: parts, isGallery: layout == .gallery, showsRanges: columns == 1)

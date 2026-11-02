@@ -182,8 +182,8 @@ struct ItemSelectionView: View {
 
 struct ItemSummaryView: View {
     let presentation: ItemHomePresentation
+    let dayParts: [FixedDayPartPresentation]
     var overviewLayout: ItemOverviewLayout?
-    var qualifier: String?
     @Environment(\.dynamicTypeSize) private var typeSize
     @ScaledMetric(relativeTo: .largeTitle) private var statusSize = 44
     @ScaledMetric(relativeTo: .title) private var overviewStatusSize = 32
@@ -191,15 +191,22 @@ struct ItemSummaryView: View {
     private var isOverview: Bool { overviewLayout != nil }
     private var isGallery: Bool { overviewLayout == .gallery }
 
+    var qualifier: String? { presentation.heroQualifier(dayParts: dayParts) }
+    var heroAccessibilityLabel: String { presentation.heroAccessibilityLabel(qualifier: qualifier) }
+
     var body: some View {
-        if isGallery {
-            VStack(alignment: .leading, spacing: 8) {
-                overviewArtwork.frame(height: 80)
-                copy
+        Group {
+            if isGallery {
+                VStack(alignment: .leading, spacing: 8) {
+                    overviewArtwork.frame(height: 80)
+                    copy
+                }
+            } else {
+                horizontalHero
             }
-        } else {
-            horizontalHero
         }
+        .accessibilityElement(children: .ignore)
+        .accessibilityLabel(heroAccessibilityLabel)
     }
 
     private var horizontalHero: some View {

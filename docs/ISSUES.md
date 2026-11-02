@@ -4,6 +4,13 @@
 
 Keep stable IDs, priority, expected/observed behavior, acceptance and validation. Use **NEEDS DECISION** when expected behavior is undefined, **AWAITING VERIFICATION** while checks remain, and **RESOLVED** only after acceptance passes. Preserve resolved entries as regression history. Detailed run/install chronology is retained in [TODO.md](TODO.md).
 
+## ISS-013 [RESOLVED] — Item detail hides necessary jacket timing qualifiers
+
+- **Priority:** P2 advice presentation.
+- **Observed/cause:** Detail passed an empty daypart list to `heroQualifier`, suppressing necessary jacket exception timing that Home/overview retained. Reproduced example: NO for rain before 06:00 with all three displayed dayparts YES; overview says “Avoid 00:00–06:00” but detail omits it.
+- **Expected/acceptance:** Under D-072/D-074/D-075, preserve necessary timing and accessible meaning on Home, overview and matching detail. Share qualifier rendering from the actual displayed dayparts, remove detail-only suppression/duplicate rendering paths, and retain uniform-advice omission, brief-usefulness, uncertainty and jacket protective grouping. Recommendation, provider/cache and unrelated presentation behavior stay unchanged.
+- **Implementation/validation:** Removed the detail-only flag and duplicate daypart/divider branches. `ItemSummaryView` now requires displayed dayparts and derives both the visible qualifier and hero accessibility label; callers cannot override/suppress the qualifier independently. Final `bash scripts/verify.sh` passed in `code.fhd9FG/`: static checks, all 14 tooling tests, 198 unit/integration tests in 18 suites and coverage. Separate Release build passed (`qualifier-release.log`; app sources unchanged during the final capture-only test addition). New shared-summary regressions cover early/late/within-daypart exceptions, brief usefulness, uniform/unavailable omission and protective avoidance; rendered light/dark checks confirm a visible qualifier line. Shared qualifier/accessibility/body/copy getters have 100% function line coverage. Reviewed standard single/detail-style and mini-hero captures plus larger-text single/detail-style/gallery captures under `qualifier-rendered/`. These are isolated rendered components, not end-to-end detail-navigation evidence; `ContentView.itemDetail`/overview navigation remain unexercised by this non-UI run. UI tests were explicitly excluded by the user. No physical-device/VoiceOver acceptance or installation claimed. This closes the missing-qualifier cause, not every possible headline/daypart discrepancy.
+
 ## ISS-012 [RESOLVED] — Stale device fixes and cached pull-to-refresh location
 
 - **Priority:** P1 location/weather correctness.
