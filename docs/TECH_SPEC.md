@@ -196,6 +196,8 @@ The core decision engine must be testable without:
 
 Use deterministic weather fixtures.
 
+UI tests may use `UIElementSnapshot` to check multiple labels/frames from one public XCTest snapshot of a stable scope. Capture a new snapshot after navigation, scrolling, rotation or other UI changes; continue using live elements for waits, hittability and interactions. Snapshot lookups must fail on missing or duplicate identifiers, preserving live-query checks rather than silently choosing a first match. Do not trade away scenarios, assertion limits, required screenshots or persistence/Settings flows for speed.
+
 The most important test suite is the jacket decision and period grouping logic.
 
 Add integration tests for:
